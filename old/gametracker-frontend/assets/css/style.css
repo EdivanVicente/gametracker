@@ -1,0 +1,467 @@
+/* ==========================================================================
+   GameTracker Pro — Design System
+   Conceito: "save file / HUD de jogo" — cantos de mira nos cards (viewfinder),
+   como selecionar um slot de save. Paleta escura de biblioteca de jogos.
+   ========================================================================== */
+
+:root {
+  /* --- Cor --- */
+  --gt-void: #0e1116;
+  --gt-surface: #171b23;
+  --gt-surface-raised: #1f2530;
+  --gt-border: #2a3140;
+  --gt-accent: #7c5cff;
+  --gt-accent-hover: #9478ff;
+  --gt-amber: #ffb13c;
+  --gt-success: #3ddc84;
+  --gt-danger: #ff5c7a;
+  --gt-text: #e8eaed;
+  --gt-text-muted: #8b93a1;
+
+  /* --- Tipografia --- */
+  --gt-font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --gt-font-body: "Inter", "Segoe UI", sans-serif;
+  --gt-font-mono: "JetBrains Mono", "Courier New", monospace;
+
+  /* --- Espaçamento de containers ultrawide (nota de design da spec) --- */
+  --gt-container-max: 1320px;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+body {
+  background-color: var(--gt-void);
+  color: var(--gt-text);
+  font-family: var(--gt-font-body);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6,
+.gt-display {
+  font-family: var(--gt-font-display);
+  letter-spacing: -0.01em;
+}
+
+.gt-mono {
+  font-family: var(--gt-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--gt-accent);
+}
+a:hover {
+  color: var(--gt-accent-hover);
+}
+
+/* Foco visível (acessibilidade) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.form-control:focus,
+.form-select:focus {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+::selection {
+  background: var(--gt-accent);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Navbar
+   ========================================================================== */
+
+.gt-navbar {
+  background-color: rgba(14, 17, 22, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--gt-border);
+}
+
+.gt-brand {
+  font-family: var(--gt-font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--gt-text) !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gt-brand .gt-brand-mark {
+  color: var(--gt-accent);
+}
+
+.gt-navbar .nav-link {
+  color: var(--gt-text-muted) !important;
+  font-weight: 500;
+}
+.gt-navbar .nav-link.active,
+.gt-navbar .nav-link:hover {
+  color: var(--gt-text) !important;
+}
+
+/* ==========================================================================
+   Botões
+   ========================================================================== */
+
+.btn-gt-primary {
+  background-color: var(--gt-accent);
+  border-color: var(--gt-accent);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-gt-primary:hover {
+  background-color: var(--gt-accent-hover);
+  border-color: var(--gt-accent-hover);
+  color: #fff;
+}
+
+.btn-gt-outline {
+  background-color: transparent;
+  border: 1px solid var(--gt-border);
+  color: var(--gt-text);
+  font-weight: 500;
+}
+.btn-gt-outline:hover {
+  border-color: var(--gt-accent);
+  color: var(--gt-text);
+  background-color: var(--gt-surface-raised);
+}
+
+/* ==========================================================================
+   HUD Status Strip (resumo do dashboard)
+   ========================================================================== */
+
+.gt-hud-strip {
+  background-color: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  border-radius: 0.5rem;
+}
+
+.gt-hud-item {
+  padding: 1rem 1.25rem;
+  border-right: 1px solid var(--gt-border);
+}
+.gt-hud-item:last-child {
+  border-right: none;
+}
+
+.gt-hud-value {
+  font-family: var(--gt-font-mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gt-hud-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gt-text-muted);
+  margin-top: 0.35rem;
+}
+
+.gt-hud-value.is-playing { color: var(--gt-amber); }
+.gt-hud-value.is-finished { color: var(--gt-success); }
+.gt-hud-value.is-favorite { color: var(--gt-accent); }
+
+/* ==========================================================================
+   Game Card — com cantos de mira (assinatura visual)
+   ========================================================================== */
+
+.gt-card {
+  position: relative;
+  background-color: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  height: 100%;
+}
+
+.gt-card:hover,
+.gt-card:focus-within {
+  border-color: var(--gt-accent);
+  transform: translateY(-2px);
+}
+
+/* Cantos de mira: aparecem no hover, como selecionar um save slot */
+.gt-card::before,
+.gt-card::after,
+.gt-card .gt-corner-tl,
+.gt-card .gt-corner-br {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--gt-accent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.gt-card::before {
+  top: 6px;
+  left: 6px;
+  border-top: 2px solid var(--gt-accent);
+  border-left: 2px solid var(--gt-accent);
+}
+.gt-card::after {
+  bottom: 6px;
+  right: 6px;
+  border-bottom: 2px solid var(--gt-accent);
+  border-right: 2px solid var(--gt-accent);
+}
+.gt-card:hover::before,
+.gt-card:hover::after,
+.gt-card:focus-within::before,
+.gt-card:focus-within::after {
+  opacity: 1;
+}
+
+.gt-card-cover {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(135deg, var(--gt-surface-raised), var(--gt-void));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gt-border);
+  font-size: 2.5rem;
+  overflow: hidden;
+}
+.gt-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gt-card-status {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  font-family: var(--gt-font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  z-index: 3;
+}
+.gt-card-status.is-playing {
+  background-color: rgba(255, 177, 60, 0.15);
+  color: var(--gt-amber);
+  border: 1px solid rgba(255, 177, 60, 0.4);
+}
+.gt-card-status.is-finished {
+  background-color: rgba(61, 220, 132, 0.15);
+  color: var(--gt-success);
+  border: 1px solid rgba(61, 220, 132, 0.4);
+}
+
+.gt-card-favorite {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(14, 17, 22, 0.6);
+  border-radius: 50%;
+  color: var(--gt-text-muted);
+  border: none;
+}
+.gt-card-favorite.is-active,
+.gt-card-favorite:hover {
+  color: var(--gt-danger);
+}
+
+.gt-card-body {
+  padding: 0.85rem;
+}
+
+.gt-card-title {
+  font-family: var(--gt-font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-card-meta {
+  font-size: 0.75rem;
+  color: var(--gt-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.gt-card-scores {
+  display: flex;
+  gap: 0.6rem;
+  font-family: var(--gt-font-mono);
+  font-size: 0.7rem;
+  color: var(--gt-text-muted);
+  border-top: 1px solid var(--gt-border);
+  padding-top: 0.5rem;
+}
+.gt-card-scores span.gt-score-value {
+  color: var(--gt-amber);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Toolbar de filtros
+   ========================================================================== */
+
+.gt-toolbar {
+  background-color: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  border-radius: 0.5rem;
+}
+
+.gt-toolbar .form-select,
+.gt-toolbar .form-control {
+  background-color: var(--gt-surface-raised);
+  border-color: var(--gt-border);
+  color: var(--gt-text);
+}
+.gt-toolbar .form-select:focus,
+.gt-toolbar .form-control:focus {
+  background-color: var(--gt-surface-raised);
+  color: var(--gt-text);
+}
+.gt-toolbar .form-select option {
+  background-color: var(--gt-surface-raised);
+}
+
+/* ==========================================================================
+   Modais e formulários (auth + busca de jogo)
+   ========================================================================== */
+
+.gt-panel {
+  background-color: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  border-radius: 0.75rem;
+}
+
+.modal-content.gt-modal {
+  background-color: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  color: var(--gt-text);
+}
+.gt-modal .modal-header,
+.gt-modal .modal-footer {
+  border-color: var(--gt-border);
+}
+.gt-modal .form-control,
+.gt-modal .form-select {
+  background-color: var(--gt-surface-raised);
+  border-color: var(--gt-border);
+  color: var(--gt-text);
+}
+.gt-modal .form-control:focus,
+.gt-modal .form-select:focus {
+  background-color: var(--gt-surface-raised);
+  color: var(--gt-text);
+}
+.gt-modal .btn-close {
+  filter: invert(1) grayscale(100%);
+}
+
+/* Estrelas de avaliação (input) */
+.gt-star-input {
+  display: inline-flex;
+  gap: 0.15rem;
+  font-size: 1.1rem;
+  color: var(--gt-border);
+}
+.gt-star-input .gt-star {
+  cursor: pointer;
+  transition: color 0.1s ease;
+}
+.gt-star-input .gt-star.is-filled,
+.gt-star-input:hover .gt-star {
+  color: var(--gt-amber);
+}
+
+/* ==========================================================================
+   Breakpoints — ajustes finos por dispositivo
+   Referência da spec:
+     <576   iPhone SE (portrait/landscape)
+     412+   Samsung A51 / Android médio-grande
+     768–1024 iPad (md/lg)
+     1200+  Desktops (xl)
+     1440+  xxl — container com max-width
+     1800 / 2560  Ultrawide — grid estende, container não
+   ========================================================================== */
+
+/* Smartphones pequenos (<576px): toolbar empilha, HUD strip vira 2 colunas */
+@media (max-width: 575.98px) {
+  .gt-hud-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .gt-hud-item {
+    border-right: 1px solid var(--gt-border);
+    border-bottom: 1px solid var(--gt-border);
+  }
+  .gt-hud-item:nth-child(2n) {
+    border-right: none;
+  }
+  .gt-hud-value {
+    font-size: 1.4rem;
+  }
+  .gt-card-title {
+    font-size: 0.85rem;
+  }
+}
+
+/* Smartphones landscape / Samsung A51 (~412px a 767px) */
+@media (min-width: 412px) and (max-width: 767.98px) {
+  .gt-card-cover {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+/* Tablets (iPad — md a lg, 768–1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .gt-hud-strip {
+    display: flex;
+  }
+}
+
+/* Acima de 1440px: container-fluid ganha um teto para não esticar demais */
+@media (min-width: 1440px) {
+  .gt-container-fluid {
+    max-width: var(--gt-container-max);
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+@media (min-width: 1800px) {
+  .gt-container-fluid {
+    max-width: 1560px;
+  }
+}
+@media (min-width: 2560px) {
+  .gt-container-fluid {
+    max-width: 1800px;
+  }
+}
+
+/* Respeita preferência de redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+  .gt-card {
+    transition: none;
+  }
+}
