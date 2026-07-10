@@ -3,7 +3,7 @@ Schemas Pydantic — contratos de entrada e saída da API.
 """
 
 import re
-from datetime import datetime, date
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
 
 # Regex exigida pela especificação:
@@ -46,81 +46,3 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: int | None = None
-
-
-# ---------------------------------------------------------------------------
-# Catálogo (UserGame + Rating)
-# ---------------------------------------------------------------------------
-
-class RatingIn(BaseModel):
-    graphics_score: int | None = None
-    sound_score: int | None = None
-    gameplay_score: int | None = None
-    difficulty_score: int | None = None
-
-    @field_validator(
-        "graphics_score", "sound_score", "gameplay_score", "difficulty_score"
-    )
-    @classmethod
-    def validate_score_range(cls, value: int | None) -> int | None:
-        if value is not None and not (1 <= value <= 5):
-            raise ValueError("A nota deve estar entre 1 e 5.")
-        return value
-
-
-class RatingOut(RatingIn):
-    model_config = ConfigDict(from_attributes=True)
-
-
-class GameOut(BaseModel):
-    id: int
-    external_id: str
-    title: str
-    cover_url: str | None = None
-    description: str | None = None
-    genre: str | None = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class UserGameCreate(BaseModel):
-    """Payload enviado quando o usuário seleciona um jogo no modal de busca."""
-    external_id: str
-    title: str
-    cover_url: str | None = None
-    description: str | None = None
-    genre: str | None = None
-    platform: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    is_favorite: bool = False
-
-
-class UserGameUpdate(BaseModel):
-    """Payload para PATCH — todos os campos opcionais (atualização parcial)."""
-    platform: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    is_favorite: bool | None = None
-    rating: RatingIn | None = None
-
-
-class UserGameOut(BaseModel):
-    id: int
-    platform: str | None
-    start_date: date | None
-    end_date: date | None
-    status: str
-    is_favorite: bool
-    game: GameOut
-    rating: RatingOut | None = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class CatalogSummary(BaseModel):
-    total: int
-    playing: int
-    finished: int
-    favorites: int
-

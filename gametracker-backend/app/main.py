@@ -1,21 +1,13 @@
 """
 Ponto de entrada da aplicação GameTracker Pro.
-
-Rodar localmente com:
-    uvicorn app.main:app --reload
-
-Docs interativas automáticas em:
-    http://localhost:8000/docs
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.database import Base, engine
-from app.routers import auth, discovery, catalog
+from app.routers import auth, discovery, games
 
 # Cria as tabelas no banco caso ainda não existam.
-# Em produção, prefira usar Alembic para migrations versionadas.
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -25,7 +17,6 @@ app = FastAPI(
 )
 
 # CORS liberado para o frontend Vanilla JS/Bootstrap consumir a API.
-# Restrinja allow_origins para o domínio real em produção.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,11 +25,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Inclusão dos roteadores (cada um incluído exatamente uma vez)
 app.include_router(auth.router)
 app.include_router(discovery.router)
-app.include_router(catalog.router)
-
+app.include_router(games.router)
 
 @app.get("/health", tags=["Status"])
 def health_check():
     return {"status": "ok"}
+# No seu app/main.py, altere para algo genérico apenas para testes
+RAWG_API_KEY = "dummy_key_for_testing"

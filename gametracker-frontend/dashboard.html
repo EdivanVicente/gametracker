@@ -16,6 +16,8 @@
 
   <!-- Design system próprio -->
   <link rel="stylesheet" href="assets/css/style.css">
+
+  <script src="assets/js/auth-check.js"></script>
 </head>
 <body>
 
@@ -23,6 +25,9 @@
        NAVBAR
        ============================================================ -->
   <nav class="navbar navbar-expand-lg gt-navbar sticky-top py-3">
+    <button class="btn btn-outline-danger" onclick="logout()">
+    Sair
+</button>
     <div class="container-fluid gt-container-fluid px-3 px-md-4">
       <a class="navbar-brand gt-brand" href="dashboard.html">
         <i class="bi bi-joystick" style="color: var(--gt-accent);"></i>
@@ -61,7 +66,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="#">Meu perfil</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#" id="btn-logout">Sair</a></li>
+              <li><a class="dropdown-item" href="index.html">Sair</a></li>
             </ul>
           </div>
         </div>
@@ -162,15 +167,131 @@
          Breakpoints: 1 col (xs) -> 2 col (sm) -> 3 col (md/lg) -> 4 col (xl) -> 6 col (xxl)
          ============================================================ -->
     <section aria-label="Meus jogos">
-      <div class="text-center py-5" id="games-grid-loading">
-        <div class="spinner-border" style="color: var(--gt-accent);" role="status">
-          <span class="visually-hidden">Carregando...</span>
+      <div class="row g-3" id="games-grid">
+
+        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
+          <article class="gt-card">
+            <div class="gt-card-status is-playing">Em andamento</div>
+            <button class="gt-card-favorite is-active" aria-label="Remover dos favoritos">
+              <i class="bi bi-heart-fill"></i>
+            </button>
+            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
+            <div class="gt-card-body">
+              <h3 class="gt-card-title mb-0">Hollow Knight</h3>
+              <p class="gt-card-meta">PC · Metroidvania</p>
+              <div class="gt-card-scores">
+                <span>Grf <span class="gt-score-value">5</span></span>
+                <span>Som <span class="gt-score-value">5</span></span>
+                <span>Jog <span class="gt-score-value">5</span></span>
+                <span>Dif <span class="gt-score-value">4</span></span>
+              </div>
+            </div>
+          </article>
         </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
+          <article class="gt-card">
+            <div class="gt-card-status is-finished">Finalizado</div>
+            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
+              <i class="bi bi-heart"></i>
+            </button>
+            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
+            <div class="gt-card-body">
+              <h3 class="gt-card-title mb-0">Ender Magnolia</h3>
+              <p class="gt-card-meta">Switch · Metroidvania</p>
+              <div class="gt-card-scores">
+                <span>Grf <span class="gt-score-value">4</span></span>
+                <span>Som <span class="gt-score-value">5</span></span>
+                <span>Jog <span class="gt-score-value">4</span></span>
+                <span>Dif <span class="gt-score-value">3</span></span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
+          <article class="gt-card">
+            <div class="gt-card-status is-finished">Finalizado</div>
+            <button class="gt-card-favorite is-active" aria-label="Remover dos favoritos">
+              <i class="bi bi-heart-fill"></i>
+            </button>
+            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
+            <div class="gt-card-body">
+              <h3 class="gt-card-title mb-0">Elden Ring</h3>
+              <p class="gt-card-meta">PS5 · RPG de Ação</p>
+              <div class="gt-card-scores">
+                <span>Grf <span class="gt-score-value">5</span></span>
+                <span>Som <span class="gt-score-value">5</span></span>
+                <span>Jog <span class="gt-score-value">5</span></span>
+                <span>Dif <span class="gt-score-value">5</span></span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
+          <article class="gt-card">
+            <div class="gt-card-status is-playing">Em andamento</div>
+            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
+              <i class="bi bi-heart"></i>
+            </button>
+            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
+            <div class="gt-card-body">
+              <h3 class="gt-card-title mb-0">Baldur's Gate 3</h3>
+              <p class="gt-card-meta">PC · RPG</p>
+              <div class="gt-card-scores">
+                <span>Grf <span class="gt-score-value">5</span></span>
+                <span>Som <span class="gt-score-value">5</span></span>
+                <span>Jog <span class="gt-score-value">4</span></span>
+                <span>Dif <span class="gt-score-value">4</span></span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
+          <article class="gt-card">
+            <div class="gt-card-status is-finished">Finalizado</div>
+            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
+              <i class="bi bi-heart"></i>
+            </button>
+            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
+            <div class="gt-card-body">
+              <h3 class="gt-card-title mb-0">Celeste</h3>
+              <p class="gt-card-meta">Switch · Plataforma</p>
+              <div class="gt-card-scores">
+                <span>Grf <span class="gt-score-value">4</span></span>
+                <span>Som <span class="gt-score-value">5</span></span>
+                <span>Jog <span class="gt-score-value">5</span></span>
+                <span>Dif <span class="gt-score-value">5</span></span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
+          <article class="gt-card">
+            <div class="gt-card-status is-finished">Finalizado</div>
+            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
+              <i class="bi bi-heart"></i>
+            </button>
+            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
+            <div class="gt-card-body">
+              <h3 class="gt-card-title mb-0">Stardew Valley</h3>
+              <p class="gt-card-meta">PC · Simulação</p>
+              <div class="gt-card-scores">
+                <span>Grf <span class="gt-score-value">3</span></span>
+                <span>Som <span class="gt-score-value">4</span></span>
+                <span>Jog <span class="gt-score-value">5</span></span>
+                <span>Dif <span class="gt-score-value">2</span></span>
+              </div>
+            </div>
+          </article>
+        </div>
+
       </div>
 
-      <div class="row g-3 d-none" id="games-grid"></div>
-
-      <!-- Estado vazio (exibido via JS quando não há resultados) -->
+      <!-- Estado vazio (oculto por padrão; exibido via JS na Etapa 4 quando não há resultados) -->
       <div class="text-center py-5 d-none" id="games-grid-empty">
         <i class="bi bi-controller fs-1 text-white-50 d-block mb-3"></i>
         <p class="text-white-50 mb-0">Nenhum jogo encontrado com esses filtros.</p>
@@ -237,48 +358,48 @@
           <div class="row g-2 mb-3">
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Gráficos</span>
-              <div class="gt-star-input" data-category="graphics_score" role="radiogroup" aria-label="Nota de gráficos">
-                <i class="bi bi-star gt-star" data-value="1"></i>
-                <i class="bi bi-star gt-star" data-value="2"></i>
-                <i class="bi bi-star gt-star" data-value="3"></i>
-                <i class="bi bi-star gt-star" data-value="4"></i>
-                <i class="bi bi-star gt-star" data-value="5"></i>
+              <div class="gt-star-input" role="radiogroup" aria-label="Nota de gráficos">
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star gt-star"></i>
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Som</span>
-              <div class="gt-star-input" data-category="sound_score" role="radiogroup" aria-label="Nota de som">
-                <i class="bi bi-star gt-star" data-value="1"></i>
-                <i class="bi bi-star gt-star" data-value="2"></i>
-                <i class="bi bi-star gt-star" data-value="3"></i>
-                <i class="bi bi-star gt-star" data-value="4"></i>
-                <i class="bi bi-star gt-star" data-value="5"></i>
+              <div class="gt-star-input" role="radiogroup" aria-label="Nota de som">
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Jogabilidade</span>
-              <div class="gt-star-input" data-category="gameplay_score" role="radiogroup" aria-label="Nota de jogabilidade">
-                <i class="bi bi-star gt-star" data-value="1"></i>
-                <i class="bi bi-star gt-star" data-value="2"></i>
-                <i class="bi bi-star gt-star" data-value="3"></i>
-                <i class="bi bi-star gt-star" data-value="4"></i>
-                <i class="bi bi-star gt-star" data-value="5"></i>
+              <div class="gt-star-input" role="radiogroup" aria-label="Nota de jogabilidade">
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Dificuldade</span>
-              <div class="gt-star-input" data-category="difficulty_score" role="radiogroup" aria-label="Nota de dificuldade">
-                <i class="bi bi-star gt-star" data-value="1"></i>
-                <i class="bi bi-star gt-star" data-value="2"></i>
-                <i class="bi bi-star gt-star" data-value="3"></i>
-                <i class="bi bi-star gt-star" data-value="4"></i>
-                <i class="bi bi-star gt-star" data-value="5"></i>
+              <div class="gt-star-input" role="radiogroup" aria-label="Nota de dificuldade">
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star-fill gt-star is-filled"></i>
+                <i class="bi bi-star gt-star"></i>
               </div>
             </div>
           </div>
 
           <div class="form-check form-switch mb-3">
-            <input class="form-check-input" type="checkbox" role="switch" id="detail-favorite">
+            <input class="form-check-input" type="checkbox" role="switch" id="detail-favorite" checked>
             <label class="form-check-label small" for="detail-favorite">Marcar como favorito</label>
           </div>
         </div>
@@ -286,7 +407,7 @@
           <button type="button" class="btn btn-gt-outline d-flex align-items-center gap-2" id="btn-share-game">
             <i class="bi bi-share"></i> Compartilhar
           </button>
-          <button type="button" class="btn btn-gt-primary" id="btn-save-detail">Salvar alterações</button>
+          <button type="button" class="btn btn-gt-primary">Salvar alterações</button>
         </div>
       </div>
     </div>
@@ -294,10 +415,7 @@
 
   <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/dashboard.js"></script>
 
-  <!-- Integração com o backend -->
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/api.js"></script>
-  <script src="assets/js/dashboard.js"></script>
 </body>
 </html>
