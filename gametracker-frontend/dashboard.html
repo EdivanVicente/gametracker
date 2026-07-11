@@ -16,6 +16,7 @@
 
   <!-- Design system próprio -->
   <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/theme.js"></script>
 
   <script src="assets/js/auth-check.js"></script>
 </head>
@@ -25,9 +26,6 @@
        NAVBAR
        ============================================================ -->
   <nav class="navbar navbar-expand-lg gt-navbar sticky-top py-3">
-    <button class="btn btn-outline-danger" onclick="logout()">
-    Sair
-</button>
     <div class="container-fluid gt-container-fluid px-3 px-md-4">
       <a class="navbar-brand gt-brand" href="dashboard.html">
         <i class="bi bi-joystick" style="color: var(--gt-accent);"></i>
@@ -53,20 +51,23 @@
         </ul>
 
         <div class="d-flex align-items-center gap-2">
+          <button class="gt-theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+            <i class="bi bi-sun"></i>
+          </button>
           <button class="btn btn-gt-primary d-flex align-items-center gap-2 px-3"
                   type="button" data-bs-toggle="modal" data-bs-target="#modalAddGame">
             <i class="bi bi-plus-lg"></i>
             <span class="d-none d-sm-inline">Adicionar jogo</span>
           </button>
           <div class="dropdown">
-            <button class="btn btn-gt-outline rounded-circle d-flex align-items-center justify-content-center p-0"
-                    style="width: 40px; height: 40px;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-gt-outline rounded-circle d-flex align-items-center justify-content-center p-0 overflow-hidden"
+                    id="navbar-avatar-btn" style="width: 40px; height: 40px;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-person"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="#">Meu perfil</a></li>
+              <li><a class="dropdown-item" href="profile.html">Meu perfil</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="index.html">Sair</a></li>
+              <li><a class="dropdown-item" href="#" onclick="logout(); return false;">Sair</a></li>
             </ul>
           </div>
         </div>
@@ -81,19 +82,19 @@
          ============================================================ -->
     <section class="gt-hud-strip d-flex flex-wrap mb-4" aria-label="Resumo do catálogo">
       <div class="gt-hud-item flex-fill">
-        <div class="gt-hud-value gt-mono">47</div>
+        <div class="gt-hud-value gt-mono" id="hud-total">0</div>
         <div class="gt-hud-label">Jogos no catálogo</div>
       </div>
       <div class="gt-hud-item flex-fill">
-        <div class="gt-hud-value gt-mono is-playing">6</div>
+        <div class="gt-hud-value gt-mono is-playing" id="hud-playing">0</div>
         <div class="gt-hud-label">Em andamento</div>
       </div>
       <div class="gt-hud-item flex-fill">
-        <div class="gt-hud-value gt-mono is-finished">38</div>
+        <div class="gt-hud-value gt-mono is-finished" id="hud-finished">0</div>
         <div class="gt-hud-label">Finalizados</div>
       </div>
       <div class="gt-hud-item flex-fill">
-        <div class="gt-hud-value gt-mono is-favorite">12</div>
+        <div class="gt-hud-value gt-mono is-favorite" id="hud-favorites">0</div>
         <div class="gt-hud-label">Favoritos</div>
       </div>
     </section>
@@ -118,8 +119,8 @@
           <select class="form-select" id="filter-console" aria-label="Filtrar por console">
             <option selected value="">Console</option>
             <option value="pc">PC</option>
-            <option value="ps5">PlayStation 5</option>
-            <option value="xbox">Xbox Series</option>
+            <option value="playstation">PlayStation</option>
+            <option value="xbox">Xbox</option>
             <option value="switch">Switch</option>
           </select>
         </div>
@@ -168,125 +169,11 @@
          ============================================================ -->
     <section aria-label="Meus jogos">
       <div class="row g-3" id="games-grid">
-
-        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
-          <article class="gt-card">
-            <div class="gt-card-status is-playing">Em andamento</div>
-            <button class="gt-card-favorite is-active" aria-label="Remover dos favoritos">
-              <i class="bi bi-heart-fill"></i>
-            </button>
-            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
-            <div class="gt-card-body">
-              <h3 class="gt-card-title mb-0">Hollow Knight</h3>
-              <p class="gt-card-meta">PC · Metroidvania</p>
-              <div class="gt-card-scores">
-                <span>Grf <span class="gt-score-value">5</span></span>
-                <span>Som <span class="gt-score-value">5</span></span>
-                <span>Jog <span class="gt-score-value">5</span></span>
-                <span>Dif <span class="gt-score-value">4</span></span>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
-          <article class="gt-card">
-            <div class="gt-card-status is-finished">Finalizado</div>
-            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
-              <i class="bi bi-heart"></i>
-            </button>
-            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
-            <div class="gt-card-body">
-              <h3 class="gt-card-title mb-0">Ender Magnolia</h3>
-              <p class="gt-card-meta">Switch · Metroidvania</p>
-              <div class="gt-card-scores">
-                <span>Grf <span class="gt-score-value">4</span></span>
-                <span>Som <span class="gt-score-value">5</span></span>
-                <span>Jog <span class="gt-score-value">4</span></span>
-                <span>Dif <span class="gt-score-value">3</span></span>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
-          <article class="gt-card">
-            <div class="gt-card-status is-finished">Finalizado</div>
-            <button class="gt-card-favorite is-active" aria-label="Remover dos favoritos">
-              <i class="bi bi-heart-fill"></i>
-            </button>
-            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
-            <div class="gt-card-body">
-              <h3 class="gt-card-title mb-0">Elden Ring</h3>
-              <p class="gt-card-meta">PS5 · RPG de Ação</p>
-              <div class="gt-card-scores">
-                <span>Grf <span class="gt-score-value">5</span></span>
-                <span>Som <span class="gt-score-value">5</span></span>
-                <span>Jog <span class="gt-score-value">5</span></span>
-                <span>Dif <span class="gt-score-value">5</span></span>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
-          <article class="gt-card">
-            <div class="gt-card-status is-playing">Em andamento</div>
-            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
-              <i class="bi bi-heart"></i>
-            </button>
-            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
-            <div class="gt-card-body">
-              <h3 class="gt-card-title mb-0">Baldur's Gate 3</h3>
-              <p class="gt-card-meta">PC · RPG</p>
-              <div class="gt-card-scores">
-                <span>Grf <span class="gt-score-value">5</span></span>
-                <span>Som <span class="gt-score-value">5</span></span>
-                <span>Jog <span class="gt-score-value">4</span></span>
-                <span>Dif <span class="gt-score-value">4</span></span>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
-          <article class="gt-card">
-            <div class="gt-card-status is-finished">Finalizado</div>
-            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
-              <i class="bi bi-heart"></i>
-            </button>
-            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
-            <div class="gt-card-body">
-              <h3 class="gt-card-title mb-0">Celeste</h3>
-              <p class="gt-card-meta">Switch · Plataforma</p>
-              <div class="gt-card-scores">
-                <span>Grf <span class="gt-score-value">4</span></span>
-                <span>Som <span class="gt-score-value">5</span></span>
-                <span>Jog <span class="gt-score-value">5</span></span>
-                <span>Dif <span class="gt-score-value">5</span></span>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
-          <article class="gt-card">
-            <div class="gt-card-status is-finished">Finalizado</div>
-            <button class="gt-card-favorite" aria-label="Adicionar aos favoritos">
-              <i class="bi bi-heart"></i>
-            </button>
-            <div class="gt-card-cover"><i class="bi bi-controller"></i></div>
-            <div class="gt-card-body">
-              <h3 class="gt-card-title mb-0">Stardew Valley</h3>
-              <p class="gt-card-meta">PC · Simulação</p>
-              <div class="gt-card-scores">
-                <span>Grf <span class="gt-score-value">3</span></span>
-                <span>Som <span class="gt-score-value">4</span></span>
-                <span>Jog <span class="gt-score-value">5</span></span>
-                <span>Dif <span class="gt-score-value">2</span></span>
-              </div>
-            </div>
-          </article>
+        <div class="col-12 py-5 text-center" id="games-grid-loading">
+          <div class="spinner-border" role="status" style="color: var(--gt-accent);">
+            <span class="visually-hidden">Carregando...</span>
+          </div>
+          <p class="text-white-50 mt-3 mb-0">Carregando sua biblioteca...</p>
         </div>
 
       </div>
@@ -341,6 +228,16 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body">
+          <div class="mb-3">
+            <label for="detail-platform" class="form-label small text-white-50">Plataforma</label>
+            <select class="form-select" id="detail-platform">
+              <option value="PC">PC</option>
+              <option value="PlayStation 5">PlayStation 5</option>
+              <option value="Xbox Series S/X">Xbox Series S/X</option>
+              <option value="Nintendo Switch">Nintendo Switch</option>
+              <option value="Outra">Outra</option>
+            </select>
+          </div>
           <div class="row g-3 mb-3">
             <div class="col-6">
               <label for="detail-start-date" class="form-label small text-white-50">Data de início</label>
@@ -358,56 +255,56 @@
           <div class="row g-2 mb-3">
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Gráficos</span>
-              <div class="gt-star-input" role="radiogroup" aria-label="Nota de gráficos">
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star gt-star"></i>
+              <div class="gt-star-input" id="stars-graphics" data-score="0" role="radiogroup" aria-label="Nota de gráficos">
+                <i class="bi bi-star gt-star" data-value="1"></i>
+                <i class="bi bi-star gt-star" data-value="2"></i>
+                <i class="bi bi-star gt-star" data-value="3"></i>
+                <i class="bi bi-star gt-star" data-value="4"></i>
+                <i class="bi bi-star gt-star" data-value="5"></i>
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Som</span>
-              <div class="gt-star-input" role="radiogroup" aria-label="Nota de som">
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
+              <div class="gt-star-input" id="stars-sound" data-score="0" role="radiogroup" aria-label="Nota de som">
+                <i class="bi bi-star gt-star" data-value="1"></i>
+                <i class="bi bi-star gt-star" data-value="2"></i>
+                <i class="bi bi-star gt-star" data-value="3"></i>
+                <i class="bi bi-star gt-star" data-value="4"></i>
+                <i class="bi bi-star gt-star" data-value="5"></i>
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Jogabilidade</span>
-              <div class="gt-star-input" role="radiogroup" aria-label="Nota de jogabilidade">
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
+              <div class="gt-star-input" id="stars-gameplay" data-score="0" role="radiogroup" aria-label="Nota de jogabilidade">
+                <i class="bi bi-star gt-star" data-value="1"></i>
+                <i class="bi bi-star gt-star" data-value="2"></i>
+                <i class="bi bi-star gt-star" data-value="3"></i>
+                <i class="bi bi-star gt-star" data-value="4"></i>
+                <i class="bi bi-star gt-star" data-value="5"></i>
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
               <span class="small">Dificuldade</span>
-              <div class="gt-star-input" role="radiogroup" aria-label="Nota de dificuldade">
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star-fill gt-star is-filled"></i>
-                <i class="bi bi-star gt-star"></i>
+              <div class="gt-star-input" id="stars-difficulty" data-score="0" role="radiogroup" aria-label="Nota de dificuldade">
+                <i class="bi bi-star gt-star" data-value="1"></i>
+                <i class="bi bi-star gt-star" data-value="2"></i>
+                <i class="bi bi-star gt-star" data-value="3"></i>
+                <i class="bi bi-star gt-star" data-value="4"></i>
+                <i class="bi bi-star gt-star" data-value="5"></i>
               </div>
             </div>
           </div>
 
           <div class="form-check form-switch mb-3">
-            <input class="form-check-input" type="checkbox" role="switch" id="detail-favorite" checked>
+            <input class="form-check-input" type="checkbox" role="switch" id="detail-favorite">
             <label class="form-check-label small" for="detail-favorite">Marcar como favorito</label>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-gt-outline d-flex align-items-center gap-2" id="btn-share-game">
-            <i class="bi bi-share"></i> Compartilhar
+          <button type="button" class="btn btn-outline-danger d-flex align-items-center gap-2 me-auto" id="btn-delete-detail">
+            <i class="bi bi-trash"></i> Excluir
           </button>
-          <button type="button" class="btn btn-gt-primary">Salvar alterações</button>
+          <button type="button" class="btn btn-gt-primary" id="btn-save-detail">Salvar alterações</button>
         </div>
       </div>
     </div>

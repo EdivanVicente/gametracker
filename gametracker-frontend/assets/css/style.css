@@ -5,7 +5,7 @@
    ========================================================================== */
 
 :root {
-  /* --- Cor --- */
+  /* --- Cor (tema escuro, padrão) --- */
   --gt-void: #0e1116;
   --gt-surface: #171b23;
   --gt-surface-raised: #1f2530;
@@ -25,6 +25,47 @@
 
   /* --- Espaçamento de containers ultrawide (nota de design da spec) --- */
   --gt-container-max: 1320px;
+}
+
+/* --- Tema claro --- */
+:root[data-theme="light"] {
+  --gt-void: #f4f5f8;
+  --gt-surface: #ffffff;
+  --gt-surface-raised: #eef0f4;
+  --gt-border: #dde1e8;
+  --gt-accent: #6a46f0;
+  --gt-accent-hover: #5934e0;
+  --gt-amber: #b8790a;
+  --gt-success: #17984f;
+  --gt-danger: #d6335a;
+  --gt-text: #1a1d24;
+  --gt-text-muted: #5b6472;
+}
+
+/* No tema claro, algumas classes utilitárias do Bootstrap (pensadas pro tema
+   escuro fixo) precisam ser reajustadas para continuar legíveis. */
+:root[data-theme="light"] .text-white-50 { color: rgba(26, 29, 36, 0.6) !important; }
+:root[data-theme="light"] .text-white { color: var(--gt-text) !important; }
+:root[data-theme="light"] .text-muted { color: var(--gt-text-muted) !important; }
+:root[data-theme="light"] .bg-dark { background-color: var(--gt-surface) !important; }
+:root[data-theme="light"] .border-secondary { border-color: var(--gt-border) !important; }
+:root[data-theme="light"] .btn-close { filter: none; }
+
+/* Botão de alternância de tema (sol/lua) */
+.gt-theme-toggle {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: transparent;
+  border: 1px solid var(--gt-border);
+  color: var(--gt-text);
+}
+.gt-theme-toggle:hover {
+  border-color: var(--gt-accent);
+  color: var(--gt-accent);
 }
 
 /* ==========================================================================
@@ -81,6 +122,13 @@ select:focus-visible,
   background-color: rgba(14, 17, 22, 0.9);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--gt-border);
+}
+:root[data-theme="light"] .gt-navbar {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+body {
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .gt-brand {

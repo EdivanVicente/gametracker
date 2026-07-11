@@ -41,6 +41,15 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # --- Perfil ---
+    display_name = Column(String(120), nullable=True)
+    avatar_data = Column(Text, nullable=True)  # data URI (base64) da foto de perfil
+
+    # --- Verificação de e-mail ---
+    is_verified = Column(Boolean, default=False, nullable=False)
+    verification_token = Column(String(255), nullable=True, index=True)
+    verification_token_expires_at = Column(DateTime, nullable=True)
+
     # Relacionamento: um usuário tem muitos jogos catalogados
     games = relationship("UserGame", back_populates="user", cascade="all, delete-orphan")
 
