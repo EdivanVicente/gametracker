@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
   <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/theme.js"></script>
 
   <style>
     .gt-auth-wrapper { min-height: 100vh; }
@@ -57,6 +58,9 @@
           <div class="d-flex align-items-center gap-2 mb-4 justify-content-center justify-content-lg-start">
             <i class="bi bi-joystick fs-3" style="color: var(--gt-accent);"></i>
             <span class="gt-brand fs-4">GameTracker <span class="gt-brand-mark">Pro</span></span>
+            <button class="gt-theme-toggle ms-auto" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+              <i class="bi bi-sun"></i>
+            </button>
           </div>
 
           <div class="gt-auth-card p-4 p-sm-4">
@@ -74,7 +78,10 @@
                 <label for="login-password" class="form-label small text-white-50">Senha</label>
                 <input type="password" class="form-control" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
               </div>
-              <div class="gt-field-error mb-3" id="login-error">E-mail ou senha incorretos.</div>
+              <div class="gt-field-error mb-2" id="login-error">E-mail ou senha incorretos.</div>
+              <button type="button" class="btn btn-link btn-sm p-0 mb-3 d-none" id="btn-resend-verification">
+                Reenviar e-mail de confirmação
+              </button>
               <button type="submit" class="btn btn-gt-primary w-100 py-2 mb-2">Entrar</button>
             </form>
 

@@ -8,7 +8,7 @@ Ambas exigem usuário autenticado, evitando consumo indevido de quota das APIs e
 por requisições anônimas.
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 
 from app.core.deps import get_current_user
 from app import models
@@ -39,9 +39,19 @@ async def explore_gameplay(
     """
     Módulo 'Explorar': retorna metadados do jogo (RAWG) + vídeo de gameplay (YouTube)
     para exibição lado a lado no frontend (card + iframe embutido).
+
+    Se a YOUTUBE_API_KEY não estiver configurada, o vídeo vem como `None` em vez de
+    quebrar a rota inteira — o usuário ainda vê os dados do jogo.
     """
-    game_metadata, videos = await games_api_service.search_games(query=title, page_size=1), \
-        await youtube_api_service.search_gameplay_video(game_title=title)
+    try:
+        game_metadata = await games_api_service.search_games(query=title, page_size=1)
+    except HTTPException:
+        game_metadata = []
+
+    try:
+        videos = await youtube_api_service.search_gameplay_video(game_title=title)
+    except HTTPException:
+        videos = []
 
     return {
         "game": game_metadata[0] if game_metadata else None,

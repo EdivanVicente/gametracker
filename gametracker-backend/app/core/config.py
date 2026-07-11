@@ -26,6 +26,23 @@ class Settings(BaseSettings):
     YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")
     YOUTUBE_BASE_URL: str = "https://www.googleapis.com/youtube/v3"
 
+    # --- E-mail (confirmação de cadastro) ---
+    # Se SMTP_HOST ficar vazio, o link de confirmação é apenas registrado no
+    # log do servidor (modo desenvolvimento) em vez de enviado por e-mail.
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM: str = os.getenv("SMTP_FROM", "no-reply@gametrackerpro.local")
+    SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+
+    # URL pública do backend, usada para montar o link de confirmação de e-mail.
+    BACKEND_BASE_URL: str = os.getenv("BACKEND_BASE_URL", "http://127.0.0.1:8000")
+    # URL do frontend, para onde o usuário é direcionado após confirmar o e-mail.
+    FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "http://127.0.0.1:5500")
+
+    EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
+
     class Config:
         env_file = ".env"
 
