@@ -20,33 +20,66 @@ Base.metadata.create_all(bind=engine)
 def _run_light_migrations() -> None:
     """
     Migração leve para bancos SQLite já existentes de versões anteriores do projeto:
-    adiciona colunas novas na tabela `users` (perfil + verificação de e-mail) caso
-    ainda não existam. `Base.metadata.create_all` só cria tabelas novas, não adiciona
-    colunas em tabelas já existentes — por isso esse passo extra é necessário.
+    adiciona colunas novas nas tabelas `users` e `games` caso ainda não existam.
+    `Base.metadata.create_all` só cria tabelas novas, não adiciona colunas em
+    tabelas já existentes — por isso esse passo extra é necessário.
     """
     inspector = inspect(engine)
-    if "users" not in inspector.get_table_names():
-        return
-
-    colunas_existentes = {col["name"] for col in inspector.get_columns("users")}
-    colunas_novas = {
-        "display_name": "VARCHAR(120)",
-        "avatar_data": "TEXT",
-        "is_verified": "BOOLEAN DEFAULT 0",
-        "verification_token": "VARCHAR(255)",
-        "verification_token_expires_at": "DATETIME",
-    }
 
     with engine.begin() as conn:
-        for nome, tipo_sql in colunas_novas.items():
-            if nome not in colunas_existentes:
-                logger.info("Migração: adicionando coluna users.%s", nome)
-                conn.execute(text(f"ALTER TABLE users ADD COLUMN {nome} {tipo_sql}"))
+        if "users" in inspector.get_table_names():
+            colunas_existentes = {col["name"] for col in inspector.get_columns("users")}
+            colunas_novas = {
+                "display_name": "VARCHAR(120)",
+                "avatar_data": "TEXT",
+                "is_verified": "BOOLEAN DEFAULT 0",
+                "verification_token": "VARCHAR(255)",
+                "verification_token_expires_at": "DATETIME",
+                "bio": "VARCHAR(30)",
+                "country": "VARCHAR(2)",
+                "state": "VARCHAR(100)",
+                "gender": "VARCHAR(20)",
+                "profile_visibility": "VARCHAR(20) DEFAULT 'public'",
+                "friend_code_3ds": "VARCHAR(100)",
+                "ea_app_id": "VARCHAR(100)",
+                "nintendo_network_id": "VARCHAR(100)",
+                "nintendo_switch_id": "VARCHAR(100)",
+                "psn_id": "VARCHAR(100)",
+                "steam_id": "VARCHAR(100)",
+                "twitch": "VARCHAR(100)",
+                "ubisoft_connect": "VARCHAR(100)",
+                "wii_friend_code": "VARCHAR(100)",
+                "xbox_gamertag": "VARCHAR(100)",
+                "discord": "VARCHAR(100)",
+                "instagram": "VARCHAR(100)",
+                "x_handle": "VARCHAR(100)",
+                "pending_email": "VARCHAR(255)",
+                "email_change_token": "VARCHAR(255)",
+                "email_change_token_expires_at": "DATETIME",
+                "deletion_token": "VARCHAR(255)",
+                "deletion_token_expires_at": "DATETIME",
+            }
 
-        # Usuários criados antes da verificação por e-mail existir: marca como
-        # verificados para não travar o acesso de quem já usava o sistema.
-        if "is_verified" not in colunas_existentes:
-            conn.execute(text("UPDATE users SET is_verified = 1 WHERE is_verified IS NULL OR is_verified = 0"))
+            for nome, tipo_sql in colunas_novas.items():
+                if nome not in colunas_existentes:
+                    logger.info("Migração: adicionando coluna users.%s", nome)
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN {nome} {tipo_sql}"))
+
+            # Usuários criados antes da verificação por e-mail existir: marca como
+            # verificados para não travar o acesso de quem já usava o sistema.
+            if "is_verified" not in colunas_existentes:
+                conn.execute(text("UPDATE users SET is_verified = 1 WHERE is_verified IS NULL OR is_verified = 0"))
+
+        if "games" in inspector.get_table_names():
+            colunas_existentes_games = {col["name"] for col in inspector.get_columns("games")}
+            colunas_novas_games = {
+                "platforms": "TEXT",
+                "multiplayer_info": "VARCHAR(255)",
+            }
+            for nome, tipo_sql in colunas_novas_games.items():
+                if nome not in colunas_existentes_games:
+                    logger.info("Migração: adicionando coluna games.%s", nome)
+                    conn.execute(text(f"ALTER TABLE games ADD COLUMN {nome} {tipo_sql}"))
 
 
 _run_light_migrations()
@@ -78,4 +111,3 @@ app.include_router(games.router)
 @app.get("/health", tags=["Status"])
 def health_check():
     return {"status": "ok"}
-RAWG_API_KEY = "dummy_key_for_testing"

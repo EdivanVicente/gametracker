@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameTracker Pro — Games</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/theme.js"></script>
+
+  <script src="assets/js/auth-check.js"></script>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg gt-navbar sticky-top py-3">
+    <div class="container-fluid gt-container-fluid px-3 px-md-4">
+      <a class="navbar-brand gt-brand" href="dashboard.html">
+        <i class="bi bi-joystick" style="color: var(--gt-accent);"></i>
+        GameTracker <span class="gt-brand-mark">Pro</span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#gtNavContent"
+              aria-controls="gtNavContent" aria-expanded="false" aria-label="Abrir menu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="gtNavContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Meus Jogos</a></li>
+          <li class="nav-item"><a class="nav-link" href="explore.html">Explorar</a></li>
+          <li class="nav-item"><a class="nav-link" href="reports.html">Relatórios</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          <button class="gt-theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+            <i class="bi bi-sun"></i>
+          </button>
+          <div class="dropdown">
+            <button class="btn btn-gt-outline d-flex align-items-center gap-2 px-2 py-1"
+                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <span id="navbar-avatar-btn"
+                    class="rounded-circle d-flex align-items-center justify-content-center overflow-hidden"
+                    style="width: 32px; height: 32px; background-color: var(--gt-surface-raised); flex-shrink: 0;">
+                <i class="bi bi-person"></i>
+              </span>
+              <span id="navbar-user-name" class="d-none d-md-inline small">Perfil</span>
+              <i class="bi bi-chevron-down small"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i>Minha conta</a></li>
+              <li><a class="dropdown-item active" href="games.html"><i class="bi bi-controller me-2"></i>Games</a></li>
+              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i>Configurações</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid gt-container-fluid px-3 px-md-4 py-4">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-9">
+
+        <div id="games-summary-loading" class="text-center py-5">
+          <div class="spinner-border" role="status" style="color: var(--gt-accent);">
+            <span class="visually-hidden">Carregando...</span>
+          </div>
+        </div>
+
+        <div id="games-summary-content" class="d-none">
+          <div class="row g-4 mb-4">
+            <div class="col-12 col-md-6">
+              <h6 class="text-white-50 text-uppercase small mb-3" style="letter-spacing: 0.06em;">
+                <i class="bi bi-play-circle me-1"></i> Jogando agora
+              </h6>
+              <div id="games-current-card"></div>
+            </div>
+            <div class="col-12 col-md-6">
+              <h6 class="text-white-50 text-uppercase small mb-3" style="letter-spacing: 0.06em;">
+                <i class="bi bi-check-circle me-1"></i> Último finalizado
+              </h6>
+              <div id="games-last-finished-card"></div>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <a href="dashboard.html" class="btn btn-gt-primary px-4 py-2">
+              <i class="bi bi-grid-3x3-gap me-2"></i>Ver todos os meus jogos
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/navbar.js"></script>
+  <script src="assets/js/games-summary.js"></script>
+</body>
+</html>

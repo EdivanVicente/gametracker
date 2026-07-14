@@ -1,21 +1,17 @@
 """
 Funções auxiliares de segurança:
-    - Hash e verificação de senha (bcrypt via passlib)
+    - Hash e verificação de senha (bcrypt direto, sem passlib)
     - Criação e decodificação de JWT
 """
 
 from datetime import datetime, timedelta, timezone
 import secrets
 
+import bcrypt
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-import bcrypt
 
 def hash_password(password: str) -> str:
     senha_bytes = password.encode("utf-8")[:72]  # bcrypt só aceita até 72 bytes
