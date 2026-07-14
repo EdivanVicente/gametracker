@@ -193,8 +193,15 @@ body {
 }
 
 .gt-hud-item {
+  display: block;
   padding: 1rem 1.25rem;
   border-right: 1px solid var(--gt-border);
+  color: var(--gt-text);
+  transition: background-color 0.15s ease;
+}
+.gt-hud-item:hover {
+  background-color: var(--gt-surface-raised);
+  color: var(--gt-text);
 }
 .gt-hud-item:last-child {
   border-right: none;
@@ -218,6 +225,41 @@ body {
 .gt-hud-value.is-playing { color: var(--gt-amber); }
 .gt-hud-value.is-finished { color: var(--gt-success); }
 .gt-hud-value.is-favorite { color: var(--gt-accent); }
+
+/* Seção de informações do jogo no modal de detalhe */
+.gt-detail-cover {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: var(--gt-surface-raised);
+  border: 1px solid var(--gt-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: var(--gt-text-muted);
+}
+.gt-detail-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gt-detail-genre {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gt-accent);
+  font-weight: 600;
+}
+.gt-platform-badge {
+  font-size: 0.72rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background-color: var(--gt-surface-raised);
+  border: 1px solid var(--gt-border);
+  color: var(--gt-text-muted);
+}
 
 /* ==========================================================================
    Game Card — com cantos de mira (assinatura visual)

@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearch();
     setupFilters();
     setupDetailModal();
-    carregarAvatarNavbar();
+    aplicarFiltroDaUrl();
     carregarMeusJogos();
 });
 
@@ -52,20 +52,21 @@ async function authFetch(path, options = {}) {
     return response;
 }
 
-// --- Navbar: mostra a foto de perfil (se houver) no botão de avatar ---
-async function carregarAvatarNavbar() {
-    try {
-        const response = await authFetch('/auth/me');
-        if (!response.ok) return;
-        const user = await response.json();
+// --- Lê ?filtro=playing|finished|favoritos|todos na URL (vindo dos cards do HUD) e pré-aplica ---
+function aplicarFiltroDaUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const filtro = params.get('filtro');
+    if (!filtro) return;
 
-        const btn = document.getElementById('navbar-avatar-btn');
-        if (user.avatar_data && btn) {
-            btn.innerHTML = `<img src="${user.avatar_data}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
-        }
-    } catch (error) {
-        // Silencioso: a navbar simplesmente mantém o ícone padrão.
+    const filtroStatus = document.getElementById('filter-status');
+    const btnFavoritos = document.getElementById('btn-favorites-only');
+
+    if (filtro === 'playing' || filtro === 'finished') {
+        filtroStatus.value = filtro;
+    } else if (filtro === 'favoritos') {
+        btnFavoritos.classList.add('active');
     }
+    // 'todos' não precisa de nada — todos os filtros já começam vazios.
 }
 
 // --- Função: Carregar os jogos salvos ---
@@ -321,14 +322,49 @@ function definirEstrelas(container, nota) {
     });
 }
 
+// Reduz uma descrição longa para no máximo ~50 palavras, terminando com reticências.
+function truncarDescricao(texto, maxPalavras = 50) {
+    if (!texto) return 'Sem descrição disponível para este jogo.';
+    const palavras = texto.trim().split(/\s+/);
+    if (palavras.length <= maxPalavras) return texto;
+    return palavras.slice(0, maxPalavras).join(' ') + '…';
+}
+
 function abrirDetalhe(userGameId) {
     const item = meusJogos.find(g => g.id === userGameId);
     if (!item) return;
 
     jogoEmEdicaoId = userGameId;
     const rating = item.rating || {};
+    const jogo = item.game;
 
-    document.getElementById('modalGameDetailLabel').textContent = item.game.title;
+    document.getElementById('modalGameDetailLabel').textContent = jogo.title;
+
+    // --- Seção de informações (capa, gênero, descrição, plataformas, multiplayer) ---
+    const coverWrapper = document.getElementById('detail-cover-wrapper');
+    coverWrapper.innerHTML = jogo.cover_url
+        ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title)}">`
+        : '<i class="bi bi-controller"></i>';
+
+    document.getElementById('detail-genre').textContent = jogo.genre || 'Gênero não informado';
+    document.getElementById('detail-description').textContent = truncarDescricao(jogo.description);
+
+    const badgesWrapper = document.getElementById('detail-platforms-badges');
+    const plataformas = (jogo.platforms || '').split(',').map(p => p.trim()).filter(Boolean);
+    badgesWrapper.innerHTML = plataformas.length
+        ? plataformas.map(p => `<span class="gt-platform-badge">${escapeHtml(p)}</span>`).join('')
+        : '';
+
+    document.getElementById('detail-multiplayer-info').textContent = jogo.multiplayer_info
+        ? `Modo: ${jogo.multiplayer_info}`
+        : '';
+
+    // Vídeo de gameplay/trailer (busca sob demanda, não fica salvo — pode demorar um instante)
+    const videoWrapper = document.getElementById('detail-video-wrapper');
+    videoWrapper.innerHTML = '<p class="small text-white-50 mb-0">Buscando vídeo de gameplay...</p>';
+    carregarVideoDoJogo(jogo.title, videoWrapper);
+
+    // --- Formulário de tracking/avaliação ---
     document.getElementById('detail-platform').value = item.platform || 'PC';
     document.getElementById('detail-start-date').value = item.start_date || '';
     document.getElementById('detail-end-date').value = item.end_date || '';
@@ -342,6 +378,29 @@ function abrirDetalhe(userGameId) {
     const modalElement = document.getElementById('modalGameDetail');
     const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
     modal.show();
+}
+
+async function carregarVideoDoJogo(titulo, videoWrapper) {
+    try {
+        const response = await authFetch(`/explore/gameplay?title=${encodeURIComponent(titulo)}`);
+        if (!response.ok) {
+            videoWrapper.innerHTML = '';
+            return;
+        }
+        const data = await response.json();
+
+        if (data.video?.embed_url) {
+            videoWrapper.innerHTML = `
+                <div class="ratio ratio-16x9">
+                    <iframe src="${data.video.embed_url}" title="Gameplay" allowfullscreen></iframe>
+                </div>
+            `;
+        } else {
+            videoWrapper.innerHTML = '<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay encontrado.</p>';
+        }
+    } catch (error) {
+        videoWrapper.innerHTML = '';
+    }
 }
 
 async function salvarDetalhe() {

@@ -84,6 +84,15 @@ class GamesApiService:
         ]
         genres = [g["name"] for g in item.get("genres", []) or []]
 
+        # A RAWG expõe "tags" com slugs como "singleplayer", "multiplayer", "co-op" etc.
+        # Usamos isso pra dar uma ideia (não é 100% garantido, mas cobre a maioria dos jogos).
+        tag_slugs = {t.get("slug", "") for t in item.get("tags", []) or []}
+        modos = []
+        if "singleplayer" in tag_slugs:
+            modos.append("Single-player")
+        if any(slug in tag_slugs for slug in ("multiplayer", "co-op", "online-co-op", "local-multiplayer")):
+            modos.append("Multiplayer")
+
         return {
             "external_id": str(item.get("id")),
             "title": item.get("name"),
@@ -92,6 +101,7 @@ class GamesApiService:
             "platforms": platforms,
             "genre": ", ".join(genres) if genres else None,
             "release_date": item.get("released"),
+            "multiplayer_info": ", ".join(modos) if modos else None,
         }
 
 

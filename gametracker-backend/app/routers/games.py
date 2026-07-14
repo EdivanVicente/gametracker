@@ -44,6 +44,8 @@ async def _get_or_create_game(db: Session, external_id: str) -> tuple[models.Gam
         cover_url=details["cover_url"],
         description=details["description"],
         genre=details["genre"],
+        platforms=", ".join(details.get("platforms") or []) or None,
+        multiplayer_info=details.get("multiplayer_info"),
     )
     db.add(game)
     db.commit()
