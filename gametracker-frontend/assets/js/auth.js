@@ -93,6 +93,13 @@ document.getElementById('panel-login')?.addEventListener('submit', async (e) => 
     }
 });
 
+// --- Login rápido com a conta demo (pré-cadastrada via seed_demo.py) ---
+document.getElementById('btn-demo-login')?.addEventListener('click', () => {
+    document.getElementById('login-email').value = 'demo@gametracker.com';
+    document.getElementById('login-password').value = 'Demo123!';
+    document.getElementById('panel-login').requestSubmit();
+});
+
 // --- Reenviar e-mail de confirmação ---
 document.getElementById('btn-resend-verification')?.addEventListener('click', async (e) => {
     e.preventDefault();
