@@ -2,7 +2,31 @@
 
 Tudo abaixo foi testado de verdade (backend rodando, cadastro, confirmação
 de e-mail, troca de e-mail, troca de senha, exclusão de conta, perfil
-completo salvo e recarregado) antes de ser entregue.
+completo salvo e recarregado, e também com um **navegador real
+automatizado** clicando na interface) antes de ser entregue.
+
+## 🎮 Conta demo (pra testar sem precisar cadastrar)
+
+Se você só quer testar o site rapidinho, sem passar pelo cadastro e
+confirmação de e-mail:
+
+```bash
+cd gametracker-backend
+python seed_demo.py
+```
+
+Isso cria uma conta já confirmada, com 4 jogos de exemplo (com notas,
+datas, favoritos etc. já preenchidos) só para você navegar pelo site.
+Credenciais:
+```
+E-mail: demo@gametracker.com
+Senha:  Demo123!
+```
+
+Na tela de login tem um botão **"Entrar como visitante (conta demo)"**
+que já preenche e envia essas credenciais sozinho — não precisa nem
+digitar. É seguro rodar o `seed_demo.py` mais de uma vez: se a conta já
+existir, ele não duplica nada.
 
 ## Como rodar
 Mesma coisa de sempre:
@@ -15,6 +39,12 @@ uvicorn app.main:app --reload
 ```
 A migração automática cuida de adicionar todas as colunas novas no seu
 `gametracker.db` existente — não precisa apagar nada.
+
+⚠️ **Erro mais comum**: rodar o `uvicorn` na pasta errada. O comando
+`uvicorn app.main:app --reload` só funciona de **dentro** da pasta
+`gametracker-backend` (onde fica a pasta `app`). Se der
+`ModuleNotFoundError: No module named 'app'`, é isso — faça `cd
+gametracker-backend` antes.
 
 ---
 
@@ -105,3 +135,7 @@ em vez de copiar o layout do HowLongToBeat.
 - Removido um resto de código morto que tinha sobrado no `security.py`
   (import do `passlib` que não era mais usado desde a correção do bug de
   hash de senha).
+- As capas dos jogos de exemplo da conta demo vêm da CDN pública da Steam
+  (`cdn.cloudflare.steamstatic.com`) — é bem estável, mas se sua rede
+  bloquear esse domínio por algum motivo, as capas não vão aparecer (o
+  resto do site funciona normalmente mesmo assim).
