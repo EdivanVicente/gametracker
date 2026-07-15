@@ -8,6 +8,10 @@ const API_BASE = 'http://127.0.0.1:8000';
 let meusJogos = [];
 // ID do UserGame atualmente aberto no modal de detalhe/edição.
 let jogoEmEdicaoId = null;
+// Densidade da grade: 'list' | 'small' | 'medium' | 'large'
+let modoVisualizacao = localStorage.getItem('gt-view-mode') || 'medium';
+// Ordenação atual: 'recent' | 'name-asc' | 'name-desc' | 'score-desc'
+let modoOrdenacao = localStorage.getItem('gt-sort-mode') || 'recent';
 
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
@@ -21,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Inicializa as funções da página
     setupSearch();
     setupFilters();
+    setupViewMode();
+    setupSort();
     setupDetailModal();
     aplicarFiltroDaUrl();
     carregarMeusJogos();
@@ -64,7 +70,7 @@ function aplicarFiltroDaUrl() {
     if (filtro === 'playing' || filtro === 'finished') {
         filtroStatus.value = filtro;
     } else if (filtro === 'favoritos') {
-        btnFavoritos.classList.add('active');
+        btnFavoritos.classList.add('is-active');
     }
     // 'todos' não precisa de nada — todos os filtros já começam vazios.
 }
@@ -102,6 +108,13 @@ function atualizarHud(jogos) {
     document.getElementById('hud-favorites').textContent = favoritos;
 }
 
+// Mapeia cada modo de grade pra classe de coluna Bootstrap (não se aplica ao modo 'list').
+const CLASSES_POR_MODO = {
+    small: 'col-6 col-sm-4 col-md-3 col-lg-2 col-xxl-1',
+    medium: 'col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2',
+    large: 'col-12 col-sm-6 col-md-6 col-lg-4 col-xl-3',
+};
+
 // --- Função: Renderiza a grade de cards a partir de uma lista de UserGame ---
 function renderGrid(jogos) {
     const grid = document.getElementById('games-grid');
@@ -115,13 +128,23 @@ function renderGrid(jogos) {
 
     emptyState.classList.add('d-none');
 
+    if (modoVisualizacao === 'list') {
+        renderGridLista(jogos, grid);
+    } else {
+        renderGridCards(jogos, grid);
+    }
+}
+
+function renderGridCards(jogos, grid) {
+    const colClass = CLASSES_POR_MODO[modoVisualizacao] || CLASSES_POR_MODO.medium;
+
     grid.innerHTML = jogos.map(item => {
         const jogo = item.game;
         const rating = item.rating || {};
         const isPlaying = item.status === 'playing';
 
         return `
-        <div class="col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2">
+        <div class="${colClass}">
           <article class="gt-card" data-id="${item.id}" style="cursor: pointer;">
             <div class="gt-card-status ${isPlaying ? 'is-playing' : 'is-finished'}">
                 ${isPlaying ? 'Em andamento' : 'Finalizado'}
@@ -149,15 +172,56 @@ function renderGrid(jogos) {
         `;
     }).join('');
 
-    // Clique no card (fora do botão de favorito) abre o modal de edição/avaliação.
-    grid.querySelectorAll('.gt-card').forEach(card => {
+    ligarEventosDosCards(grid);
+}
+
+function renderGridLista(jogos, grid) {
+    grid.innerHTML = jogos.map(item => {
+        const jogo = item.game;
+        const rating = item.rating || {};
+        const isPlaying = item.status === 'playing';
+
+        return `
+        <div class="col-12">
+          <article class="gt-card-list" data-id="${item.id}">
+            <div class="gt-card-list-cover">
+                ${jogo.cover_url
+                    ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title)}" loading="lazy">`
+                    : '<i class="bi bi-controller"></i>'}
+            </div>
+            <div class="flex-grow-1 min-width-0">
+              <div class="gt-card-list-title">${escapeHtml(jogo.title)}</div>
+              <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(jogo.genre || '—')}</div>
+            </div>
+            <span class="gt-card-status position-relative ${isPlaying ? 'is-playing' : 'is-finished'}" style="top:auto; left:auto;">
+                ${isPlaying ? 'Em andamento' : 'Finalizado'}
+            </span>
+            <div class="gt-card-list-scores d-none d-md-block">
+                Grf <span class="gt-score-value">${rating.graphics_score ?? '-'}</span> ·
+                Som <span class="gt-score-value">${rating.sound_score ?? '-'}</span> ·
+                Jog <span class="gt-score-value">${rating.gameplay_score ?? '-'}</span> ·
+                Dif <span class="gt-score-value">${rating.difficulty_score ?? '-'}</span>
+            </div>
+            <button class="gt-card-favorite position-relative ${item.is_favorite ? 'is-active' : ''}" data-id="${item.id}" data-favorite="${item.is_favorite}" aria-label="Favoritar" style="top:auto; right:auto;">
+                <i class="bi bi-heart${item.is_favorite ? '-fill' : ''}"></i>
+            </button>
+          </article>
+        </div>
+        `;
+    }).join('');
+
+    ligarEventosDosCards(grid, '.gt-card-list');
+}
+
+// Liga os eventos de clique (abrir detalhe) e favoritar, compartilhados entre os modos de card e lista.
+function ligarEventosDosCards(grid, seletorCard = '.gt-card') {
+    grid.querySelectorAll(seletorCard).forEach(card => {
         card.addEventListener('click', (e) => {
             if (e.target.closest('.gt-card-favorite')) return;
             abrirDetalhe(Number(card.dataset.id));
         });
     });
 
-    // Botão de favorito em cada card: alterna sem precisar abrir o modal.
     grid.querySelectorAll('.gt-card-favorite').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -178,6 +242,61 @@ function renderGrid(jogos) {
             }
         });
     });
+}
+
+// --- Alterna entre os modos de densidade da grade (lista/pequeno/médio/grande), estilo Google Drive ---
+function setupViewMode() {
+    const botoes = document.querySelectorAll('#view-mode-group [data-view]');
+
+    const aplicarEstadoAtivo = () => {
+        botoes.forEach(b => b.classList.toggle('is-active', b.dataset.view === modoVisualizacao));
+    };
+    aplicarEstadoAtivo();
+
+    botoes.forEach(botao => {
+        botao.addEventListener('click', () => {
+            modoVisualizacao = botao.dataset.view;
+            localStorage.setItem('gt-view-mode', modoVisualizacao);
+            aplicarEstadoAtivo();
+            aplicarFiltros();
+        });
+    });
+}
+
+// --- Ordenação (dropdown "Ordenar") ---
+function setupSort() {
+    const itens = document.querySelectorAll('#sort-menu [data-sort]');
+    itens.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            modoOrdenacao = item.dataset.sort;
+            localStorage.setItem('gt-sort-mode', modoOrdenacao);
+            aplicarFiltros();
+        });
+    });
+}
+
+function ordenarJogos(lista) {
+    const copia = [...lista];
+    switch (modoOrdenacao) {
+        case 'name-asc':
+            return copia.sort((a, b) => a.game.title.localeCompare(b.game.title, 'pt-BR'));
+        case 'name-desc':
+            return copia.sort((a, b) => b.game.title.localeCompare(a.game.title, 'pt-BR'));
+        case 'score-desc':
+            return copia.sort((a, b) => {
+                const notaMedia = (item) => {
+                    const r = item.rating;
+                    if (!r) return -1;
+                    const notas = [r.graphics_score, r.sound_score, r.gameplay_score, r.difficulty_score].filter(n => typeof n === 'number');
+                    return notas.length ? notas.reduce((x, y) => x + y, 0) / notas.length : -1;
+                };
+                return notaMedia(b) - notaMedia(a);
+            });
+        case 'recent':
+        default:
+            return copia.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
 }
 
 // --- Função: Lógica de Pesquisa (Adicionar jogo) ---
@@ -389,11 +508,20 @@ async function carregarVideoDoJogo(titulo, videoWrapper) {
         }
         const data = await response.json();
 
-        if (data.video?.embed_url) {
+        if (data.video?.watch_url) {
+            const video = data.video;
             videoWrapper.innerHTML = `
-                <div class="ratio ratio-16x9">
-                    <iframe src="${data.video.embed_url}" title="Gameplay" allowfullscreen></iframe>
-                </div>
+                <p class="small text-white-50 mb-2">Gameplay</p>
+                <a href="${video.watch_url}" target="_blank" rel="noopener noreferrer" class="gt-gameplay-link">
+                    <div class="gt-gameplay-thumb">
+                        ${video.thumbnail_url ? `<img src="${video.thumbnail_url}" alt="Miniatura do vídeo">` : ''}
+                        <div class="gt-gameplay-play"><i class="bi bi-play-fill"></i></div>
+                    </div>
+                    <div>
+                        <div class="gt-gameplay-title">${escapeHtml(video.title || 'Ver gameplay')}</div>
+                        <div class="gt-gameplay-channel">${escapeHtml(video.channel_title || '')} · <span class="text-decoration-underline">assistir no YouTube</span></div>
+                    </div>
+                </a>
             `;
         } else {
             videoWrapper.innerHTML = '<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay encontrado.</p>';
@@ -461,7 +589,7 @@ function setupFilters() {
     filtroStatus?.addEventListener('change', aplicarFiltros);
     filtroNota?.addEventListener('change', aplicarFiltros);
     btnFavoritos?.addEventListener('click', () => {
-        btnFavoritos.classList.toggle('active');
+        btnFavoritos.classList.toggle('is-active');
         aplicarFiltros();
     });
 }
@@ -472,7 +600,7 @@ function aplicarFiltros() {
     const generoSel = (document.getElementById('filter-genre')?.value || '').toLowerCase();
     const statusSel = document.getElementById('filter-status')?.value || '';
     const notaMinima = Number(document.getElementById('filter-gameplay-score')?.value || 0);
-    const apenasFavoritos = document.getElementById('btn-favorites-only')?.classList.contains('active');
+    const apenasFavoritos = document.getElementById('btn-favorites-only')?.classList.contains('is-active');
 
     const filtrados = meusJogos.filter(item => {
         const jogo = item.game;
@@ -488,7 +616,7 @@ function aplicarFiltros() {
         return true;
     });
 
-    renderGrid(filtrados);
+    renderGrid(ordenarJogos(filtrados));
 }
 
 // --- Função: Logoff ---

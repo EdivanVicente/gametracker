@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarPerfil();
 
     document.getElementById('btn-save-profile').addEventListener('click', salvarPerfil);
-    document.getElementById('btn-cancel-profile').addEventListener('click', () => preencherFormulario(perfilOriginal));
+    document.getElementById('btn-cancel-profile').addEventListener('click', () => {
+        window.location.href = 'dashboard.html';
+    });
 });
 
 async function authFetch(path, options = {}) {

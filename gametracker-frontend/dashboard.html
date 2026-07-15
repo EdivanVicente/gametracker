@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GameTracker Pro — Dashboard</title>
+  <title>GameTracker Pro — Meus Jogos</title>
 
   <!-- Fontes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,7 +46,7 @@
             <a class="nav-link" href="explore.html">Explorar</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="reports.html">Relatórios</a>
+            <a class="nav-link" href="estatisticas.html">Estatísticas</a>
           </li>
         </ul>
 
@@ -70,9 +70,19 @@
               <span id="navbar-user-name" class="d-none d-md-inline small">Perfil</span>
               <i class="bi bi-chevron-down small"></i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end">
+            <ul class="dropdown-menu dropdown-menu-end" style="min-width: 220px;">
+              <li class="px-3 py-3 text-center">
+                <div id="dropdown-avatar"
+                     class="rounded-circle mx-auto mb-2 overflow-hidden d-flex align-items-center justify-content-center"
+                     style="width: 64px; height: 64px; background-color: var(--gt-surface-raised); border: 2px solid var(--gt-border);">
+                  <i class="bi bi-person fs-3 text-white-50"></i>
+                </div>
+                <div id="dropdown-user-name" class="fw-semibold small text-truncate">Carregando...</div>
+                <div id="dropdown-user-email" class="text-white-50 text-truncate" style="font-size: 0.7rem;">—</div>
+              </li>
+              <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i>Minha conta</a></li>
-              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i>Games</a></li>
+              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i>Jogos</a></li>
               <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i>Configurações</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
@@ -119,7 +129,7 @@
               <i class="bi bi-search text-white-50"></i>
             </span>
             <input type="search" class="form-control border-0 border-start-0" id="filter-search"
-                   placeholder="Buscar no meu catálogo..." style="border-left: none !important;">
+                   placeholder="Buscar nos meus jogos" style="border-left: none !important;">
           </div>
         </div>
 
@@ -160,12 +170,38 @@
           </select>
         </div>
 
-        <div class="col-12 col-xl-1 d-flex justify-content-xl-end gap-2">
-          <button class="btn btn-gt-outline flex-fill flex-xl-grow-0" type="button" id="btn-favorites-only" title="Somente favoritos">
+        <div class="col-6 col-md-2 col-xl-1 d-flex">
+          <button class="btn btn-gt-outline flex-fill" type="button" id="btn-favorites-only" title="Somente favoritos">
             <i class="bi bi-heart"></i>
           </button>
-          <button class="btn btn-gt-outline flex-fill flex-xl-grow-0" type="button" title="Ordenar">
+        </div>
+
+        <div class="col-6 col-md-3 col-xl-2 dropdown">
+          <button class="btn btn-gt-outline w-100 d-flex align-items-center justify-content-center gap-2"
+                  type="button" id="btn-sort" data-bs-toggle="dropdown" aria-expanded="false" title="Ordenar">
             <i class="bi bi-sort-down"></i>
+            <span class="d-none d-md-inline small">Ordenar</span>
+          </button>
+          <ul class="dropdown-menu" id="sort-menu">
+            <li><a class="dropdown-item" href="#" data-sort="recent">Adicionado recentemente</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="name-asc">Nome (A-Z)</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="name-desc">Nome (Z-A)</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="score-desc">Nota mais alta</a></li>
+          </ul>
+        </div>
+
+        <div class="col-12 col-xl-2 d-flex justify-content-xl-end gap-1" id="view-mode-group" role="group" aria-label="Densidade da grade">
+          <button class="btn btn-gt-outline flex-fill flex-xl-grow-0" type="button" data-view="list" title="Lista">
+            <i class="bi bi-list-ul"></i>
+          </button>
+          <button class="btn btn-gt-outline flex-fill flex-xl-grow-0" type="button" data-view="small" title="Grade pequena">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+          </button>
+          <button class="btn btn-gt-outline flex-fill flex-xl-grow-0 is-active" type="button" data-view="medium" title="Grade média">
+            <i class="bi bi-grid-3x2-gap-fill"></i>
+          </button>
+          <button class="btn btn-gt-outline flex-fill flex-xl-grow-0" type="button" data-view="large" title="Grade grande">
+            <i class="bi bi-grid-1x2-gap-fill"></i>
           </button>
         </div>
       </div>

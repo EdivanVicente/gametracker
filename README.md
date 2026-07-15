@@ -1,9 +1,66 @@
-# GameTracker Pro — terceira rodada: conta, redes sociais, HUD clicável
+# GameTracker Pro — quarta rodada: nomes, densidade da grade, correções de UX
 
-Tudo abaixo foi testado de verdade (backend rodando, cadastro, confirmação
-de e-mail, troca de e-mail, troca de senha, exclusão de conta, perfil
-completo salvo e recarregado, e também com um **navegador real
-automatizado** clicando na interface) antes de ser entregue.
+Nove pedidos desta vez, todos testados com **navegador real automatizado**
+(login, navegação entre todas as páginas, cliques em botões, verificação
+visual por screenshot) antes de entregar.
+
+## Changelog desta rodada, ponto a ponto
+
+**1. "Relatórios" → "Estatísticas".**
+O nome antigo não dizia muito sobre o que a página mostra (distribuição
+por gênero/plataforma, notas médias, top jogos). Renomeei para
+"Estatísticas" — arquivo também renomeado (`reports.html` →
+`estatisticas.html`) e todos os links atualizados.
+
+**2. Página "Explorar" mais convidativa.**
+Adicionei um título, uma frase explicando o que a página faz, e uma fileira
+de "sugestões" (5 jogos populares) que já disparam a busca com um clique —
+antes era só uma barra de busca sem contexto nenhum.
+
+**3. Vídeo do jogo: thumbnail + link, em vez de vídeo incorporado.**
+Trocei o `<iframe>` que carregava o vídeo automaticamente por um card
+com a miniatura do YouTube e um botão de play — clicar abre o vídeo numa
+aba nova. Isso vale tanto no modal do jogo (dashboard) quanto na página
+Explorar. Mais leve e não força o carregamento do player do YouTube
+sem você pedir.
+
+**4. Todos os textos em português.**
+Troquei os últimos textos em inglês que tinham sobrado: o item de menu
+"Games" virou "Jogos", e os títulos das abas do navegador ("Dashboard" e
+"Games") também foram traduzidos. Conferi o site inteiro (HTML, JS,
+placeholders, alertas) — o resto já estava em português.
+
+**5. Placeholder da busca.**
+Mudei para "Buscar nos meus jogos", como pedido.
+
+**6. Menu de perfil com foto grande.**
+Agora, ao clicar no menu (Minha conta / Jogos / Configurações), aparece
+no topo do dropdown a foto redonda do perfil, o nome e o e-mail, antes
+da lista de opções — em todas as páginas do site.
+
+**7. Botão "Cancelar" da Minha Conta.**
+Agora leva de volta para o catálogo (`dashboard.html`) sem salvar as
+alterações, em vez de só limpar os campos do formulário (que era o
+comportamento antigo e não parecia "fechar" nada).
+
+**8. Botão de ordenação, que não tinha função nenhuma.**
+O botão "Ordenar" existia visualmente mas nunca teve um `id` nem
+JavaScript ligado a ele — agora é um dropdown funcional com 4 opções:
+adicionado recentemente, nome A-Z, nome Z-A, nota mais alta. De brinde,
+encontrei e corrigi outro bug relacionado: o botão de "somente
+favoritos" já funcionava por trás dos panos, mas não tinha **nenhum**
+estilo visual pro estado "ativado" — clicar nele não parecia fazer nada
+mesmo filtrando corretamente. Também descobri que o menu dropdown inteiro
+estava com fundo branco (padrão do Bootstrap, nunca sobrescrito) —
+destoando do resto do tema escuro; corrigido junto.
+
+**9. Densidade da grade (Lista / Pequeno / Médio / Grande), como o Google Drive.**
+Adicionei 4 botões na barra de ferramentas. "Médio" é o visual que já
+existia; "Pequeno" e "Grande" ajustam quantos jogos cabem por linha;
+"Lista" troca pra um formato de linha horizontal compacta (capa pequena,
+título, plataforma, notas e favorito tudo numa linha só). A escolha fica
+salva no navegador — se você trocar pra Lista, da próxima vez que abrir
+o site ele já abre em Lista.
 
 ## 🎮 Conta demo (pra testar sem precisar cadastrar)
 

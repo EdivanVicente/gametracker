@@ -22,14 +22,28 @@ async function carregarNavbarUsuario() {
 
         const avatarBtn = document.getElementById('navbar-avatar-btn');
         const nameEl = document.getElementById('navbar-user-name');
+        const dropdownAvatar = document.getElementById('dropdown-avatar');
+        const dropdownName = document.getElementById('dropdown-user-name');
+        const dropdownEmail = document.getElementById('dropdown-user-email');
         const nomeExibido = user.display_name || user.email.split('@')[0];
 
         if (nameEl) {
             nameEl.textContent = nomeExibido;
         }
+        if (dropdownName) {
+            dropdownName.textContent = nomeExibido;
+        }
+        if (dropdownEmail) {
+            dropdownEmail.textContent = user.email;
+        }
 
-        if (avatarBtn && user.avatar_data) {
-            avatarBtn.innerHTML = `<img src="${user.avatar_data}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
+        if (user.avatar_data) {
+            if (avatarBtn) {
+                avatarBtn.innerHTML = `<img src="${user.avatar_data}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
+            }
+            if (dropdownAvatar) {
+                dropdownAvatar.innerHTML = `<img src="${user.avatar_data}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
+            }
         }
     } catch (error) {
         // Silencioso: a navbar simplesmente mantém os valores padrão.
