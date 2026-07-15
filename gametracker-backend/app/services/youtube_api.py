@@ -66,6 +66,8 @@ class YoutubeApiService:
             "thumbnail_url": snippet.get("thumbnails", {}).get("medium", {}).get("url"),
             # URL pronta para uso no atributo src de um <iframe>
             "embed_url": f"https://www.youtube.com/embed/{video_id}" if video_id else None,
+            # Link direto pro YouTube, para abrir em uma nova aba (usado no card de thumbnail)
+            "watch_url": f"https://www.youtube.com/watch?v={video_id}" if video_id else None,
         }
 
 

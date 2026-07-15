@@ -29,14 +29,14 @@ async function carregarRelatorios() {
         const jogos = await response.json();
 
         if (jogos.length === 0) {
-            document.getElementById('reports-content').classList.add('d-none');
-            document.getElementById('reports-empty').classList.remove('d-none');
+            document.getElementById('stats-content').classList.add('d-none');
+            document.getElementById('stats-empty').classList.remove('d-none');
             return;
         }
 
         renderResumo(jogos);
-        renderBarras('rep-genero', contarPor(jogos, j => j.game.genre));
-        renderBarras('rep-plataforma', contarPor(jogos, j => j.platform));
+        renderBarras('stat-genero', contarPor(jogos, j => j.game.genre));
+        renderBarras('stat-plataforma', contarPor(jogos, j => j.platform));
         renderNotasMedias(jogos);
         renderTopJogos(jogos);
     } catch (error) {
@@ -57,10 +57,10 @@ function renderResumo(jogos) {
         ? (todasNotas.reduce((a, b) => a + b, 0) / todasNotas.length).toFixed(1)
         : '-';
 
-    document.getElementById('rep-total').textContent = total;
-    document.getElementById('rep-taxa-conclusao').textContent = `${Math.round((finalizados / total) * 100)}%`;
-    document.getElementById('rep-media-geral').textContent = mediaGeral;
-    document.getElementById('rep-favoritos').textContent = favoritos;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-taxa-conclusao').textContent = `${Math.round((finalizados / total) * 100)}%`;
+    document.getElementById('stat-media-geral').textContent = mediaGeral;
+    document.getElementById('stat-favoritos').textContent = favoritos;
 }
 
 // Agrupa uma lista de UserGame por um campo (gênero, plataforma etc.), contando ocorrências.
@@ -109,7 +109,7 @@ function renderNotasMedias(jogos) {
         return [label, Number(media.toFixed(1))];
     });
 
-    const container = document.getElementById('rep-notas');
+    const container = document.getElementById('stat-notas');
     const algumaNota = entradas.some(([, v]) => v > 0);
 
     if (!algumaNota) {
@@ -140,7 +140,7 @@ function renderTopJogos(jogos) {
         .sort((a, b) => b.media - a.media)
         .slice(0, 5);
 
-    const lista = document.getElementById('rep-top-jogos');
+    const lista = document.getElementById('stat-top-jogos');
 
     if (comMediaGeral.length === 0) {
         lista.innerHTML = '<li class="text-white-50 small">Ainda não há jogos avaliados.</li>';
