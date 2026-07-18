@@ -149,6 +149,20 @@ class DeleteAccountRequest(BaseModel):
     current_password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_reset_password_strength(cls, value: str) -> str:
+        return _validar_senha_forte(value)
+
+
 # --- Catálogo externo (RAWG) ---
 
 class GameOut(BaseModel):

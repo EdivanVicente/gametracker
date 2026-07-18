@@ -59,15 +59,18 @@ class YoutubeApiService:
     def _map_video_item(item: dict) -> dict:
         video_id = item.get("id", {}).get("videoId")
         snippet = item.get("snippet", {})
+        channel_id = snippet.get("channelId")
         return {
             "video_id": video_id,
             "title": snippet.get("title"),
             "channel_title": snippet.get("channelTitle"),
             "thumbnail_url": snippet.get("thumbnails", {}).get("medium", {}).get("url"),
             # URL pronta para uso no atributo src de um <iframe>
-            "embed_url": f"https://www.youtube.com/embed/{video_id}" if video_id else None,
+            "embed_url": f"https://www.youtube.com/embed/{video_id}?autoplay=1" if video_id else None,
             # Link direto pro YouTube, para abrir em uma nova aba (usado no card de thumbnail)
             "watch_url": f"https://www.youtube.com/watch?v={video_id}" if video_id else None,
+            # Link direto pro canal de quem postou o vídeo
+            "channel_url": f"https://www.youtube.com/channel/{channel_id}" if channel_id else None,
         }
 
 

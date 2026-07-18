@@ -127,6 +127,44 @@ select:focus-visible,
   background-color: rgba(255, 255, 255, 0.85);
 }
 
+/* Botão do menu hambúrguer — o ícone padrão do Bootstrap é escuro fixo e
+   fica invisível no tema escuro; usamos um ícone próprio (currentColor). */
+.navbar-toggler {
+  border: 1px solid var(--gt-border);
+  color: var(--gt-text);
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.35rem 0.55rem;
+}
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 2px var(--gt-accent);
+}
+
+/* Menu mobile (hambúrguer aberto): itens centralizados */
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    text-align: center;
+  }
+  .navbar-collapse .navbar-nav {
+    align-items: center;
+  }
+  .navbar-collapse .d-flex {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+/* Dropdown nunca deve ficar mais alto que a tela nem cortar conteúdo */
+.dropdown-menu {
+  max-height: min(80vh, 26rem);
+  overflow-y: auto;
+}
+
+.gt-footer {
+  border-top: 1px solid var(--gt-border);
+  margin-top: 2rem;
+}
+
 body {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -246,7 +284,7 @@ body {
 .gt-card-list .gt-card-list-cover img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .gt-card-list .gt-card-list-title {
   font-family: var(--gt-font-display);
@@ -332,7 +370,7 @@ body {
 .gt-detail-cover img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .gt-detail-genre {
   font-size: 0.8rem;
@@ -377,11 +415,24 @@ body {
   background-color: var(--gt-surface-raised);
   text-decoration: none;
   color: var(--gt-text);
+  cursor: pointer;
   transition: border-color 0.15s ease;
 }
 .gt-gameplay-link:hover {
   border-color: var(--gt-accent);
   color: var(--gt-text);
+}
+.gt-gameplay-channel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--gt-accent);
+  text-decoration: none;
+}
+.gt-gameplay-channel-link:hover {
+  text-decoration: underline;
 }
 .gt-gameplay-thumb {
   position: relative;
@@ -488,7 +539,7 @@ body {
 .gt-card-cover img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .gt-card-status {

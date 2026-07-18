@@ -102,6 +102,36 @@ def send_account_deletion_confirmation(to_email: str, token: str) -> None:
     )
 
 
+def send_password_reset_email(to_email: str, token: str) -> None:
+    """Envia o link de redefinição — aponta para o FRONTEND, pois lá tem o
+    formulário onde a pessoa digita a nova senha (diferente dos outros links,
+    que só confirmam uma ação e podem apontar direto pro backend)."""
+    link = f"{settings.FRONTEND_BASE_URL}/reset-password.html?token={token}"
+
+    if not settings.SMTP_HOST:
+        logger.warning("SMTP não configurado — link de redefinição de senha para %s: %s", to_email, link)
+        print(f"[DEV] Link de redefinição de senha para {to_email}: {link}")
+        return
+
+    _send(
+        to_email=to_email,
+        subject="Redefinir sua senha — GameTracker Pro",
+        heading="Redefinir senha",
+        body_html=f"""
+          <p>Recebemos um pedido para redefinir a senha da sua conta.
+          Clique no botão abaixo para escolher uma nova senha:</p>
+          <p style="text-align:center; margin: 24px 0;">
+            <a href="{link}" style="background:#7c5cff; color:#fff; padding:12px 24px;
+               border-radius:6px; text-decoration:none; font-weight:bold;">
+               Redefinir senha
+            </a>
+          </p>
+          <p style="color:#888; font-size: 0.85rem;">Este link expira em 1 hora. Se você não pediu isso, ignore este e-mail — sua senha continua a mesma.</p>
+        """,
+        body_text=f"Recebemos um pedido para redefinir a senha da sua conta.\n\nClique no link (válido por 1 hora):\n{link}\n\nSe você não pediu isso, ignore este e-mail.",
+    )
+
+
 def _send(to_email: str, subject: str, heading: str, body_html: str, body_text: str) -> None:
     if not settings.SMTP_HOST:
         logger.warning("SMTP não configurado — e-mail '%s' não enviado para %s.", subject, to_email)

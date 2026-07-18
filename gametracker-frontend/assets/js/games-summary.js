@@ -67,7 +67,7 @@ function renderCard(containerId, item, mensagemVazio) {
         <div class="gt-panel p-3 d-flex gap-3 align-items-center">
             <div class="gt-detail-cover" style="width: 90px; flex-shrink: 0; aspect-ratio: 3/4;">
                 ${jogo.cover_url
-                    ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title)}" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem;">`
+                    ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title)}" style="width:100%;height:100%;object-fit:contain;background-color:var(--gt-void);border-radius:0.5rem;">`
                     : '<i class="bi bi-controller"></i>'}
             </div>
             <div>

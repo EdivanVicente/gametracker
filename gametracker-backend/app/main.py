@@ -58,6 +58,8 @@ def _run_light_migrations() -> None:
                 "email_change_token_expires_at": "DATETIME",
                 "deletion_token": "VARCHAR(255)",
                 "deletion_token_expires_at": "DATETIME",
+                "password_reset_token": "VARCHAR(255)",
+                "password_reset_token_expires_at": "DATETIME",
             }
 
             for nome, tipo_sql in colunas_novas.items():
