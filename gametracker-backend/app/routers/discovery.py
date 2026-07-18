@@ -49,11 +49,14 @@ async def explore_gameplay(
         game_metadata = []
 
     try:
-        videos = await youtube_api_service.search_gameplay_video(game_title=title)
+        videos = await youtube_api_service.search_gameplay_video(game_title=title, max_results=3)
     except HTTPException:
         videos = []
 
     return {
         "game": game_metadata[0] if game_metadata else None,
         "video": videos[0] if videos else None,
+        # Candidatos extras: se o primeiro vídeo estiver indisponível/removido,
+        # o frontend tenta o próximo desta lista automaticamente.
+        "videos": videos,
     }

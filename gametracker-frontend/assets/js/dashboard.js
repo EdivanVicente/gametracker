@@ -245,17 +245,29 @@ function ligarEventosDosCards(grid, seletorCard = '.gt-card') {
 }
 
 // --- Alterna entre os modos de densidade da grade (lista/pequeno/médio/grande), estilo Google Drive ---
+const ICONE_POR_MODO = {
+    list: 'bi-list-ul',
+    small: 'bi-grid-3x3-gap-fill',
+    medium: 'bi-grid-3x2-gap-fill',
+    large: 'bi-grid-1x2-gap-fill',
+};
+
 function setupViewMode() {
-    const botoes = document.querySelectorAll('#view-mode-group [data-view]');
+    const itens = document.querySelectorAll('#view-mode-group [data-view]');
+    const iconeAtual = document.getElementById('view-mode-current-icon');
 
     const aplicarEstadoAtivo = () => {
-        botoes.forEach(b => b.classList.toggle('is-active', b.dataset.view === modoVisualizacao));
+        itens.forEach(el => el.classList.toggle('active', el.dataset.view === modoVisualizacao));
+        if (iconeAtual) {
+            iconeAtual.className = `bi ${ICONE_POR_MODO[modoVisualizacao] || ICONE_POR_MODO.medium}`;
+        }
     };
     aplicarEstadoAtivo();
 
-    botoes.forEach(botao => {
-        botao.addEventListener('click', () => {
-            modoVisualizacao = botao.dataset.view;
+    itens.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            modoVisualizacao = item.dataset.view;
             localStorage.setItem('gt-view-mode', modoVisualizacao);
             aplicarEstadoAtivo();
             aplicarFiltros();
@@ -333,7 +345,7 @@ function setupSearch() {
                 <div class="col-12 mb-2">
                     <div class="card p-2 d-flex flex-row align-items-center bg-dark text-white border-secondary">
                         ${jogo.cover_url
-                            ? `<img src="${jogo.cover_url}" style="width: 50px; height: 50px; object-fit: cover;" class="rounded" alt="Capa">`
+                            ? `<img src="${jogo.cover_url}" style="width: 50px; height: 50px; object-fit: contain; background-color: var(--gt-void);" class="rounded" alt="Capa">`
                             : '<div style="width:50px;height:50px;" class="rounded bg-secondary d-flex align-items-center justify-content-center"><i class="bi bi-controller"></i></div>'}
                         <div class="ms-3">
                             <h6 class="mb-0 text-white">${escapeHtml(jogo.title)}</h6>
@@ -507,25 +519,7 @@ async function carregarVideoDoJogo(titulo, videoWrapper) {
             return;
         }
         const data = await response.json();
-
-        if (data.video?.watch_url) {
-            const video = data.video;
-            videoWrapper.innerHTML = `
-                <p class="small text-white-50 mb-2">Gameplay</p>
-                <a href="${video.watch_url}" target="_blank" rel="noopener noreferrer" class="gt-gameplay-link">
-                    <div class="gt-gameplay-thumb">
-                        ${video.thumbnail_url ? `<img src="${video.thumbnail_url}" alt="Miniatura do vídeo">` : ''}
-                        <div class="gt-gameplay-play"><i class="bi bi-play-fill"></i></div>
-                    </div>
-                    <div>
-                        <div class="gt-gameplay-title">${escapeHtml(video.title || 'Ver gameplay')}</div>
-                        <div class="gt-gameplay-channel">${escapeHtml(video.channel_title || '')} · <span class="text-decoration-underline">assistir no YouTube</span></div>
-                    </div>
-                </a>
-            `;
-        } else {
-            videoWrapper.innerHTML = '<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay encontrado.</p>';
-        }
+        renderizarGameplay(videoWrapper, data.videos || (data.video ? [data.video] : []));
     } catch (error) {
         videoWrapper.innerHTML = '';
     }

@@ -100,6 +100,60 @@ document.getElementById('btn-demo-login')?.addEventListener('click', () => {
     document.getElementById('panel-login').requestSubmit();
 });
 
+// --- Esqueci minha senha ---
+document.getElementById('link-forgot-password')?.addEventListener('click', (e) => {
+    e.preventDefault();
+
+    // Pré-preenche com o e-mail já digitado no login, se houver.
+    const emailAtual = document.getElementById('login-email').value.trim();
+    document.getElementById('forgot-password-email').value = emailAtual;
+    document.getElementById('forgot-password-error').classList.add('d-none');
+    document.getElementById('forgot-password-success').classList.add('d-none');
+
+    const modalElement = document.getElementById('modalForgotPassword');
+    const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+    modal.show();
+});
+
+document.getElementById('btn-send-forgot-password')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-send-forgot-password');
+    const email = document.getElementById('forgot-password-email').value.trim();
+    const erroEl = document.getElementById('forgot-password-error');
+    const sucessoEl = document.getElementById('forgot-password-success');
+
+    erroEl.classList.add('d-none');
+    sucessoEl.classList.add('d-none');
+
+    if (!email) {
+        erroEl.textContent = 'Digite seu e-mail.';
+        erroEl.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            sucessoEl.textContent = data.message;
+            sucessoEl.classList.remove('d-none');
+        } else {
+            erroEl.textContent = extrairMensagemErro(data, 'Não foi possível enviar o link.');
+            erroEl.classList.remove('d-none');
+        }
+    } catch (err) {
+        erroEl.textContent = 'Erro de conexão com o servidor.';
+        erroEl.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
 // --- Reenviar e-mail de confirmação ---
 document.getElementById('btn-resend-verification')?.addEventListener('click', async (e) => {
     e.preventDefault();

@@ -77,7 +77,7 @@ function renderResultado(data) {
         <div class="row g-4">
             <div class="col-12 col-md-5">
                 <div class="gt-card p-3">
-                    ${jogo?.cover_url ? `<img src="${jogo.cover_url}" class="w-100 rounded mb-3" style="max-height:280px;object-fit:cover;">` : ''}
+                    ${jogo?.cover_url ? `<img src="${jogo.cover_url}" class="w-100 rounded mb-3" style="max-height:280px;object-fit:contain;background-color:var(--gt-void);">` : ''}
                     <h3 class="gt-card-title mb-1">${escapeHtml(jogo?.title || 'Jogo não encontrado na base')}</h3>
                     <p class="gt-detail-genre mb-2">${escapeHtml(jogo?.genre || '')}</p>
                     <p class="small text-white-50 mb-2">${jogo?.description ? escapeHtml(jogo.description.split(/\s+/).slice(0, 50).join(' ')) + '…' : ''}</p>
@@ -86,19 +86,10 @@ function renderResultado(data) {
             </div>
             <div class="col-12 col-md-7">
                 <p class="small text-white-50 mb-2">Gameplay</p>
-                ${video?.watch_url
-                    ? `<a href="${video.watch_url}" target="_blank" rel="noopener noreferrer" class="gt-gameplay-link">
-                        <div class="gt-gameplay-thumb">
-                            ${video.thumbnail_url ? `<img src="${video.thumbnail_url}" alt="Miniatura do vídeo">` : ''}
-                            <div class="gt-gameplay-play"><i class="bi bi-play-fill"></i></div>
-                        </div>
-                        <div>
-                            <div class="gt-gameplay-title">${escapeHtml(video.title || 'Ver gameplay')}</div>
-                            <div class="gt-gameplay-channel">${escapeHtml(video.channel_title || '')} · <span class="text-decoration-underline">assistir no YouTube</span></div>
-                        </div>
-                       </a>`
-                    : '<p class="text-white-50 small">Nenhum vídeo de gameplay encontrado (configure a YOUTUBE_API_KEY no .env do backend para habilitar essa parte).</p>'}
+                <div id="explore-video-wrapper"></div>
             </div>
         </div>
     `;
+
+    renderizarGameplay(document.getElementById('explore-video-wrapper'), data.videos || (video ? [video] : []));
 }

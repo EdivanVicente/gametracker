@@ -24,6 +24,7 @@ from app.services.email_service import (
     send_verification_email,
     send_email_change_confirmation,
     send_account_deletion_confirmation,
+    send_password_reset_email,
 )
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -266,3 +267,42 @@ def confirm_account_deletion(token: str, db: Session = Depends(get_db)):
     db.commit()
 
     return HTMLResponse(_pagina_html("Conta excluída", "Sua conta e todos os seus dados foram excluídos permanentemente.", ok=True))
+
+
+# --- Esqueci minha senha ---
+
+@router.post("/forgot-password")
+def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Gera um token de redefinição e envia por e-mail. Sempre retorna a mesma
+    mensagem de sucesso, exista ou não o e-mail cadastrado — isso evita que
+    alguém use esta rota para descobrir quais e-mails estão registrados.
+    """
+    user = db.query(models.User).filter(models.User.email == payload.email).first()
+
+    if user:
+        token = generate_verification_token()
+        user.password_reset_token = token
+        user.password_reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+        send_password_reset_email(user.email, token)
+
+    return {"message": "Se este e-mail estiver cadastrado, enviamos um link para redefinir a senha."}
+
+
+@router.post("/reset-password")
+def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.password_reset_token == payload.token).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Link inválido ou já utilizado.")
+
+    if user.password_reset_token_expires_at and user.password_reset_token_expires_at < datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este link expirou. Peça uma nova redefinição de senha.")
+
+    user.password_hash = hash_password(payload.new_password)
+    user.password_reset_token = None
+    user.password_reset_token_expires_at = None
+    db.commit()
+
+    return {"message": "Senha redefinida com sucesso. Você já pode entrar com a nova senha."}

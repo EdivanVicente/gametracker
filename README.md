@@ -1,12 +1,91 @@
-# GameTracker Pro — quarta rodada: nomes, densidade da grade, correções de UX
+# GameTracker Pro — quinta rodada: mobile, player de vídeo, esqueci senha
 
-Nove pedidos desta vez, todos testados com **navegador real automatizado**
-(login, navegação entre todas as páginas, cliques em botões, verificação
-visual por screenshot) antes de entregar.
+Onze pedidos desta vez — mobile (portrait), player de vídeo com fallback
+automático, e recuperação de senha por e-mail. Tudo testado com
+**navegador real automatizado**, incluindo em viewport de celular
+(390×844), com screenshots para conferência visual.
 
-## Changelog desta rodada, ponto a ponto
+## Changelog desta rodada (quinta), ponto a ponto
 
-**1. "Relatórios" → "Estatísticas".**
+**1. "Adicionar jogo" sempre visível em mobile portrait.**
+Antes ficava escondido dentro do menu hambúrguer fechado. Agora esse
+botão fica fora da área colapsável da navbar — aparece direto no topo,
+em qualquer tamanho de tela.
+
+**2. Ícone do menu hambúrguer sumia no tema escuro.**
+O Bootstrap usa um ícone de hambúrguer com cor fixa (SVG embutido) que
+ficava praticamente invisível no fundo escuro. Troquei por um ícone de
+fonte (Bootstrap Icons) que respeita a cor do texto do tema atual —
+sempre visível, claro ou escuro.
+
+**3. Itens do menu mobile centralizados.**
+Ao abrir o menu hambúrguer em telas pequenas, os links (Meus Jogos,
+Explorar, Estatísticas) e os controles (tema, perfil) agora ficam
+centralizados, não mais alinhados à esquerda.
+
+**4. Menu de perfil cortando conteúdo.**
+O dropdown de perfil (foto, nome, e-mail, opções) podia ficar maior que
+a tela em telas pequenas ou com muito conteúdo, cortando os itens de
+baixo. Agora tem um limite de altura com rolagem interna
+(`max-height` + `overflow-y: auto`) — nunca mais um item fica
+inacessível.
+
+**5. Botão "Voltar" em Explorar e Estatísticas.**
+Um botão simples com seta, no topo de cada página, que volta pra página
+anterior no histórico do navegador (ou pro catálogo, se não houver
+histórico — por exemplo, se a pessoa abriu a página direto por um link).
+
+**6. Densidade da grade dentro de um dropdown "Visualização".**
+Os 4 botões separados (lista/pequeno/médio/grande) viraram um único
+dropdown chamado "Visualização", com o ícone do modo atual ao lado do
+nome no botão principal, e cada opção do menu com ícone + texto — igual
+ao padrão do dropdown "Ordenar" que já existia.
+
+**7. Rodapé com crédito.**
+Adicionado em todas as páginas: "GameTracker Pro © 2026 — desenvolvido
+por Edivan Vicente".
+
+**8. Capas dos jogos cortando a imagem.**
+Trocado `object-fit: cover` (que corta as bordas pra preencher o
+espaço) por `object-fit: contain` (mostra a imagem inteira, com uma
+pequena margem se a proporção não bater exatamente) em todos os lugares
+que mostram capa: cards do catálogo, modo lista, modal de detalhe,
+resultados de busca, página Explorar e página Jogos.
+
+**9 e 10. Vídeo toca ao clicar, com link pro canal, e troca sozinho se estiver quebrado.**
+Criei um player compartilhado (`youtube-player.js`) usado tanto no
+modal do jogo quanto na página Explorar:
+- Clicar na thumbnail toca o vídeo ali mesmo, sem precisar sair da página.
+- Um link separado leva direto ao canal de quem postou o vídeo.
+- Se o vídeo estiver indisponível (removido, tornado privado, ou com
+  incorporação bloqueada pelo dono), o player detecta o erro
+  automaticamente (evento `onError` da API do YouTube) e troca sozinho
+  para o próximo vídeo candidato da lista — sem o usuário precisar fazer
+  nada. O backend agora busca até 3 candidatos por busca, exatamente
+  para alimentar essa troca automática.
+
+**11. "Esqueci minha senha".**
+Fluxo completo por e-mail, no mesmo padrão da confirmação de cadastro:
+- Link "Esqueci minha senha" na tela de login abre um modal pedindo o e-mail.
+- O backend gera um token temporário (válido por 1 hora) e envia um link
+  por e-mail (ou loga no terminal, em modo dev sem SMTP configurado).
+- O link leva pra uma página nova (`reset-password.html`) onde a pessoa
+  escolhe a nova senha.
+- Por segurança, a resposta é sempre a mesma mensagem de sucesso, exista
+  ou não o e-mail cadastrado — isso evita que alguém use essa tela para
+  descobrir quais e-mails estão registrados no sistema.
+
+## Uma limitação a saber
+O clique-para-tocar e a troca automática de vídeo (itens 9 e 10)
+dependem da API oficial do YouTube (`iframe_api`), que só carrega com
+acesso real à internet — não deu pra testar isso 100% no meu ambiente
+de desenvolvimento (sandbox sem acesso à rede externa). Revisei a
+lógica manualmente com atenção e ela é direta (o evento `onError` da
+API dispara `tentarProximoCandidato`, que avança pro próximo vídeo da
+lista), mas vale você testar esse fluxo especificamente no seu ambiente
+com internet normal.
+
+---**1. "Relatórios" → "Estatísticas".**
 O nome antigo não dizia muito sobre o que a página mostra (distribuição
 por gênero/plataforma, notas médias, top jogos). Renomeei para
 "Estatísticas" — arquivo também renomeado (`reports.html` →

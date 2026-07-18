@@ -79,6 +79,10 @@ class User(Base):
     deletion_token = Column(String(255), nullable=True, index=True)
     deletion_token_expires_at = Column(DateTime, nullable=True)
 
+    # --- Recuperação de senha ("esqueci minha senha") ---
+    password_reset_token = Column(String(255), nullable=True, index=True)
+    password_reset_token_expires_at = Column(DateTime, nullable=True)
+
     # Relacionamento: um usuário tem muitos jogos catalogados
     games = relationship("UserGame", back_populates="user", cascade="all, delete-orphan")
 
