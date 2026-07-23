@@ -42,10 +42,23 @@ function _escapeHtmlLocal(unsafe) {
 /**
  * @param {HTMLElement} container - onde o card/player vai ser renderizado
  * @param {Array} candidatos - lista de vídeos candidatos (o primeiro é o preferido)
+ * @param {string} [tituloBusca] - nome do jogo, usado para montar o link de busca manual no YouTube
+ *                                 quando nenhum vídeo automático é encontrado/disponível.
  */
-function renderizarGameplay(container, candidatos) {
+function renderizarGameplay(container, candidatos, tituloBusca) {
+    const linkBuscaManual = (mensagem) => {
+        if (!tituloBusca) return mensagem;
+        const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(tituloBusca + ' gameplay')}`;
+        return `
+            ${mensagem}
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="gt-gameplay-channel-link d-inline-flex mt-2">
+                <i class="bi bi-youtube"></i> Buscar no YouTube <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+        `;
+    };
+
     if (!candidatos || candidatos.length === 0) {
-        container.innerHTML = '<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay encontrado.</p>';
+        container.innerHTML = linkBuscaManual('<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay encontrado.</p>');
         return;
     }
 
@@ -54,7 +67,7 @@ function renderizarGameplay(container, candidatos) {
     const mostrarThumbnail = () => {
         const video = candidatos[indiceAtual];
         if (!video) {
-            container.innerHTML = '<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay disponível no momento.</p>';
+            container.innerHTML = linkBuscaManual('<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay disponível no momento.</p>');
             return;
         }
 
@@ -86,7 +99,7 @@ function renderizarGameplay(container, candidatos) {
             // Já estava tocando: tenta o próximo direto, sem exigir novo clique.
             tocarVideo();
         } else {
-            container.innerHTML = '<p class="small text-white-50 mb-0">Não foi possível carregar nenhum vídeo disponível para este jogo.</p>';
+            container.innerHTML = linkBuscaManual('<p class="small text-white-50 mb-0">Não foi possível carregar nenhum vídeo disponível para este jogo.</p>');
         }
     };
 

@@ -356,7 +356,7 @@ body {
 /* Seção de informações do jogo no modal de detalhe */
 .gt-detail-cover {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 16 / 9;
   border-radius: 0.5rem;
   overflow: hidden;
   background-color: var(--gt-surface-raised);
@@ -433,6 +433,28 @@ body {
 }
 .gt-gameplay-channel-link:hover {
   text-decoration: underline;
+}
+
+/* Contador de dias jogando/concluído (item 1) */
+.gt-card-duration {
+  font-size: 0.72rem;
+  color: var(--gt-text-muted);
+  margin: 0.2rem 0 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.gt-duration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background-color: var(--gt-surface-raised);
+  border: 1px solid var(--gt-border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gt-accent);
 }
 .gt-gameplay-thumb {
   position: relative;
@@ -527,7 +549,7 @@ body {
 
 .gt-card-cover {
   position: relative;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 16 / 9;
   background: linear-gradient(135deg, var(--gt-surface-raised), var(--gt-void));
   display: flex;
   align-items: center;
@@ -642,6 +664,38 @@ body {
 }
 .gt-toolbar .form-select option {
   background-color: var(--gt-surface-raised);
+}
+
+/* Toolbar em uma linha só (desktop/tablet): busca cresce, resto tem largura fixa. */
+.gt-toolbar-row {
+  flex-wrap: wrap;
+}
+.gt-toolbar-search {
+  min-width: 180px;
+}
+.gt-toolbar-fixed {
+  flex: 0 0 auto;
+  width: 44px;
+}
+
+@media (min-width: 768px) {
+  .gt-toolbar-row {
+    flex-wrap: nowrap;
+  }
+  .gt-toolbar-fixed {
+    width: auto;
+    min-width: 44px;
+  }
+  /* Em telas muito estreitas mesmo acima do breakpoint, prefere rolagem
+     horizontal a quebrar em duas linhas (fica mais discreto/arrumado). */
+  .gt-toolbar-row {
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+}
+
+.gt-filtros-panel {
+  background-color: var(--gt-surface);
 }
 
 /* ==========================================================================

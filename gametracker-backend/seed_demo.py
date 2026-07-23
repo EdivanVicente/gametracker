@@ -35,7 +35,7 @@ JOGOS_EXEMPLO = [
             "habitado por insetos. Explore cavernas vastas, enfrente criaturas corrompidas "
             "e descubra os segredos de Hallownest."
         ),
-        "genre": "Metroidvania, Action",
+        "genre": "Action, Adventure, Indie",
         "platforms": "PC, Nintendo Switch, PlayStation 4, Xbox One",
         "multiplayer_info": "Single-player",
         "platform_jogador": "PC",
@@ -89,7 +89,7 @@ JOGOS_EXEMPLO = [
             "Ajude Madeline a escalar a Montanha Celeste, num jogo de plataforma desafiador "
             "sobre ansiedade, autoaceitação e superação pessoal."
         ),
-        "genre": "Platform, Indie",
+        "genre": "Platformer, Indie",
         "platforms": "PC, Nintendo Switch, PlayStation 4, Xbox One",
         "multiplayer_info": "Single-player",
         "platform_jogador": "PC",
