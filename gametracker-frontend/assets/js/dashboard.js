@@ -22,7 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 2. Inicializa as funções da página
+    // 2. Popula os selects de console e gênero (compartilhados via consoles.js/genres.js)
+    popularSelectConsoles(document.getElementById('filter-console'), { incluirTodos: true, labelTodos: 'Console' });
+    popularSelectConsoles(document.getElementById('detail-platform'));
+    popularSelectGeneros(document.getElementById('filter-genre'));
+
+    // 3. Inicializa as funções da página
     setupSearch();
     setupFilters();
     setupViewMode();
@@ -30,6 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDetailModal();
     aplicarFiltroDaUrl();
     carregarMeusJogos();
+
+    // Recalcula os contadores de "dias jogando" periodicamente, sem precisar
+    // recarregar a página (usa o cache local, não faz nenhuma chamada à API).
+    setInterval(aplicarFiltros, 5 * 60 * 1000);
 });
 
 // --- Helper: Sanitização para evitar XSS ---
@@ -40,6 +49,64 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// --- Contador de dias jogando / concluído (item 1) ---
+
+// Conta os dias entre o início do jogo e uma data de referência (hoje, se não
+// finalizado), contando o próprio dia de início como "dia 1" — assim, quem
+// começou hoje já vê "jogando há 1 dia" em vez de "0 dias".
+function calcularDiasDeJogo(dataInicioStr, dataFimStr) {
+    const inicio = new Date(`${dataInicioStr}T00:00:00`);
+    const fimRef = dataFimStr ? new Date(`${dataFimStr}T00:00:00`) : new Date(new Date().toDateString());
+    const diffDias = Math.round((fimRef - inicio) / 86400000);
+    return Math.max(1, diffDias + 1);
+}
+
+// Transforma um total de dias em texto humanizado tipo "1 mês e 15 dias" ou
+// "1 ano, 2 meses e 3 dias" — usado na frase "Você passou X jogando este jogo".
+function formatarDuracaoHumana(totalDias) {
+    if (totalDias <= 0) return 'menos de 1 dia';
+
+    const anos = Math.floor(totalDias / 365);
+    const resto = totalDias % 365;
+    const meses = Math.floor(resto / 30);
+    const dias = resto % 30;
+
+    const partes = [];
+    if (anos > 0) partes.push(`${anos} ano${anos > 1 ? 's' : ''}`);
+    if (meses > 0) partes.push(`${meses} mês${meses > 1 ? 'es' : ''}`);
+    if (dias > 0 || partes.length === 0) partes.push(`${dias} dia${dias !== 1 ? 's' : ''}`);
+
+    if (partes.length === 1) return partes[0];
+    if (partes.length === 2) return `${partes[0]} e ${partes[1]}`;
+    return `${partes.slice(0, -1).join(', ')} e ${partes[partes.length - 1]}`;
+}
+
+// Monta o texto de duração pra um UserGame: "Jogando há X dias" (em andamento)
+// ou "Concluído em X dias" + a frase humanizada (finalizado). Retorna null se
+// não houver data de início registrada ainda (nada a mostrar).
+function obterTextoDuracao(item) {
+    const dataInicio = item.start_date || (item.created_at ? item.created_at.slice(0, 10) : null);
+    if (!dataInicio) return null;
+
+    if (item.status === 'finished' && item.end_date) {
+        const totalDias = calcularDiasDeJogo(dataInicio, item.end_date);
+        return {
+            titulo: `Concluído em ${totalDias} dia${totalDias !== 1 ? 's' : ''}`,
+            subtitulo: `Você passou ${formatarDuracaoHumana(totalDias)} jogando este jogo`,
+        };
+    }
+
+    if (item.status === 'playing') {
+        const totalDias = calcularDiasDeJogo(dataInicio, null);
+        return {
+            titulo: `Jogando há ${totalDias} dia${totalDias !== 1 ? 's' : ''}`,
+            subtitulo: null,
+        };
+    }
+
+    return null;
 }
 
 // --- Helper: fetch autenticado com tratamento de sessão expirada ---
@@ -142,6 +209,7 @@ function renderGridCards(jogos, grid) {
         const jogo = item.game;
         const rating = item.rating || {};
         const isPlaying = item.status === 'playing';
+        const duracao = obterTextoDuracao(item);
 
         return `
         <div class="${colClass}">
@@ -160,6 +228,7 @@ function renderGridCards(jogos, grid) {
             <div class="gt-card-body">
               <h3 class="gt-card-title mb-0">${escapeHtml(jogo.title)}</h3>
               <p class="gt-card-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(jogo.genre || '—')}</p>
+              ${duracao ? `<p class="gt-card-duration"><i class="bi bi-hourglass-split"></i> ${duracao.titulo}</p>` : ''}
               <div class="gt-card-scores">
                 <span>Grf <span class="gt-score-value">${rating.graphics_score ?? '-'}</span></span>
                 <span>Som <span class="gt-score-value">${rating.sound_score ?? '-'}</span></span>
@@ -180,6 +249,7 @@ function renderGridLista(jogos, grid) {
         const jogo = item.game;
         const rating = item.rating || {};
         const isPlaying = item.status === 'playing';
+        const duracao = obterTextoDuracao(item);
 
         return `
         <div class="col-12">
@@ -191,7 +261,7 @@ function renderGridLista(jogos, grid) {
             </div>
             <div class="flex-grow-1 min-width-0">
               <div class="gt-card-list-title">${escapeHtml(jogo.title)}</div>
-              <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(jogo.genre || '—')}</div>
+              <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(jogo.genre || '—')}${duracao ? ` · ${duracao.titulo}` : ''}</div>
             </div>
             <span class="gt-card-status position-relative ${isPlaying ? 'is-playing' : 'is-finished'}" style="top:auto; left:auto;">
                 ${isPlaying ? 'Em andamento' : 'Finalizado'}
@@ -440,6 +510,10 @@ function setupDetailModal() {
 
     document.getElementById('btn-save-detail')?.addEventListener('click', salvarDetalhe);
     document.getElementById('btn-delete-detail')?.addEventListener('click', excluirJogoAtual);
+
+    document.getElementById('detail-platform')?.addEventListener('change', (e) => {
+        document.getElementById('detail-platform-custom').classList.toggle('d-none', e.target.value !== 'Outro');
+    });
 }
 
 function definirEstrelas(container, nota) {
@@ -496,10 +570,38 @@ function abrirDetalhe(userGameId) {
     carregarVideoDoJogo(jogo.title, videoWrapper);
 
     // --- Formulário de tracking/avaliação ---
-    document.getElementById('detail-platform').value = item.platform || 'PC';
+    const consoleConhecido = identificarConsoleConhecido(item.platform);
+    const platformSelect = document.getElementById('detail-platform');
+    const platformCustomInput = document.getElementById('detail-platform-custom');
+
+    if (consoleConhecido) {
+        platformSelect.value = consoleConhecido.value;
+        platformCustomInput.classList.add('d-none');
+        platformCustomInput.value = '';
+    } else if (item.platform) {
+        platformSelect.value = 'Outro';
+        platformCustomInput.value = item.platform;
+        platformCustomInput.classList.remove('d-none');
+    } else {
+        platformSelect.value = 'PC';
+        platformCustomInput.classList.add('d-none');
+        platformCustomInput.value = '';
+    }
+
     document.getElementById('detail-start-date').value = item.start_date || '';
     document.getElementById('detail-end-date').value = item.end_date || '';
     document.getElementById('detail-favorite').checked = !!item.is_favorite;
+
+    // --- Contador de dias jogando/concluído ---
+    const duracaoWrapper = document.getElementById('detail-duration-wrapper');
+    const duracao = obterTextoDuracao(item);
+    if (duracao) {
+        document.getElementById('detail-duration-title').textContent = duracao.titulo;
+        document.getElementById('detail-duration-subtitle').textContent = duracao.subtitulo || '';
+        duracaoWrapper.classList.remove('d-none');
+    } else {
+        duracaoWrapper.classList.add('d-none');
+    }
 
     definirEstrelas(document.getElementById('stars-graphics'), rating.graphics_score || 0);
     definirEstrelas(document.getElementById('stars-sound'), rating.sound_score || 0);
@@ -519,7 +621,7 @@ async function carregarVideoDoJogo(titulo, videoWrapper) {
             return;
         }
         const data = await response.json();
-        renderizarGameplay(videoWrapper, data.videos || (data.video ? [data.video] : []));
+        renderizarGameplay(videoWrapper, data.videos || (data.video ? [data.video] : []), titulo);
     } catch (error) {
         videoWrapper.innerHTML = '';
     }
@@ -528,8 +630,13 @@ async function carregarVideoDoJogo(titulo, videoWrapper) {
 async function salvarDetalhe() {
     if (!jogoEmEdicaoId) return;
 
+    const platformSelectValue = document.getElementById('detail-platform').value;
+    const platformFinal = platformSelectValue === 'Outro'
+        ? (document.getElementById('detail-platform-custom').value.trim() || 'Outro')
+        : platformSelectValue;
+
     const payload = {
-        platform: document.getElementById('detail-platform').value,
+        platform: platformFinal,
         start_date: document.getElementById('detail-start-date').value || null,
         end_date: document.getElementById('detail-end-date').value || null,
         is_favorite: document.getElementById('detail-favorite').checked,
@@ -576,6 +683,7 @@ function setupFilters() {
     const filtroStatus = document.getElementById('filter-status');
     const filtroNota = document.getElementById('filter-gameplay-score');
     const btnFavoritos = document.getElementById('btn-favorites-only');
+    const btnLimpar = document.getElementById('btn-limpar-filtros');
 
     filtroSearch?.addEventListener('input', aplicarFiltros);
     filtroConsole?.addEventListener('change', aplicarFiltros);
@@ -586,22 +694,64 @@ function setupFilters() {
         btnFavoritos.classList.toggle('is-active');
         aplicarFiltros();
     });
+
+    btnLimpar?.addEventListener('click', () => {
+        if (filtroConsole) filtroConsole.value = '';
+        if (filtroGenero) filtroGenero.value = '';
+        if (filtroStatus) filtroStatus.value = '';
+        if (filtroNota) filtroNota.value = '';
+        aplicarFiltros();
+    });
+}
+
+// Atualiza o número de filtros ativos no badge do botão "Filtros" (não conta
+// a busca por texto nem favoritos, que têm seus próprios indicadores visuais).
+function atualizarBadgeFiltros() {
+    const badge = document.getElementById('filtros-badge-count');
+    if (!badge) return;
+
+    const valores = [
+        document.getElementById('filter-console')?.value,
+        document.getElementById('filter-genre')?.value,
+        document.getElementById('filter-status')?.value,
+        document.getElementById('filter-gameplay-score')?.value,
+    ];
+    const ativos = valores.filter(Boolean).length;
+
+    if (ativos > 0) {
+        badge.textContent = ativos;
+        badge.classList.remove('d-none');
+    } else {
+        badge.classList.add('d-none');
+    }
 }
 
 function aplicarFiltros() {
     const termo = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-    const consoleSel = (document.getElementById('filter-console')?.value || '').toLowerCase();
+    const consoleSel = document.getElementById('filter-console')?.value || '';
     const generoSel = (document.getElementById('filter-genre')?.value || '').toLowerCase();
     const statusSel = document.getElementById('filter-status')?.value || '';
     const notaMinima = Number(document.getElementById('filter-gameplay-score')?.value || 0);
     const apenasFavoritos = document.getElementById('btn-favorites-only')?.classList.contains('is-active');
+
+    atualizarBadgeFiltros();
 
     const filtrados = meusJogos.filter(item => {
         const jogo = item.game;
         const rating = item.rating || {};
 
         if (termo && !jogo.title.toLowerCase().includes(termo)) return false;
-        if (consoleSel && !(item.platform || '').toLowerCase().includes(consoleSel)) return false;
+
+        if (consoleSel) {
+            const consoleConhecido = identificarConsoleConhecido(item.platform);
+            if (consoleSel === 'Outro') {
+                // "Outro" reúne tudo que não bateu com nenhum console conhecido da lista.
+                if (consoleConhecido) return false;
+            } else if (!consoleConhecido || consoleConhecido.value !== consoleSel) {
+                return false;
+            }
+        }
+
         if (generoSel && !(jogo.genre || '').toLowerCase().includes(generoSel)) return false;
         if (statusSel && item.status !== statusSel) return false;
         if (notaMinima && (rating.gameplay_score || 0) < notaMinima) return false;

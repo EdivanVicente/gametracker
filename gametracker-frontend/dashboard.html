@@ -122,12 +122,12 @@
     </section>
 
     <!-- ============================================================
-         TOOLBAR — busca, filtros e ordenação
+         TOOLBAR — busca, filtros e ordenação (tudo em uma linha)
          ============================================================ -->
     <section class="gt-toolbar p-3 mb-4">
-      <div class="row g-2 align-items-center">
+      <div class="d-flex flex-nowrap align-items-center gap-2 gt-toolbar-row">
 
-        <div class="col-12 col-md-4 col-xl-3">
+        <div class="flex-grow-1 gt-toolbar-search">
           <div class="input-group">
             <span class="input-group-text bg-transparent border-0" style="background-color: var(--gt-surface-raised) !important; border-color: var(--gt-border) !important;">
               <i class="bi bi-search text-white-50"></i>
@@ -137,56 +137,56 @@
           </div>
         </div>
 
-        <div class="col-6 col-md-2 col-xl-2">
-          <select class="form-select" id="filter-console" aria-label="Filtrar por console">
-            <option selected value="">Console</option>
-            <option value="pc">PC</option>
-            <option value="playstation">PlayStation</option>
-            <option value="xbox">Xbox</option>
-            <option value="switch">Switch</option>
-          </select>
+        <div class="dropdown gt-toolbar-fixed">
+          <button class="btn btn-gt-outline w-100 d-flex align-items-center justify-content-center gap-2 position-relative"
+                  type="button" id="btn-filtros" data-bs-toggle="dropdown" aria-expanded="false" title="Filtros">
+            <i class="bi bi-funnel"></i>
+            <span class="d-none d-md-inline">Filtros</span>
+            <span class="badge rounded-pill d-none" id="filtros-badge-count" style="background-color: var(--gt-accent); font-size: 0.65rem;"></span>
+          </button>
+          <div class="dropdown-menu p-3 gt-filtros-panel" style="min-width: 260px;">
+            <label for="filter-console" class="form-label small text-white-50 mb-1">Console</label>
+            <select class="form-select form-select-sm mb-2" id="filter-console" aria-label="Filtrar por console">
+              <!-- Populado via consoles.js -->
+            </select>
+
+            <label for="filter-genre" class="form-label small text-white-50 mb-1">Gênero</label>
+            <select class="form-select form-select-sm mb-2" id="filter-genre" aria-label="Filtrar por gênero">
+              <!-- Populado via genres.js -->
+            </select>
+
+            <label for="filter-status" class="form-label small text-white-50 mb-1">Status</label>
+            <select class="form-select form-select-sm mb-2" id="filter-status" aria-label="Filtrar por status">
+              <option selected value="">Status</option>
+              <option value="playing">Em andamento</option>
+              <option value="finished">Finalizado</option>
+            </select>
+
+            <label for="filter-gameplay-score" class="form-label small text-white-50 mb-1">Jogabilidade mínima</label>
+            <select class="form-select form-select-sm mb-2" id="filter-gameplay-score" aria-label="Filtrar por nota de jogabilidade">
+              <option selected value="">Jogabilidade ≥</option>
+              <option value="5">5 estrelas</option>
+              <option value="4">4+ estrelas</option>
+              <option value="3">3+ estrelas</option>
+            </select>
+
+            <button type="button" class="btn btn-gt-outline btn-sm w-100" id="btn-limpar-filtros">Limpar filtros</button>
+          </div>
         </div>
 
-        <div class="col-6 col-md-2 col-xl-2">
-          <select class="form-select" id="filter-genre" aria-label="Filtrar por gênero">
-            <option selected value="">Gênero</option>
-            <option value="rpg">RPG</option>
-            <option value="metroidvania">Metroidvania</option>
-            <option value="fps">FPS</option>
-            <option value="indie">Indie</option>
-          </select>
-        </div>
-
-        <div class="col-6 col-md-2 col-xl-2">
-          <select class="form-select" id="filter-status" aria-label="Filtrar por status">
-            <option selected value="">Status</option>
-            <option value="playing">Em andamento</option>
-            <option value="finished">Finalizado</option>
-          </select>
-        </div>
-
-        <div class="col-6 col-md-2 col-xl-2">
-          <select class="form-select" id="filter-gameplay-score" aria-label="Filtrar por nota de jogabilidade">
-            <option selected value="">Jogabilidade ≥</option>
-            <option value="5">5 estrelas</option>
-            <option value="4">4+ estrelas</option>
-            <option value="3">3+ estrelas</option>
-          </select>
-        </div>
-
-        <div class="col-6 col-md-2 col-xl-1 d-flex">
-          <button class="btn btn-gt-outline flex-fill" type="button" id="btn-favorites-only" title="Somente favoritos">
+        <div class="gt-toolbar-fixed">
+          <button class="btn btn-gt-outline w-100" type="button" id="btn-favorites-only" title="Somente favoritos">
             <i class="bi bi-heart"></i>
           </button>
         </div>
 
-        <div class="col-6 col-md-3 col-xl-2 dropdown">
+        <div class="dropdown gt-toolbar-fixed">
           <button class="btn btn-gt-outline w-100 d-flex align-items-center justify-content-center gap-2"
                   type="button" id="btn-sort" data-bs-toggle="dropdown" aria-expanded="false" title="Ordenar">
             <i class="bi bi-sort-down"></i>
             <span class="d-none d-md-inline small">Ordenar</span>
           </button>
-          <ul class="dropdown-menu" id="sort-menu">
+          <ul class="dropdown-menu dropdown-menu-end" id="sort-menu">
             <li><a class="dropdown-item" href="#" data-sort="recent">Adicionado recentemente</a></li>
             <li><a class="dropdown-item" href="#" data-sort="name-asc">Nome (A-Z)</a></li>
             <li><a class="dropdown-item" href="#" data-sort="name-desc">Nome (Z-A)</a></li>
@@ -194,19 +194,20 @@
           </ul>
         </div>
 
-        <div class="col-12 col-xl-3 dropdown" id="view-mode-group">
+        <div class="dropdown gt-toolbar-fixed" id="view-mode-group">
           <button class="btn btn-gt-outline w-100 d-flex align-items-center justify-content-center gap-2"
                   type="button" id="btn-view-mode" data-bs-toggle="dropdown" aria-expanded="false" title="Visualização">
-            <span>Visualização</span>
+            <span class="d-none d-md-inline">Visualização</span>
             <i class="bi bi-grid-3x2-gap-fill" id="view-mode-current-icon"></i>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end w-100">
+          <ul class="dropdown-menu dropdown-menu-end">
             <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="list"><i class="bi bi-list-ul"></i> Lista</a></li>
             <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="small"><i class="bi bi-grid-3x3-gap-fill"></i> Pequeno</a></li>
             <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="medium"><i class="bi bi-grid-3x2-gap-fill"></i> Médio</a></li>
             <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="large"><i class="bi bi-grid-1x2-gap-fill"></i> Grande</a></li>
           </ul>
         </div>
+
       </div>
     </section>
 
@@ -281,12 +282,12 @@
                Preenchido dinamicamente pelo dashboard.js ao abrir o modal.
                ================================================ -->
           <div class="row g-3 mb-4" id="detail-info-section">
-            <div class="col-12 col-sm-4">
+            <div class="col-12">
               <div class="gt-detail-cover" id="detail-cover-wrapper">
                 <i class="bi bi-controller"></i>
               </div>
             </div>
-            <div class="col-12 col-sm-8">
+            <div class="col-12">
               <p class="gt-detail-genre mb-2" id="detail-genre">—</p>
               <p class="small mb-2" id="detail-description">Sem descrição disponível.</p>
               <div class="d-flex flex-wrap gap-1 mb-2" id="detail-platforms-badges"></div>
@@ -303,12 +304,9 @@
           <div class="mb-3">
             <label for="detail-platform" class="form-label small text-white-50">Plataforma</label>
             <select class="form-select" id="detail-platform">
-              <option value="PC">PC</option>
-              <option value="PlayStation 5">PlayStation 5</option>
-              <option value="Xbox Series S/X">Xbox Series S/X</option>
-              <option value="Nintendo Switch">Nintendo Switch</option>
-              <option value="Outra">Outra</option>
+              <!-- Populado via consoles.js -->
             </select>
+            <input type="text" class="form-control mt-2 d-none" id="detail-platform-custom" placeholder="Digite o nome da plataforma" maxlength="100">
           </div>
           <div class="row g-3 mb-3">
             <div class="col-6">
@@ -319,6 +317,14 @@
               <label for="detail-end-date" class="form-label small text-white-50">Data de finalização</label>
               <input type="date" class="form-control" id="detail-end-date">
             </div>
+          </div>
+
+          <div class="mb-3 d-none" id="detail-duration-wrapper">
+            <div class="gt-duration-badge">
+              <i class="bi bi-hourglass-split"></i>
+              <span id="detail-duration-title">—</span>
+            </div>
+            <p class="small text-white-50 mt-1 mb-0" id="detail-duration-subtitle"></p>
           </div>
 
           <hr class="border-secondary">
@@ -392,6 +398,8 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="assets/js/navbar.js"></script>
 <script src="assets/js/youtube-player.js"></script>
+<script src="assets/js/consoles.js"></script>
+<script src="assets/js/genres.js"></script>
 <script src="assets/js/dashboard.js"></script>
 
 </body>

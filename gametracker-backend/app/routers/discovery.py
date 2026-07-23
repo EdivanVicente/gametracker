@@ -38,15 +38,22 @@ async def explore_gameplay(
 ):
     """
     Módulo 'Explorar': retorna metadados do jogo (RAWG) + vídeo de gameplay (YouTube)
-    para exibição lado a lado no frontend (card + iframe embutido).
+    para exibição lado a lado no frontend (card + player de vídeo).
 
-    Se a YOUTUBE_API_KEY não estiver configurada, o vídeo vem como `None` em vez de
-    quebrar a rota inteira — o usuário ainda vê os dados do jogo.
+    Importante: usamos a busca em lista só para achar o ID do jogo, e depois
+    buscamos os DETALHES completos dele (get_game_details) — a busca em lista da
+    RAWG não retorna a descrição do jogo, só os detalhes completos retornam.
+
+    Se a YOUTUBE_API_KEY não estiver configurada, ou a RAWG falhar, os campos
+    correspondentes vêm como `None`/lista vazia em vez de quebrar a rota inteira.
     """
+    game_data = None
     try:
-        game_metadata = await games_api_service.search_games(query=title, page_size=1)
+        resultados_busca = await games_api_service.search_games(query=title, page_size=1)
+        if resultados_busca:
+            game_data = await games_api_service.get_game_details(external_id=resultados_busca[0]["external_id"])
     except HTTPException:
-        game_metadata = []
+        game_data = None
 
     try:
         videos = await youtube_api_service.search_gameplay_video(game_title=title, max_results=3)
@@ -54,7 +61,7 @@ async def explore_gameplay(
         videos = []
 
     return {
-        "game": game_metadata[0] if game_metadata else None,
+        "game": game_data,
         "video": videos[0] if videos else None,
         # Candidatos extras: se o primeiro vídeo estiver indisponível/removido,
         # o frontend tenta o próximo desta lista automaticamente.

@@ -1,9 +1,98 @@
-# GameTracker Pro — quinta rodada: mobile, player de vídeo, esqueci senha
+# GameTracker Pro — sexta rodada: contador de dias, toolbar, tradução, consoles
 
-Onze pedidos desta vez — mobile (portrait), player de vídeo com fallback
-automático, e recuperação de senha por e-mail. Tudo testado com
-**navegador real automatizado**, incluindo em viewport de celular
-(390×844), com screenshots para conferência visual.
+Oito pedidos desta vez, envolvendo mudanças de backend (tradução de
+descrições, correção de um bug real na página Explorar) e frontend
+(contador de tempo jogado, reorganização da toolbar, mais consoles e
+gêneros, capas em paisagem). Tudo testado com **navegador real
+automatizado**, com verificação numérica de cada comportamento (não só
+visual).
+
+## Changelog desta rodada (sexta), ponto a ponto
+
+**1. Contador de dias jogando / concluído.**
+Cada card (e o modal de detalhe) agora mostra:
+- Enquanto o jogo está "em andamento": *"Jogando há X dias"*, contando a
+  partir da data de início (ou da data em que você adicionou o jogo, se
+  não tiver marcado uma data de início específica).
+- Quando finalizado: *"Concluído em X dias"* + uma frase humanizada tipo
+  *"Você passou 1 mês e 15 dias jogando este jogo"* (com anos, meses e
+  dias, omitindo qualquer parte igual a zero).
+- O texto se atualiza sozinho a cada 5 minutos (sem precisar recarregar
+  a página), então o contador realmente vai avançando dia após dia
+  enquanto você deixa a aba aberta ou revisita o site.
+
+Um ajuste que fiz no seu exemplo original: você descreveu "concluído em
+45 dias" como "1 mês e 45 dias", o que não fecha matematicamente (1 mês
+já são ~30 dias, então sobrariam só uns 15). Implementei a versão que
+faz sentido: 45 dias → "1 mês e 15 dias".
+
+**2. Link de busca no YouTube quando não há vídeo.**
+Tanto no modal do jogo quanto na página Explorar, quando nenhum vídeo de
+gameplay é encontrado (ou nenhum candidato consegue tocar), agora aparece
+um link "Buscar no YouTube" que abre a busca por "{nome do jogo}
+gameplay" numa aba nova — pra você conseguir checar manualmente.
+
+**3. Toolbar reorganizada em uma linha só.**
+Os filtros de Console, Gênero, Status e Jogabilidade, que antes eram 4
+campos separados ocupando duas linhas, agora ficam dentro de um único
+dropdown "Filtros" (com contador de quantos filtros estão ativos, e um
+botão "Limpar filtros"). A barra final ficou assim: busca — Filtros —
+Favoritos — Ordenar — Visualização, tudo numa linha só.
+
+**4. Lista completa de consoles clássicos + "Outro".**
+Adicionei Game Boy, Game Boy Advance, Nintendo DS, Nintendo 3DS, NES,
+Super Nintendo, Nintendo 64, GameCube, Wii, Wii U, Switch, PS1 a PS5,
+PSP, PS Vita, Xbox Clássico, 360, One, Series S/X, Mega Drive, PC e
+Mobile — organizados por fabricante (com `<optgroup>`) tanto no filtro
+quanto no seletor de plataforma do jogo. Quando a plataforma não está
+nessa lista, a opção "Outro" revela um campo de texto livre pra você
+digitar o nome.
+
+**5. Capas em paisagem (16:9), sem cortar a imagem.**
+Mudado de um formato retrato (3:4, tipo capa de caixa de jogo) para
+paisagem (16:9, tipo thumbnail), tanto nos cards do catálogo quanto no
+modal de detalhe (onde a capa agora ocupa a largura toda, no topo) e na
+página Explorar. Como já usamos `object-fit: contain`, a imagem aparece
+inteira, sem cortar as bordas.
+
+**6. Página Explorar não mostrava informações do jogo — bug real corrigido.**
+Encontrei a causa: o endpoint buscava só a **busca em lista** da RAWG
+pra montar as informações do jogo, mas a busca em lista não retorna a
+descrição do jogo (só a busca de **detalhes** de um jogo específico traz
+isso). Corrigi pra sempre buscar os detalhes completos depois de achar o
+jogo certo — agora a descrição, gênero e plataformas aparecem
+corretamente na página Explorar.
+
+**7. Mais gêneros no filtro.**
+Expandido de 4 para 19 opções, cobrindo o vocabulário real e fixo de
+gêneros da RAWG: Ação, Indie, Aventura, RPG, Estratégia, FPS/Tiro,
+Casual, Simulação, Puzzle, Arcade, Plataforma, Multiplayer Massivo,
+Esporte, Corrida, Luta, Família, Tabuleiro, Educativo e Cartas — com
+rótulos em português mapeados pra palavra-chave certa em inglês (ex:
+"FPS" busca por "shooter", que é como a RAWG chama esse gênero).
+
+**8. Descrições traduzidas para o idioma do site.**
+Adicionei tradução automática (via `deep-translator`, sem precisar de
+chave de API paga) aplicada às descrições de jogos vindas da RAWG (que
+normalmente vêm em inglês). Já implementei pensando na futura versão
+multi-idioma: a função de tradução recebe o idioma de destino como
+parâmetro, então quando você adicionar as versões em inglês/espanhol
+será só passar o idioma certo em vez de sempre "pt". Se o serviço de
+tradução falhar por qualquer motivo (sem internet, fora do ar), o texto
+original aparece em vez de quebrar a página.
+
+## Uma limitação a saber
+Meu ambiente de desenvolvimento não tem acesso à internet externa (RAWG,
+YouTube e Google Translate são bloqueados aqui). Isso significa que:
+- Não consegui testar uma tradução real de ponta a ponta — só confirmei
+  que a biblioteca importa e funciona; o fallback (mostrar o texto
+  original se a tradução falhar) foi testado e funciona.
+- A página Explorar, nos meus testes, mostra "nenhuma informação
+  encontrada" — isso é o comportamento correto **quando a RAWG está
+  inacessível** (que é o meu caso aqui), não um bug. No seu ambiente com
+  internet normal, deve mostrar as informações do jogo de verdade.
+
+---
 
 ## Changelog desta rodada (quinta), ponto a ponto
 
@@ -164,8 +253,38 @@ que já preenche e envia essas credenciais sozinho — não precisa nem
 digitar. É seguro rodar o `seed_demo.py` mais de uma vez: se a conta já
 existir, ele não duplica nada.
 
-## Como rodar
-Mesma coisa de sempre:
+## Como rodar (novo: scripts prontos, sem precisar decorar comandos)
+
+A partir desta versão, tem 3 arquivos que fazem tudo sozinhos — você só
+precisa dar duplo clique (ou rodar pelo terminal). Eles sempre acham a
+pasta certa por conta própria, então não tem mais como errar o caminho:
+
+1. **`gametracker-backend\iniciar.bat`** — cria o ambiente virtual (só
+   na primeira vez), instala/atualiza as dependências automaticamente, e
+   sobe o servidor. Deixe essa janela aberta enquanto usa o site.
+2. **`gametracker-backend\criar_conta_demo.bat`** — cria a conta demo
+   (`demo@gametracker.com` / `Demo123!`) com jogos de exemplo, pra você
+   testar o site sem precisar cadastrar. Seguro rodar mais de uma vez.
+3. **`gametracker-frontend\iniciar_frontend.bat`** — sobe o site em
+   `http://127.0.0.1:5500`. Abra essa URL no navegador (em vez de abrir
+   o `index.html` direto por duplo clique).
+
+**Ordem de uso, do zero:**
+1. Duplo clique em `iniciar.bat` (dentro de `gametracker-backend`) →
+   espera aparecer "Application startup complete."
+2. Duplo clique em `criar_conta_demo.bat` (opcional, só se quiser testar
+   com a conta demo) → espera aparecer "Conta demo criada com sucesso!"
+3. Duplo clique em `iniciar_frontend.bat` (dentro de
+   `gametracker-frontend`) → deixa essa janela aberta também.
+4. Abra `http://127.0.0.1:5500/index.html` no navegador.
+
+Das próximas vezes, é só repetir os passos 1 e 3 (não precisa rodar o
+`criar_conta_demo.bat` de novo, a menos que queira recriar os dados de
+exemplo).
+
+<details>
+<summary><strong>Prefere rodar os comandos manualmente? (clique para expandir)</strong></summary>
+
 ```bash
 cd gametracker-backend
 python3 -m venv venv
@@ -176,11 +295,27 @@ uvicorn app.main:app --reload
 A migração automática cuida de adicionar todas as colunas novas no seu
 `gametracker.db` existente — não precisa apagar nada.
 
-⚠️ **Erro mais comum**: rodar o `uvicorn` na pasta errada. O comando
-`uvicorn app.main:app --reload` só funciona de **dentro** da pasta
-`gametracker-backend` (onde fica a pasta `app`). Se der
-`ModuleNotFoundError: No module named 'app'`, é isso — faça `cd
-gametracker-backend` antes.
+⚠️ **Erro mais comum**: rodar o `uvicorn` na pasta errada. O comando só
+funciona de **dentro** da pasta `gametracker-backend` (onde fica a pasta
+`app`). Se der `ModuleNotFoundError: No module named 'app'`, é isso.
+</details>
+
+### ⚠️ Se você tem Python muito recente (3.13, 3.14) e a instalação falhar
+
+Nesta versão, troquei as versões fixas do `requirements.txt` por faixas
+(`>=x,<y`) em vez de números exatos (`==x`). Isso é importante porque
+versões muito específicas de uma dependência (`pydantic-core`) só têm
+pacote pré-compilado pra certas versões do Python — em versões muito
+novas, o `pip` tentava **compilar do zero**, o que exige Rust e Visual
+C++ Build Tools instalados (coisa pesada e que a maioria não tem). Com
+as faixas de versão, o `pip` agora escolhe uma versão mais nova que já
+tem pacote pronto pro seu Python, evitando esse problema.
+
+Se mesmo assim a instalação falhar tentando compilar algo do zero,
+delete a pasta `venv` de dentro de `gametracker-backend` e rode o
+`iniciar.bat` de novo, para garantir que está usando um ambiente virtual
+limpo (às vezes uma tentativa anterior deixa pacotes "meio instalados"
+que atrapalham).
 
 ---
 

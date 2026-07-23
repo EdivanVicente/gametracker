@@ -9,8 +9,51 @@ troque apenas a URL base, os parâmetros de auth e o mapeamento de campos em
 
 import httpx
 from fastapi import HTTPException, status
+from deep_translator import GoogleTranslator
 
 from app.core.config import settings
+
+# Limite de caracteres por chamada ao Google Translate (via deep-translator).
+# Textos maiores são cortados em pedaços para não estourar o limite do serviço.
+_TAMANHO_MAX_TRADUCAO = 4500
+
+
+def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str:
+    """
+    Traduz um texto (descrição de jogo, vinda da RAWG normalmente em inglês) para
+    o idioma pedido. Se a tradução falhar por qualquer motivo (sem internet,
+    serviço fora do ar, texto vazio etc.), devolve o texto original em vez de
+    quebrar a requisição — a descrição em inglês é melhor do que nenhuma descrição.
+
+    `idioma_destino` já vem parametrizado pensando na futura versão multi-idioma
+    do site (pt/en/es) — hoje sempre chamado com "pt", mas pronto para receber
+    o idioma escolhido pelo usuário quando essa opção existir.
+    """
+    if not texto:
+        return texto
+
+    try:
+        if len(texto) <= _TAMANHO_MAX_TRADUCAO:
+            return GoogleTranslator(source="auto", target=idioma_destino).translate(texto)
+
+        # Textos longos: traduz em pedaços e junta de novo, quebrando em frases
+        # para não cortar uma tradução no meio de uma palavra.
+        partes = []
+        pedaco_atual = ""
+        for frase in texto.split(". "):
+            if len(pedaco_atual) + len(frase) + 2 > _TAMANHO_MAX_TRADUCAO:
+                partes.append(pedaco_atual)
+                pedaco_atual = frase
+            else:
+                pedaco_atual = f"{pedaco_atual}. {frase}" if pedaco_atual else frase
+        if pedaco_atual:
+            partes.append(pedaco_atual)
+
+        traduzido = [GoogleTranslator(source="auto", target=idioma_destino).translate(p) for p in partes]
+        return " ".join(traduzido)
+    except Exception:
+        # Qualquer falha do serviço de tradução: devolve o texto original.
+        return texto
 
 
 class GamesApiService:
@@ -93,11 +136,14 @@ class GamesApiService:
         if any(slug in tag_slugs for slug in ("multiplayer", "co-op", "online-co-op", "local-multiplayer")):
             modos.append("Multiplayer")
 
+        descricao_original = item.get("description_raw") or item.get("description")
+        descricao_traduzida = _traduzir_texto(descricao_original, idioma_destino="pt") if descricao_original else None
+
         return {
             "external_id": str(item.get("id")),
             "title": item.get("name"),
             "cover_url": item.get("background_image"),
-            "description": item.get("description_raw") or item.get("description"),
+            "description": descricao_traduzida,
             "platforms": platforms,
             "genre": ", ".join(genres) if genres else None,
             "release_date": item.get("released"),
