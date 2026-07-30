@@ -209,6 +209,26 @@ class UserGameUpdate(BaseModel):
     gameplay_score: int | None = Field(default=None, ge=1, le=5)
     difficulty_score: int | None = Field(default=None, ge=1, le=5)
 
+    # Horas jogadas e estimativas de duração — todos em MINUTOS no banco,
+    # mas aceitos/expostos em HORAS (float) nesse schema para facilitar o front.
+    hours_played: float | None = Field(default=None, ge=0)
+    time_to_beat_main: float | None = Field(default=None, ge=0)
+    time_to_beat_completionist: float | None = Field(default=None, ge=0)
+
+
+class PlaySessionOut(BaseModel):
+    id: int
+    played_at: date
+    note: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PlaySessionCreate(BaseModel):
+    """Payload opcional para registrar manualmente uma nova sessão de jogo (replay)."""
+    played_at: date | None = None
+    note: str | None = Field(default=None, max_length=255)
+
 
 class UserGameOut(BaseModel):
     id: int
@@ -221,4 +241,18 @@ class UserGameOut(BaseModel):
     game: GameOut
     rating: RatingOut | None = None
 
+    play_count: int = 1
+    hours_played: float | None = None
+    time_to_beat_main: float | None = None
+    time_to_beat_completionist: float | None = None
+    sessions: list[PlaySessionOut] = []
+
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("hours_played", "time_to_beat_main", "time_to_beat_completionist", mode="before")
+    @classmethod
+    def _minutos_para_horas(cls, value):
+        """O banco guarda minutos (int); a API expõe horas (float) — ex: 90 min -> 1.5h."""
+        if value is None:
+            return None
+        return round(value / 60, 2)

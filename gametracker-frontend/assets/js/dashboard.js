@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Inicializa as funções da página
     setupSearch();
     setupFilters();
+    setupToolbarDropdowns();
     setupViewMode();
     setupSort();
     setupDetailModal();
@@ -39,7 +40,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Recalcula os contadores de "dias jogando" periodicamente, sem precisar
     // recarregar a página (usa o cache local, não faz nenhuma chamada à API).
     setInterval(aplicarFiltros, 5 * 60 * 1000);
+
+    // Textos gerados via JS (status do card, etc.) não são atualizados pelo
+    // GT_I18N.apply() automático — precisam re-renderizar a grade.
+    document.addEventListener('gt:langchange', () => aplicarFiltros());
 });
+
+// --- Helper: toast simples (sem markup fixo no HTML — cria o container sob demanda) ---
+function mostrarToast(mensagem) {
+    let container = document.getElementById('gt-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'gt-toast-container';
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = 1080;
+        document.body.appendChild(container);
+    }
+
+    const toastEl = document.createElement('div');
+    toastEl.className = 'toast align-items-center gt-modal border-0';
+    toastEl.setAttribute('role', 'status');
+    toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${escapeHtml(mensagem)}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+        </div>`;
+    container.appendChild(toastEl);
+
+    const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+    toast.show();
+    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+}
 
 // --- Helper: Sanitização para evitar XSS ---
 function escapeHtml(unsafe) {
@@ -150,7 +181,7 @@ async function carregarMeusJogos() {
         const response = await authFetch('/games/');
 
         if (!response.ok) {
-            grid.innerHTML = '<p class="text-danger text-center mt-5">Não foi possível carregar sua biblioteca.</p>';
+            grid.innerHTML = `<p class="text-danger text-center mt-5">${GT_I18N.t('grid.loadError')}</p>`;
             return;
         }
 
@@ -215,7 +246,7 @@ function renderGridCards(jogos, grid) {
         <div class="${colClass}">
           <article class="gt-card" data-id="${item.id}" style="cursor: pointer;">
             <div class="gt-card-status ${isPlaying ? 'is-playing' : 'is-finished'}">
-                ${isPlaying ? 'Em andamento' : 'Finalizado'}
+                ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
             </div>
             <button class="gt-card-favorite ${item.is_favorite ? 'is-active' : ''}" data-id="${item.id}" data-favorite="${item.is_favorite}" aria-label="Favoritar">
                 <i class="bi bi-heart${item.is_favorite ? '-fill' : ''}"></i>
@@ -264,7 +295,7 @@ function renderGridLista(jogos, grid) {
               <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(jogo.genre || '—')}${duracao ? ` · ${duracao.titulo}` : ''}</div>
             </div>
             <span class="gt-card-status position-relative ${isPlaying ? 'is-playing' : 'is-finished'}" style="top:auto; left:auto;">
-                ${isPlaying ? 'Em andamento' : 'Finalizado'}
+                ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
             </span>
             <div class="gt-card-list-scores d-none d-md-block">
                 Grf <span class="gt-score-value">${rating.graphics_score ?? '-'}</span> ·
@@ -452,6 +483,7 @@ async function adicionarJogo(externalId, btnElement) {
         });
 
         if (response.ok) {
+            const data = await response.json().catch(() => null);
             carregarMeusJogos();
 
             const modalElement = document.getElementById('modalAddGame');
@@ -461,7 +493,16 @@ async function adicionarJogo(externalId, btnElement) {
             }
             document.getElementById('game-search-input').value = '';
             document.getElementById('game-search-results').innerHTML =
-                '<p class="text-white-50 small text-center py-4 mb-0">Digite o nome de um jogo para buscar na base de dados.</p>';
+                `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('addGame.searchHint')}</p>`;
+
+            // Já estava na biblioteca: em vez de duplicar o card, o backend
+            // registrou uma nova sessão de jogo (replay) e incrementou o contador.
+            if (data && data.play_count > 1) {
+                mostrarToast(
+                    tf('toast.replayLogged', { title: data.game?.title || '', count: data.play_count })
+                    || `"${data.game?.title || ''}" já estava na sua biblioteca — registramos mais uma jogada (total: ${data.play_count}x).`
+                );
+            }
         } else if (response.status === 409) {
             alert('Esse jogo já está na sua biblioteca.');
             btnElement.disabled = false;
@@ -510,6 +551,7 @@ function setupDetailModal() {
 
     document.getElementById('btn-save-detail')?.addEventListener('click', salvarDetalhe);
     document.getElementById('btn-delete-detail')?.addEventListener('click', excluirJogoAtual);
+    document.getElementById('btn-log-play-session')?.addEventListener('click', registrarNovaJogada);
 
     document.getElementById('detail-platform')?.addEventListener('change', (e) => {
         document.getElementById('detail-platform-custom').classList.toggle('d-none', e.target.value !== 'Outro');
@@ -603,6 +645,21 @@ function abrirDetalhe(userGameId) {
         duracaoWrapper.classList.add('d-none');
     }
 
+    // --- Replay: vezes jogado, última vez, horas jogadas, duração estimada ---
+    document.getElementById('detail-play-count').textContent = item.play_count || 1;
+    const ultimaVezWrapper = document.getElementById('detail-last-played-wrapper');
+    const sessoes = item.sessions || [];
+    if (sessoes.length > 0) {
+        document.getElementById('detail-last-played').textContent =
+            new Date(`${sessoes[0].played_at}T00:00:00`).toLocaleDateString();
+        ultimaVezWrapper.classList.remove('d-none');
+    } else {
+        ultimaVezWrapper.classList.add('d-none');
+    }
+    document.getElementById('detail-hours-played').value = item.hours_played ?? '';
+    document.getElementById('detail-time-to-beat-main').value = item.time_to_beat_main ?? '';
+    document.getElementById('detail-time-to-beat-100').value = item.time_to_beat_completionist ?? '';
+
     definirEstrelas(document.getElementById('stars-graphics'), rating.graphics_score || 0);
     definirEstrelas(document.getElementById('stars-sound'), rating.sound_score || 0);
     definirEstrelas(document.getElementById('stars-gameplay'), rating.gameplay_score || 0);
@@ -644,6 +701,9 @@ async function salvarDetalhe() {
         sound_score: Number(document.getElementById('stars-sound').dataset.score) || null,
         gameplay_score: Number(document.getElementById('stars-gameplay').dataset.score) || null,
         difficulty_score: Number(document.getElementById('stars-difficulty').dataset.score) || null,
+        hours_played: parseFloat(document.getElementById('detail-hours-played').value) || null,
+        time_to_beat_main: parseFloat(document.getElementById('detail-time-to-beat-main').value) || null,
+        time_to_beat_completionist: parseFloat(document.getElementById('detail-time-to-beat-100').value) || null,
     };
 
     const sucesso = await atualizarJogo(jogoEmEdicaoId, payload);
@@ -653,6 +713,35 @@ async function salvarDetalhe() {
         carregarMeusJogos();
     } else {
         alert('Não foi possível salvar as alterações.');
+    }
+}
+
+// Registra manualmente uma nova "vez jogada" (replay) pro jogo aberto no modal —
+// útil pra jogos rápidos (ex: Metal Slug) que a pessoa termina e joga de novo no mesmo dia.
+async function registrarNovaJogada() {
+    if (!jogoEmEdicaoId) return;
+    try {
+        const response = await authFetch(`/games/${jogoEmEdicaoId}/sessions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        });
+        if (!response.ok) {
+            alert('Não foi possível registrar a nova jogada.');
+            return;
+        }
+        const data = await response.json();
+        document.getElementById('detail-play-count').textContent = data.play_count;
+        const sessoes = data.sessions || [];
+        if (sessoes.length > 0) {
+            document.getElementById('detail-last-played').textContent =
+                new Date(`${sessoes[0].played_at}T00:00:00`).toLocaleDateString();
+            document.getElementById('detail-last-played-wrapper').classList.remove('d-none');
+        }
+        const idx = meusJogos.findIndex(g => g.id === jogoEmEdicaoId);
+        if (idx !== -1) meusJogos[idx] = data;
+    } catch (error) {
+        console.error('Erro ao registrar jogada:', error);
     }
 }
 
@@ -676,6 +765,22 @@ async function excluirJogoAtual() {
 }
 
 // --- Filtros e busca no catálogo local ---
+// A toolbar (.gt-toolbar-row) usa "overflow-x: auto" pra rolar em vez de quebrar
+// em telas estreitas — mas isso faz o navegador tratar overflow-y como "auto"
+// também (regra do CSS), então o menu dos dropdowns (Filtros/Ordenar/Visualização)
+// acabava sendo CORTADO pela própria toolbar, sobrando só uma tira fina com as
+// setinhas dos <select>. Corrigido posicionando o menu com Popper "fixed", que
+// não é afetado pelo overflow do ancestral.
+function setupToolbarDropdowns() {
+    ['btn-filtros', 'btn-sort', 'btn-view-mode'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || typeof bootstrap === 'undefined') return;
+        bootstrap.Dropdown.getOrCreateInstance(el, {
+            popperConfig: (defaultConfig) => ({ ...defaultConfig, strategy: 'fixed' }),
+        });
+    });
+}
+
 function setupFilters() {
     const filtroSearch = document.getElementById('filter-search');
     const filtroConsole = document.getElementById('filter-console');

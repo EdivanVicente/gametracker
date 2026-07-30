@@ -122,6 +122,20 @@ class UserGame(Base):
     status = Column(Enum(GameStatus), default=GameStatus.PLAYING, nullable=False)
     is_favorite = Column(Boolean, default=False)
 
+    # --- Replay tracking ---
+    # Quantas vezes o usuário já jogou este título nesta plataforma. Ao tentar
+    # adicionar um jogo que já existe na biblioteca (mesmo user+game+platform),
+    # em vez de criar um card duplicado, incrementamos este contador e
+    # registramos uma nova sessão (tabela PlaySession) com a data.
+    play_count = Column(Integer, default=1, nullable=False)
+
+    # Total de horas jogadas, informado manualmente pelo usuário.
+    hours_played = Column(Integer, nullable=True)  # armazenado em minutos
+
+    # --- Estimativas de duração (informativo, tipo HowLongToBeat) ---
+    time_to_beat_main = Column(Integer, nullable=True)  # minutos p/ terminar a missão principal
+    time_to_beat_completionist = Column(Integer, nullable=True)  # minutos p/ 100%
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="games")
@@ -129,10 +143,32 @@ class UserGame(Base):
     rating = relationship(
         "Rating", back_populates="user_game", uselist=False, cascade="all, delete-orphan"
     )
+    sessions = relationship(
+        "PlaySession", back_populates="user_game", cascade="all, delete-orphan",
+        order_by="desc(PlaySession.played_at)",
+    )
 
     def refresh_status(self):
         """Atualiza o status automaticamente com base nas datas preenchidas."""
         self.status = GameStatus.FINISHED if self.end_date else GameStatus.PLAYING
+
+
+class PlaySession(Base):
+    """
+    Registro de uma "vez jogada" — usado para o contador de replays.
+    Toda vez que o usuário tenta adicionar um jogo que já está na biblioteca
+    (mesmo título + plataforma), em vez de duplicar o card, criamos aqui um
+    novo registro com a data e incrementamos UserGame.play_count.
+    """
+
+    __tablename__ = "play_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_game_id = Column(Integer, ForeignKey("user_games.id"), nullable=False)
+    played_at = Column(Date, default=date.today, nullable=False)
+    note = Column(String(255), nullable=True)
+
+    user_game = relationship("UserGame", back_populates="sessions")
 
 
 class Rating(Base):
