@@ -15,6 +15,7 @@
 
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/js/theme.js"></script>
+  <script src="assets/js/i18n.js"></script>
 
   <style>
     .gt-auth-wrapper { min-height: 100vh; }
@@ -48,8 +49,8 @@
       <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center gt-auth-side p-5">
         <div class="gt-preview-card">
           <p class="gt-mono text-uppercase small mb-3" style="color: var(--gt-accent); letter-spacing: 0.1em;">// save_slot_01</p>
-          <h1 class="gt-display fw-bold mb-3" style="font-size: 2.5rem; line-height: 1.1;">Todo jogo que você joga,<br>em um único save.</h1>
-          <p class="text-white-50 mb-4">Catalogue, avalie por gráficos, som, jogabilidade e dificuldade, e acompanhe seu progresso mês a mês.</p>
+          <h1 class="gt-display fw-bold mb-3" style="font-size: 2.5rem; line-height: 1.1;" data-i18n="auth.tagline">Todo jogo que você joga,<br>em um único save.</h1>
+          <p class="text-white-50 mb-4" data-i18n="auth.subtitle">Catalogue, avalie por gráficos, som, jogabilidade e dificuldade, e acompanhe seu progresso mês a mês.</p>
         </div>
       </div>
 
@@ -58,54 +59,57 @@
           <div class="d-flex align-items-center gap-2 mb-4 justify-content-center justify-content-lg-start">
             <i class="bi bi-joystick fs-3" style="color: var(--gt-accent);"></i>
             <span class="gt-brand fs-4">GameTracker <span class="gt-brand-mark">Pro</span></span>
-            <button class="gt-theme-toggle ms-auto" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
-              <i class="bi bi-sun"></i>
-            </button>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <div data-gt-lang-switcher></div>
+              <button class="gt-theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+                <i class="bi bi-sun"></i>
+              </button>
+            </div>
           </div>
 
           <div class="gt-auth-card p-4 p-sm-4">
             <div class="gt-tab-toggle d-flex mb-4" role="tablist">
-              <button class="btn flex-fill active" id="tab-login-btn" type="button" role="tab" aria-selected="true" aria-controls="panel-login">Entrar</button>
-              <button class="btn flex-fill" id="tab-register-btn" type="button" role="tab" aria-selected="false" aria-controls="panel-register">Criar conta</button>
+              <button class="btn flex-fill active" id="tab-login-btn" type="button" role="tab" aria-selected="true" aria-controls="panel-login" data-i18n="auth.login">Entrar</button>
+              <button class="btn flex-fill" id="tab-register-btn" type="button" role="tab" aria-selected="false" aria-controls="panel-register" data-i18n="auth.register">Criar conta</button>
             </div>
 
             <form id="panel-login" role="tabpanel" method="POST" action="#" novalidate>
               <div class="mb-3">
-                <label for="login-email" class="form-label small text-white-50">E-mail</label>
+                <label for="login-email" class="form-label small text-white-50" data-i18n="auth.email">E-mail</label>
                 <input type="email" class="form-control" id="login-email" placeholder="voce@email.com" autocomplete="email" required>
               </div>
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center">
-                  <label for="login-password" class="form-label small text-white-50 mb-0">Senha</label>
-                  <a href="#" class="small" id="link-forgot-password">Esqueci minha senha</a>
+                  <label for="login-password" class="form-label small text-white-50 mb-0" data-i18n="auth.password">Senha</label>
+                  <a href="#" class="small" id="link-forgot-password" data-i18n="auth.forgotPassword">Esqueci minha senha</a>
                 </div>
                 <input type="password" class="form-control" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
               </div>
-              <div class="gt-field-error mb-2" id="login-error">E-mail ou senha incorretos.</div>
-              <button type="button" class="btn btn-link btn-sm p-0 mb-3 d-none" id="btn-resend-verification">
+              <div class="gt-field-error mb-2" id="login-error" data-i18n="auth.loginError">E-mail ou senha incorretos.</div>
+              <button type="button" class="btn btn-link btn-sm p-0 mb-3 d-none" id="btn-resend-verification" data-i18n="auth.resendVerification">
                 Reenviar e-mail de confirmação
               </button>
-              <button type="submit" class="btn btn-gt-primary w-100 py-2 mb-2">Entrar</button>
+              <button type="submit" class="btn btn-gt-primary w-100 py-2 mb-2" data-i18n="auth.login">Entrar</button>
               <button type="button" class="btn btn-gt-outline w-100 py-2" id="btn-demo-login">
-                <i class="bi bi-eye me-2"></i>Entrar como visitante (conta demo)
+                <i class="bi bi-eye me-2"></i><span data-i18n="auth.demoLogin">Entrar como visitante (conta demo)</span>
               </button>
             </form>
 
             <form id="panel-register" role="tabpanel" class="d-none" method="POST" action="#" novalidate>
               <div class="mb-3">
-                <label for="register-email" class="form-label small text-white-50">E-mail</label>
+                <label for="register-email" class="form-label small text-white-50" data-i18n="auth.email">E-mail</label>
                 <input type="email" class="form-control" id="register-email" placeholder="voce@email.com" autocomplete="email" required>
               </div>
               <div class="mb-2">
-                <label for="register-password" class="form-label small text-white-50">Senha</label>
+                <label for="register-password" class="form-label small text-white-50" data-i18n="auth.password">Senha</label>
                 <input type="password" class="form-control" id="register-password" placeholder="••••••••" autocomplete="new-password" required>
               </div>
-              <p class="gt-password-hint mb-3">Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.</p>
-              <div class="gt-field-error mb-3" id="register-error">Não foi possível criar a conta.</div>
-              <button type="submit" class="btn btn-gt-primary w-100 py-2 mb-2">Criar conta</button>
+              <p class="gt-password-hint mb-3" data-i18n="auth.passwordHint">Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.</p>
+              <div class="gt-field-error mb-3" id="register-error" data-i18n="auth.registerError">Não foi possível criar a conta.</div>
+              <button type="submit" class="btn btn-gt-primary w-100 py-2 mb-2" data-i18n="auth.register">Criar conta</button>
             </form>
 
-            <p class="text-center text-white-50 small mt-3 mb-0">Ao continuar, você concorda com o acompanhamento obsessivo da sua backlog.</p>
+            <p class="text-center text-white-50 small mt-3 mb-0" data-i18n="auth.terms">Ao continuar, você concorda com o acompanhamento obsessivo da sua backlog.</p>
           </div>
         </div>
       </div>
@@ -117,26 +121,26 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalForgotPasswordLabel">Redefinir senha</h5>
+          <h5 class="modal-title" id="modalForgotPasswordLabel" data-i18n="auth.resetTitle">Redefinir senha</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body">
-          <p class="small text-white-50">Digite o e-mail cadastrado na sua conta. Vamos enviar um link para você escolher uma nova senha.</p>
-          <label for="forgot-password-email" class="form-label small text-white-50">E-mail</label>
+          <p class="small text-white-50" data-i18n="auth.resetText">Digite o e-mail cadastrado na sua conta. Vamos enviar um link para você escolher uma nova senha.</p>
+          <label for="forgot-password-email" class="form-label small text-white-50" data-i18n="auth.email">E-mail</label>
           <input type="email" class="form-control" id="forgot-password-email" placeholder="voce@email.com">
           <div class="gt-field-error text-danger small mt-2 d-none" id="forgot-password-error"></div>
           <div class="text-success small mt-2 d-none" id="forgot-password-success"></div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-gt-outline" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-gt-primary" id="btn-send-forgot-password">Enviar link</button>
+          <button type="button" class="btn btn-gt-outline" data-bs-dismiss="modal" data-i18n="common.cancel">Cancelar</button>
+          <button type="button" class="btn btn-gt-primary" id="btn-send-forgot-password" data-i18n="auth.sendLink">Enviar link</button>
         </div>
       </div>
     </div>
   </div>
 
   <footer class="gt-footer py-4 text-center">
-    <p class="small text-white-50 mb-0">
+    <p class="small text-white-50 mb-0" data-i18n="footer.credit">
       GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong>
     </p>
   </footer>

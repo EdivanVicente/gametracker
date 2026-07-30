@@ -17,6 +17,7 @@
   <!-- Design system próprio -->
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/js/theme.js"></script>
+  <script src="assets/js/i18n.js"></script>
 
   <script src="assets/js/auth-check.js"></script>
 </head>
@@ -37,7 +38,7 @@
         <button class="btn btn-gt-primary d-flex align-items-center gap-2 px-3"
                 type="button" data-bs-toggle="modal" data-bs-target="#modalAddGame">
           <i class="bi bi-plus-lg"></i>
-          <span class="d-none d-sm-inline">Adicionar jogo</span>
+          <span class="d-none d-sm-inline" data-i18n="nav.addGame">Adicionar jogo</span>
         </button>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#gtNavContent"
@@ -49,17 +50,18 @@
       <div class="collapse navbar-collapse" id="gtNavContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
           <li class="nav-item">
-            <a class="nav-link active" href="dashboard.html">Meus Jogos</a>
+            <a class="nav-link active" href="dashboard.html" data-i18n="nav.myGames">Meus Jogos</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="explore.html">Explorar</a>
+            <a class="nav-link" href="explore.html" data-i18n="nav.explore">Explorar</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="estatisticas.html">Estatísticas</a>
+            <a class="nav-link" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a>
           </li>
         </ul>
 
         <div class="d-flex align-items-center gap-2">
+          <div data-gt-lang-switcher></div>
           <button class="gt-theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
             <i class="bi bi-sun"></i>
           </button>
@@ -71,7 +73,7 @@
                     style="width: 32px; height: 32px; background-color: var(--gt-surface-raised); flex-shrink: 0;">
                 <i class="bi bi-person"></i>
               </span>
-              <span id="navbar-user-name" class="d-none d-md-inline small">Perfil</span>
+              <span id="navbar-user-name" class="d-none d-md-inline small" data-i18n="nav.profile">Perfil</span>
               <i class="bi bi-chevron-down small"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" style="min-width: 220px;">
@@ -85,11 +87,11 @@
                 <div id="dropdown-user-email" class="text-white-50 text-truncate" style="font-size: 0.7rem;">—</div>
               </li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i>Minha conta</a></li>
-              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i>Jogos</a></li>
-              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i>Configurações</a></li>
+              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i><span data-i18n="nav.account">Minha conta</span></a></li>
+              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
+              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Configurações</span></a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="nav.logout">Sair</span></a></li>
             </ul>
           </div>
         </div>
@@ -105,19 +107,19 @@
     <section class="gt-hud-strip d-flex flex-wrap mb-4" aria-label="Resumo do catálogo">
       <a href="dashboard.html?filtro=todos" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono" id="hud-total">0</div>
-        <div class="gt-hud-label">Meus Jogos</div>
+        <div class="gt-hud-label" data-i18n="hud.myGames">Meus Jogos</div>
       </a>
       <a href="dashboard.html?filtro=playing" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono is-playing" id="hud-playing">0</div>
-        <div class="gt-hud-label">Em andamento</div>
+        <div class="gt-hud-label" data-i18n="hud.playing">Em andamento</div>
       </a>
       <a href="dashboard.html?filtro=finished" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono is-finished" id="hud-finished">0</div>
-        <div class="gt-hud-label">Finalizados</div>
+        <div class="gt-hud-label" data-i18n="hud.finished">Finalizados</div>
       </a>
       <a href="dashboard.html?filtro=favoritos" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono is-favorite" id="hud-favorites">0</div>
-        <div class="gt-hud-label">Favoritos</div>
+        <div class="gt-hud-label" data-i18n="hud.favorites">Favoritos</div>
       </a>
     </section>
 
@@ -133,78 +135,123 @@
               <i class="bi bi-search text-white-50"></i>
             </span>
             <input type="search" class="form-control border-0 border-start-0" id="filter-search"
-                   placeholder="Buscar nos meus jogos" style="border-left: none !important;">
+                   placeholder="Buscar nos meus jogos" data-i18n-placeholder="toolbar.searchPlaceholder" style="border-left: none !important;">
           </div>
         </div>
 
         <div class="dropdown gt-toolbar-fixed">
           <button class="btn btn-gt-outline w-100 d-flex align-items-center justify-content-center gap-2 position-relative"
-                  type="button" id="btn-filtros" data-bs-toggle="dropdown" aria-expanded="false" title="Filtros">
+                  type="button" id="btn-filtros" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Filtros">
             <i class="bi bi-funnel"></i>
-            <span class="d-none d-md-inline">Filtros</span>
+            <span class="d-none d-md-inline" data-i18n="toolbar.filters">Filtros</span>
             <span class="badge rounded-pill d-none" id="filtros-badge-count" style="background-color: var(--gt-accent); font-size: 0.65rem;"></span>
           </button>
-          <div class="dropdown-menu p-3 gt-filtros-panel" style="min-width: 260px;">
-            <label for="filter-console" class="form-label small text-white-50 mb-1">Console</label>
-            <select class="form-select form-select-sm mb-2" id="filter-console" aria-label="Filtrar por console">
-              <!-- Populado via consoles.js -->
-            </select>
+          <div class="dropdown-menu p-2 gt-filtros-panel" style="min-width: 300px;">
+            <div class="accordion gt-filtros-accordion" id="filtros-accordion">
 
-            <label for="filter-genre" class="form-label small text-white-50 mb-1">Gênero</label>
-            <select class="form-select form-select-sm mb-2" id="filter-genre" aria-label="Filtrar por gênero">
-              <!-- Populado via genres.js -->
-            </select>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#acc-console">
+                    <i class="bi bi-display me-2"></i><span data-i18n="toolbar.console">Console</span>
+                  </button>
+                </h2>
+                <div id="acc-console" class="accordion-collapse collapse show" data-bs-parent="#filtros-accordion">
+                  <div class="accordion-body">
+                    <select class="form-select form-select-sm" id="filter-console" aria-label="Filtrar por console">
+                      <!-- Populado via consoles.js -->
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-            <label for="filter-status" class="form-label small text-white-50 mb-1">Status</label>
-            <select class="form-select form-select-sm mb-2" id="filter-status" aria-label="Filtrar por status">
-              <option selected value="">Status</option>
-              <option value="playing">Em andamento</option>
-              <option value="finished">Finalizado</option>
-            </select>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#acc-genero">
+                    <i class="bi bi-tags me-2"></i><span data-i18n="toolbar.genre">Gênero</span>
+                  </button>
+                </h2>
+                <div id="acc-genero" class="accordion-collapse collapse" data-bs-parent="#filtros-accordion">
+                  <div class="accordion-body">
+                    <select class="form-select form-select-sm" id="filter-genre" aria-label="Filtrar por gênero">
+                      <!-- Populado via genres.js -->
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-            <label for="filter-gameplay-score" class="form-label small text-white-50 mb-1">Jogabilidade mínima</label>
-            <select class="form-select form-select-sm mb-2" id="filter-gameplay-score" aria-label="Filtrar por nota de jogabilidade">
-              <option selected value="">Jogabilidade ≥</option>
-              <option value="5">5 estrelas</option>
-              <option value="4">4+ estrelas</option>
-              <option value="3">3+ estrelas</option>
-            </select>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#acc-status">
+                    <i class="bi bi-flag me-2"></i><span data-i18n="toolbar.status">Status</span>
+                  </button>
+                </h2>
+                <div id="acc-status" class="accordion-collapse collapse" data-bs-parent="#filtros-accordion">
+                  <div class="accordion-body">
+                    <select class="form-select form-select-sm" id="filter-status" aria-label="Filtrar por status">
+                      <option selected value="" data-i18n="toolbar.status">Status</option>
+                      <option value="playing" data-i18n="status.playing">Em andamento</option>
+                      <option value="finished" data-i18n="status.finished">Finalizado</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-            <button type="button" class="btn btn-gt-outline btn-sm w-100" id="btn-limpar-filtros">Limpar filtros</button>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#acc-nota">
+                    <i class="bi bi-joystick me-2"></i><span data-i18n="toolbar.minGameplay">Jogabilidade mínima</span>
+                  </button>
+                </h2>
+                <div id="acc-nota" class="accordion-collapse collapse" data-bs-parent="#filtros-accordion">
+                  <div class="accordion-body">
+                    <select class="form-select form-select-sm" id="filter-gameplay-score" aria-label="Filtrar por nota de jogabilidade">
+                      <option selected value="" data-i18n="toolbar.gameplayGte">Jogabilidade ≥</option>
+                      <option value="5" data-i18n="toolbar.stars5">5 estrelas</option>
+                      <option value="4" data-i18n="toolbar.stars4">4+ estrelas</option>
+                      <option value="3" data-i18n="toolbar.stars3">3+ estrelas</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <button type="button" class="btn btn-gt-outline btn-sm w-100 mt-2" id="btn-limpar-filtros" data-i18n="toolbar.clearFilters">Limpar filtros</button>
           </div>
         </div>
 
+
         <div class="gt-toolbar-fixed">
-          <button class="btn btn-gt-outline w-100" type="button" id="btn-favorites-only" title="Somente favoritos">
+          <button class="btn btn-gt-outline w-100" type="button" id="btn-favorites-only" title="Somente favoritos" data-i18n-title="toolbar.favoritesOnly">
             <i class="bi bi-heart"></i>
           </button>
         </div>
 
         <div class="dropdown gt-toolbar-fixed">
           <button class="btn btn-gt-outline w-100 d-flex align-items-center justify-content-center gap-2"
-                  type="button" id="btn-sort" data-bs-toggle="dropdown" aria-expanded="false" title="Ordenar">
+                  type="button" id="btn-sort" data-bs-toggle="dropdown" aria-expanded="false" title="Ordenar" data-i18n-title="toolbar.sort">
             <i class="bi bi-sort-down"></i>
-            <span class="d-none d-md-inline small">Ordenar</span>
+            <span class="d-none d-md-inline small" data-i18n="toolbar.sort">Ordenar</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end" id="sort-menu">
-            <li><a class="dropdown-item" href="#" data-sort="recent">Adicionado recentemente</a></li>
-            <li><a class="dropdown-item" href="#" data-sort="name-asc">Nome (A-Z)</a></li>
-            <li><a class="dropdown-item" href="#" data-sort="name-desc">Nome (Z-A)</a></li>
-            <li><a class="dropdown-item" href="#" data-sort="score-desc">Nota mais alta</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="recent" data-i18n="toolbar.sortRecent">Adicionado recentemente</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="name-asc" data-i18n="toolbar.sortNameAsc">Nome (A-Z)</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="name-desc" data-i18n="toolbar.sortNameDesc">Nome (Z-A)</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="score-desc" data-i18n="toolbar.sortScoreDesc">Nota mais alta</a></li>
           </ul>
         </div>
 
         <div class="dropdown gt-toolbar-fixed" id="view-mode-group">
           <button class="btn btn-gt-outline w-100 d-flex align-items-center justify-content-center gap-2"
-                  type="button" id="btn-view-mode" data-bs-toggle="dropdown" aria-expanded="false" title="Visualização">
-            <span class="d-none d-md-inline">Visualização</span>
+                  type="button" id="btn-view-mode" data-bs-toggle="dropdown" aria-expanded="false" title="Visualização" data-i18n-title="toolbar.viewMode">
+            <span class="d-none d-md-inline" data-i18n="toolbar.viewMode">Visualização</span>
             <i class="bi bi-grid-3x2-gap-fill" id="view-mode-current-icon"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="list"><i class="bi bi-list-ul"></i> Lista</a></li>
-            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="small"><i class="bi bi-grid-3x3-gap-fill"></i> Pequeno</a></li>
-            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="medium"><i class="bi bi-grid-3x2-gap-fill"></i> Médio</a></li>
-            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="large"><i class="bi bi-grid-1x2-gap-fill"></i> Grande</a></li>
+            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="list"><i class="bi bi-list-ul"></i> <span data-i18n="toolbar.viewList">Lista</span></a></li>
+            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="small"><i class="bi bi-grid-3x3-gap-fill"></i> <span data-i18n="toolbar.viewSmall">Pequeno</span></a></li>
+            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="medium"><i class="bi bi-grid-3x2-gap-fill"></i> <span data-i18n="toolbar.viewMedium">Médio</span></a></li>
+            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-view="large"><i class="bi bi-grid-1x2-gap-fill"></i> <span data-i18n="toolbar.viewLarge">Grande</span></a></li>
           </ul>
         </div>
 
@@ -221,7 +268,7 @@
           <div class="spinner-border" role="status" style="color: var(--gt-accent);">
             <span class="visually-hidden">Carregando...</span>
           </div>
-          <p class="text-white-50 mt-3 mb-0">Carregando sua biblioteca...</p>
+          <p class="text-white-50 mt-3 mb-0" data-i18n="grid.loadingLibrary">Carregando sua biblioteca...</p>
         </div>
 
       </div>
@@ -229,7 +276,7 @@
       <!-- Estado vazio (oculto por padrão; exibido via JS na Etapa 4 quando não há resultados) -->
       <div class="text-center py-5 d-none" id="games-grid-empty">
         <i class="bi bi-controller fs-1 text-white-50 d-block mb-3"></i>
-        <p class="text-white-50 mb-0">Nenhum jogo encontrado com esses filtros.</p>
+        <p class="text-white-50 mb-0" data-i18n="grid.empty">Nenhum jogo encontrado com esses filtros.</p>
       </div>
     </section>
 
@@ -243,12 +290,12 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content gt-modal">
         <div class="modal-header">
-          <h5 class="modal-title gt-display" id="modalAddGameLabel">Adicionar jogo ao catálogo</h5>
+          <h5 class="modal-title gt-display" id="modalAddGameLabel" data-i18n="addGame.title">Adicionar jogo ao catálogo</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body">
           <div class="input-group mb-3">
-            <input type="text" class="form-control" id="game-search-input" placeholder="Digite o nome do jogo... (ex: Hollow Knight)">
+            <input type="text" class="form-control" id="game-search-input" placeholder="Digite o nome do jogo... (ex: Hollow Knight)" data-i18n-placeholder="addGame.searchPlaceholder">
             <button class="btn btn-gt-primary" type="button" id="game-search-btn">
               <i class="bi bi-search"></i>
             </button>
@@ -256,7 +303,7 @@
 
           <!-- Resultados da busca serão injetados aqui via JS (Etapa 4) -->
           <div id="game-search-results" class="row g-2">
-            <p class="text-white-50 small text-center py-4 mb-0">
+            <p class="text-white-50 small text-center py-4 mb-0" data-i18n="addGame.searchHint">
               Digite o nome de um jogo para buscar na base de dados.
             </p>
           </div>
@@ -294,7 +341,7 @@
               <p class="small text-white-50 mb-0" id="detail-multiplayer-info"></p>
             </div>
             <div class="col-12">
-              <p class="small text-white-50 mb-2">Gameplay</p>
+              <p class="small text-white-50 mb-2" data-i18n="detail.gameplayLabel">Gameplay</p>
               <div id="detail-video-wrapper"></div>
             </div>
           </div>
@@ -302,7 +349,7 @@
           <hr class="border-secondary">
 
           <div class="mb-3">
-            <label for="detail-platform" class="form-label small text-white-50">Plataforma</label>
+            <label for="detail-platform" class="form-label small text-white-50" data-i18n="detail.platform">Plataforma</label>
             <select class="form-select" id="detail-platform">
               <!-- Populado via consoles.js -->
             </select>
@@ -310,11 +357,11 @@
           </div>
           <div class="row g-3 mb-3">
             <div class="col-6">
-              <label for="detail-start-date" class="form-label small text-white-50">Data de início</label>
+              <label for="detail-start-date" class="form-label small text-white-50" data-i18n="detail.startDate">Data de início</label>
               <input type="date" class="form-control" id="detail-start-date">
             </div>
             <div class="col-6">
-              <label for="detail-end-date" class="form-label small text-white-50">Data de finalização</label>
+              <label for="detail-end-date" class="form-label small text-white-50" data-i18n="detail.endDate">Data de finalização</label>
               <input type="date" class="form-control" id="detail-end-date">
             </div>
           </div>
@@ -327,12 +374,46 @@
             <p class="small text-white-50 mt-1 mb-0" id="detail-duration-subtitle"></p>
           </div>
 
+          <!-- ================================================
+               REPLAY — quantas vezes já jogou + horas jogadas
+               ================================================ -->
+          <div class="d-flex align-items-center justify-content-between gt-panel p-2 px-3 mb-3">
+            <div>
+              <p class="small text-white-50 mb-0" data-i18n="detail.playCountLabel">Vezes jogado</p>
+              <p class="fw-semibold mb-0"><i class="bi bi-arrow-repeat me-1"></i><span id="detail-play-count">1</span></p>
+              <p class="small text-white-50 mb-0 d-none" id="detail-last-played-wrapper">
+                <span data-i18n="detail.lastPlayed">Última vez</span>: <span id="detail-last-played">—</span>
+              </p>
+            </div>
+            <button type="button" class="btn btn-gt-outline btn-sm" id="btn-log-play-session">
+              <i class="bi bi-plus-lg me-1"></i><span data-i18n="detail.logSession">Registrar nova jogada</span>
+            </button>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-sm-4">
+              <label for="detail-hours-played" class="form-label small text-white-50" data-i18n="detail.hoursPlayed">Horas jogadas</label>
+              <input type="number" min="0" step="0.5" class="form-control" id="detail-hours-played" placeholder="0">
+            </div>
+            <div class="col-6 col-sm-4">
+              <label for="detail-time-to-beat-main" class="form-label small text-white-50" data-i18n="detail.timeToBeatMain">Duração estimada (missão principal)</label>
+              <input type="number" min="0" step="0.5" class="form-control" id="detail-time-to-beat-main" placeholder="h">
+            </div>
+            <div class="col-6 col-sm-4">
+              <label for="detail-time-to-beat-100" class="form-label small text-white-50" data-i18n="detail.timeToBeat100">Duração estimada (100%)</label>
+              <input type="number" min="0" step="0.5" class="form-control" id="detail-time-to-beat-100" placeholder="h">
+            </div>
+          </div>
+          <p class="small text-white-50 mb-3" style="margin-top: -0.5rem;" data-i18n="detail.timeToBeatHint">
+            As durações estimadas são informativas — preencha manualmente com base na sua própria experiência ou em um guia externo (ex: HowLongToBeat).
+          </p>
+
           <hr class="border-secondary">
 
-          <p class="small text-white-50 mb-2">Avaliação por categoria</p>
+          <p class="small text-white-50 mb-2" data-i18n="detail.ratingByCategory">Avaliação por categoria</p>
           <div class="row g-2 mb-3">
             <div class="col-6 d-flex justify-content-between align-items-center">
-              <span class="small">Gráficos</span>
+              <span class="small" data-i18n="detail.graphics">Gráficos</span>
               <div class="gt-star-input" id="stars-graphics" data-score="0" role="radiogroup" aria-label="Nota de gráficos">
                 <i class="bi bi-star gt-star" data-value="1"></i>
                 <i class="bi bi-star gt-star" data-value="2"></i>
@@ -342,7 +423,7 @@
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
-              <span class="small">Som</span>
+              <span class="small" data-i18n="detail.sound">Som</span>
               <div class="gt-star-input" id="stars-sound" data-score="0" role="radiogroup" aria-label="Nota de som">
                 <i class="bi bi-star gt-star" data-value="1"></i>
                 <i class="bi bi-star gt-star" data-value="2"></i>
@@ -352,7 +433,7 @@
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
-              <span class="small">Jogabilidade</span>
+              <span class="small" data-i18n="detail.gameplay">Jogabilidade</span>
               <div class="gt-star-input" id="stars-gameplay" data-score="0" role="radiogroup" aria-label="Nota de jogabilidade">
                 <i class="bi bi-star gt-star" data-value="1"></i>
                 <i class="bi bi-star gt-star" data-value="2"></i>
@@ -362,7 +443,7 @@
               </div>
             </div>
             <div class="col-6 d-flex justify-content-between align-items-center">
-              <span class="small">Dificuldade</span>
+              <span class="small" data-i18n="detail.difficulty">Dificuldade</span>
               <div class="gt-star-input" id="stars-difficulty" data-score="0" role="radiogroup" aria-label="Nota de dificuldade">
                 <i class="bi bi-star gt-star" data-value="1"></i>
                 <i class="bi bi-star gt-star" data-value="2"></i>
@@ -375,14 +456,14 @@
 
           <div class="form-check form-switch mb-3">
             <input class="form-check-input" type="checkbox" role="switch" id="detail-favorite">
-            <label class="form-check-label small" for="detail-favorite">Marcar como favorito</label>
+            <label class="form-check-label small" for="detail-favorite" data-i18n="detail.markFavorite">Marcar como favorito</label>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-danger d-flex align-items-center gap-2 me-auto" id="btn-delete-detail">
-            <i class="bi bi-trash"></i> Excluir
+            <i class="bi bi-trash"></i> <span data-i18n="common.delete">Excluir</span>
           </button>
-          <button type="button" class="btn btn-gt-primary" id="btn-save-detail">Salvar alterações</button>
+          <button type="button" class="btn btn-gt-primary" id="btn-save-detail" data-i18n="common.save">Salvar alterações</button>
         </div>
       </div>
     </div>
@@ -391,7 +472,7 @@
   <!-- Bootstrap 5 JS Bundle -->
   <footer class="gt-footer py-4 text-center">
     <p class="small text-white-50 mb-0">
-      GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong>
+      <span data-i18n="footer.credit">GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong></span>
     </p>
   </footer>
 

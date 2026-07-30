@@ -83,6 +83,21 @@ def _run_light_migrations() -> None:
                     logger.info("Migração: adicionando coluna games.%s", nome)
                     conn.execute(text(f"ALTER TABLE games ADD COLUMN {nome} {tipo_sql}"))
 
+        if "user_games" in inspector.get_table_names():
+            colunas_existentes_ug = {col["name"] for col in inspector.get_columns("user_games")}
+            colunas_novas_ug = {
+                "play_count": "INTEGER DEFAULT 1",
+                "hours_played": "INTEGER",
+                "time_to_beat_main": "INTEGER",
+                "time_to_beat_completionist": "INTEGER",
+            }
+            for nome, tipo_sql in colunas_novas_ug.items():
+                if nome not in colunas_existentes_ug:
+                    logger.info("Migração: adicionando coluna user_games.%s", nome)
+                    conn.execute(text(f"ALTER TABLE user_games ADD COLUMN {nome} {tipo_sql}"))
+            if "play_count" not in colunas_existentes_ug:
+                conn.execute(text("UPDATE user_games SET play_count = 1 WHERE play_count IS NULL"))
+
 
 _run_light_migrations()
 

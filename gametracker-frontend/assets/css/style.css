@@ -698,6 +698,44 @@ body {
   background-color: var(--gt-surface);
 }
 
+/* Accordion do painel de Filtros — segue o tema escuro/claro do site
+   (por padrão o Bootstrap usa fundo branco e ícone escuro fixos). */
+.gt-filtros-accordion .accordion-item {
+  background-color: transparent;
+  border: 1px solid var(--gt-border);
+  border-radius: 0.4rem;
+  margin-bottom: 0.4rem;
+  overflow: hidden;
+}
+.gt-filtros-accordion .accordion-item:last-child {
+  margin-bottom: 0;
+}
+.gt-filtros-accordion .accordion-button {
+  background-color: var(--gt-surface-raised);
+  color: var(--gt-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 0.75rem;
+  box-shadow: none;
+}
+.gt-filtros-accordion .accordion-button:not(.collapsed) {
+  background-color: var(--gt-surface-raised);
+  color: var(--gt-accent);
+  box-shadow: none;
+}
+.gt-filtros-accordion .accordion-button:focus {
+  box-shadow: none;
+  border-color: var(--gt-border);
+}
+.gt-filtros-accordion .accordion-button::after {
+  filter: invert(1) grayscale(100%);
+  opacity: 0.7;
+}
+.gt-filtros-accordion .accordion-body {
+  background-color: var(--gt-surface);
+  padding: 0.6rem 0.75rem;
+}
+
 /* ==========================================================================
    Modais e formulários (auth + busca de jogo)
    ========================================================================== */

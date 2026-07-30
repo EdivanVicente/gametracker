@@ -14,6 +14,7 @@
 
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/js/theme.js"></script>
+  <script src="assets/js/i18n.js"></script>
 
   <script src="assets/js/auth-check.js"></script>
 </head>
@@ -33,11 +34,12 @@
 
       <div class="collapse navbar-collapse" id="gtNavContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-          <li class="nav-item"><a class="nav-link" href="dashboard.html">Meus Jogos</a></li>
-          <li class="nav-item"><a class="nav-link" href="explore.html">Explorar</a></li>
-          <li class="nav-item"><a class="nav-link" href="estatisticas.html">Estatísticas</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html" data-i18n="nav.myGames">Meus Jogos</a></li>
+          <li class="nav-item"><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explorar</a></li>
+          <li class="nav-item"><a class="nav-link" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a></li>
         </ul>
         <div class="d-flex align-items-center gap-2">
+          <div data-gt-lang-switcher></div>
           <button class="gt-theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
             <i class="bi bi-sun"></i>
           </button>
@@ -49,7 +51,7 @@
                     style="width: 32px; height: 32px; background-color: var(--gt-surface-raised); flex-shrink: 0;">
                 <i class="bi bi-person"></i>
               </span>
-              <span id="navbar-user-name" class="d-none d-md-inline small">Perfil</span>
+              <span id="navbar-user-name" class="d-none d-md-inline small" data-i18n="nav.profile">Perfil</span>
               <i class="bi bi-chevron-down small"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" style="min-width: 220px;">
@@ -63,11 +65,11 @@
                 <div id="dropdown-user-email" class="text-white-50 text-truncate" style="font-size: 0.7rem;">—</div>
               </li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i>Minha conta</a></li>
-              <li><a class="dropdown-item active" href="games.html"><i class="bi bi-controller me-2"></i>Jogos</a></li>
-              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i>Configurações</a></li>
+              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i><span data-i18n="nav.account">Minha conta</span></a></li>
+              <li><a class="dropdown-item active" href="games.html"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
+              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Configurações</span></a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="nav.logout">Sair</span></a></li>
             </ul>
           </div>
         </div>
@@ -89,13 +91,13 @@
           <div class="row g-4 mb-4">
             <div class="col-12 col-md-6">
               <h6 class="text-white-50 text-uppercase small mb-3" style="letter-spacing: 0.06em;">
-                <i class="bi bi-play-circle me-1"></i> Jogando agora
+                <i class="bi bi-play-circle me-1"></i> <span data-i18n="gamesSummary.nowPlaying">Jogando agora</span>
               </h6>
               <div id="games-current-card"></div>
             </div>
             <div class="col-12 col-md-6">
               <h6 class="text-white-50 text-uppercase small mb-3" style="letter-spacing: 0.06em;">
-                <i class="bi bi-check-circle me-1"></i> Último finalizado
+                <i class="bi bi-check-circle me-1"></i> <span data-i18n="gamesSummary.lastFinished">Último finalizado</span>
               </h6>
               <div id="games-last-finished-card"></div>
             </div>
@@ -103,7 +105,7 @@
 
           <div class="text-center">
             <a href="dashboard.html" class="btn btn-gt-primary px-4 py-2">
-              <i class="bi bi-grid-3x3-gap me-2"></i>Ver todos os meus jogos
+              <i class="bi bi-grid-3x3-gap me-2"></i><span data-i18n="gamesSummary.viewAll">Ver todos os meus jogos</span>
             </a>
           </div>
         </div>
@@ -114,7 +116,7 @@
 
   <footer class="gt-footer py-4 text-center">
     <p class="small text-white-50 mb-0">
-      GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong>
+      <span data-i18n="footer.credit">GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong></span>
     </p>
   </footer>
 

@@ -14,6 +14,7 @@
 
   <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/js/theme.js"></script>
+  <script src="assets/js/i18n.js"></script>
 
   <script src="assets/js/auth-check.js"></script>
 
@@ -41,11 +42,12 @@
 
       <div class="collapse navbar-collapse" id="gtNavContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-          <li class="nav-item"><a class="nav-link" href="dashboard.html">Meus Jogos</a></li>
-          <li class="nav-item"><a class="nav-link" href="explore.html">Explorar</a></li>
-          <li class="nav-item"><a class="nav-link active" href="estatisticas.html">Estatísticas</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html" data-i18n="nav.myGames">Meus Jogos</a></li>
+          <li class="nav-item"><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explorar</a></li>
+          <li class="nav-item"><a class="nav-link active" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a></li>
         </ul>
         <div class="d-flex align-items-center gap-2">
+          <div data-gt-lang-switcher></div>
           <button class="gt-theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
             <i class="bi bi-sun"></i>
           </button>
@@ -57,7 +59,7 @@
                     style="width: 32px; height: 32px; background-color: var(--gt-surface-raised); flex-shrink: 0;">
                 <i class="bi bi-person"></i>
               </span>
-              <span id="navbar-user-name" class="d-none d-md-inline small">Perfil</span>
+              <span id="navbar-user-name" class="d-none d-md-inline small" data-i18n="nav.profile">Perfil</span>
               <i class="bi bi-chevron-down small"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" style="min-width: 220px;">
@@ -71,11 +73,11 @@
                 <div id="dropdown-user-email" class="text-white-50 text-truncate" style="font-size: 0.7rem;">—</div>
               </li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i>Minha conta</a></li>
-              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i>Jogos</a></li>
-              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i>Configurações</a></li>
+              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i><span data-i18n="nav.account">Minha conta</span></a></li>
+              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
+              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Configurações</span></a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="nav.logout">Sair</span></a></li>
             </ul>
           </div>
         </div>
@@ -116,28 +118,28 @@
     <div id="stats-content" class="row g-4">
       <div class="col-12 col-lg-6">
         <div class="gt-panel p-4">
-          <h5 class="gt-display mb-3">Por gênero</h5>
+          <h5 class="gt-display mb-3" data-i18n="stats.byGenre">Por gênero</h5>
           <div id="stat-genero"></div>
         </div>
       </div>
 
       <div class="col-12 col-lg-6">
         <div class="gt-panel p-4">
-          <h5 class="gt-display mb-3">Por plataforma</h5>
+          <h5 class="gt-display mb-3" data-i18n="stats.byPlatform">Por plataforma</h5>
           <div id="stat-plataforma"></div>
         </div>
       </div>
 
       <div class="col-12 col-lg-6">
         <div class="gt-panel p-4">
-          <h5 class="gt-display mb-3">Notas médias por categoria</h5>
+          <h5 class="gt-display mb-3" data-i18n="stats.avgByCategory">Notas médias por categoria</h5>
           <div id="stat-notas"></div>
         </div>
       </div>
 
       <div class="col-12 col-lg-6">
         <div class="gt-panel p-4">
-          <h5 class="gt-display mb-3">Melhor avaliados</h5>
+          <h5 class="gt-display mb-3" data-i18n="stats.topRated">Melhor avaliados</h5>
           <ol class="mb-0 ps-3" id="stat-top-jogos"></ol>
         </div>
       </div>
@@ -146,7 +148,7 @@
 
   <footer class="gt-footer py-4 text-center">
     <p class="small text-white-50 mb-0">
-      GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong>
+      <span data-i18n="footer.credit">GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong></span>
     </p>
   </footer>
 
