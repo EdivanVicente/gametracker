@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
 from app.database import Base, engine
-from app.routers import auth, discovery, games
+from app.routers import auth, discovery, games, social, search
 
 logger = logging.getLogger("gametracker.migrations")
 
@@ -98,6 +98,21 @@ def _run_light_migrations() -> None:
             if "play_count" not in colunas_existentes_ug:
                 conn.execute(text("UPDATE user_games SET play_count = 1 WHERE play_count IS NULL"))
 
+        if "play_sessions" in inspector.get_table_names():
+            colunas_existentes_ps = {col["name"] for col in inspector.get_columns("play_sessions")}
+            if "started_at" not in colunas_existentes_ps:
+                logger.info("Migração: adicionando coluna play_sessions.started_at")
+                conn.execute(text("ALTER TABLE play_sessions ADD COLUMN started_at DATE"))
+                # Registros antigos só tinham played_at — usamos esse valor como started_at.
+                conn.execute(text("UPDATE play_sessions SET started_at = played_at WHERE started_at IS NULL"))
+            if "finished_at" not in colunas_existentes_ps:
+                logger.info("Migração: adicionando coluna play_sessions.finished_at")
+                conn.execute(text("ALTER TABLE play_sessions ADD COLUMN finished_at DATE"))
+                # Sessões antigas (de antes dessa migração) são tratadas como já
+                # concluídas no mesmo dia, pra não aparecerem como "em andamento"
+                # indevidamente no histórico — o status real do card não muda.
+                conn.execute(text("UPDATE play_sessions SET finished_at = started_at WHERE finished_at IS NULL"))
+
 
 _run_light_migrations()
 
@@ -123,6 +138,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(discovery.router)
 app.include_router(games.router)
+app.include_router(social.router)
+app.include_router(search.router)
 
 
 @app.get("/health", tags=["Status"])

@@ -74,8 +74,24 @@ async function carregarPerfil() {
 
         perfilOriginal = await response.json();
         preencherFormulario(perfilOriginal);
+        carregarContadoresSociais(perfilOriginal.id);
     } catch (error) {
         console.error('Erro ao carregar perfil:', error);
+    }
+}
+
+// Busca os contadores de jogos/seguidores/seguindo (mesmos dados do perfil
+// público, só que da própria conta) pra mostrar na tela de conta.
+async function carregarContadoresSociais(userId) {
+    try {
+        const response = await authFetch(`/social/profile/${userId}`);
+        if (!response.ok) return;
+        const p = await response.json();
+        document.getElementById('profile-games-count').textContent = p.games_count;
+        document.getElementById('profile-followers-count').textContent = p.followers_count;
+        document.getElementById('profile-following-count').textContent = p.following_count;
+    } catch (error) {
+        console.error('Erro ao carregar contadores sociais:', error);
     }
 }
 

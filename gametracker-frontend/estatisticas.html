@@ -45,6 +45,7 @@
           <li class="nav-item"><a class="nav-link" href="dashboard.html" data-i18n="nav.myGames">Meus Jogos</a></li>
           <li class="nav-item"><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explorar</a></li>
           <li class="nav-item"><a class="nav-link active" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a></li>
+          <li class="nav-item"><a class="nav-link" href="comunidade.html" data-i18n="nav.community">Comunidade</a></li>
         </ul>
         <div class="d-flex align-items-center gap-2">
           <div data-gt-lang-switcher></div>
@@ -88,25 +89,25 @@
   <main class="container-fluid gt-container-fluid px-3 px-md-4 py-4">
 
     <button type="button" class="btn btn-gt-outline d-inline-flex align-items-center gap-2 mb-3" onclick="voltarPagina()">
-      <i class="bi bi-arrow-left"></i> Voltar
+      <i class="bi bi-arrow-left"></i> <span data-i18n="common.back">Voltar</span>
     </button>
 
     <section class="gt-hud-strip d-flex flex-wrap mb-4" aria-label="Resumo">
       <div class="gt-hud-item flex-fill">
         <div class="gt-hud-value gt-mono" id="stat-total">0</div>
-        <div class="gt-hud-label">Jogos catalogados</div>
+        <div class="gt-hud-label" data-i18n="stats.gamesCataloged">Jogos catalogados</div>
       </div>
       <div class="gt-hud-item flex-fill">
         <div class="gt-hud-value gt-mono is-finished" id="stat-taxa-conclusao">0%</div>
-        <div class="gt-hud-label">Taxa de conclusão</div>
+        <div class="gt-hud-label" data-i18n="stats.completionRate">Taxa de conclusão</div>
       </div>
       <div class="gt-hud-item flex-fill">
         <div class="gt-hud-value gt-mono" id="stat-media-geral">-</div>
-        <div class="gt-hud-label">Nota média geral</div>
+        <div class="gt-hud-label" data-i18n="stats.avgScore">Nota média geral</div>
       </div>
       <div class="gt-hud-item flex-fill">
         <div class="gt-hud-value gt-mono is-favorite" id="stat-favoritos">0</div>
-        <div class="gt-hud-label">Favoritos</div>
+        <div class="gt-hud-label" data-i18n="hud.favorites">Favoritos</div>
       </div>
     </section>
 

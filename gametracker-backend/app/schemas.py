@@ -94,6 +94,15 @@ class UserProfileUpdate(BaseModel):
     instagram: str | None = Field(default=None, max_length=100)
     x_handle: str | None = Field(default=None, max_length=100)
 
+    @field_validator("display_name")
+    @classmethod
+    def validar_display_name(cls, value):
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("O nome de exibição não pode ficar em branco.")
+        return value
+
     @field_validator("gender")
     @classmethod
     def validar_gender(cls, value):
@@ -219,15 +228,26 @@ class UserGameUpdate(BaseModel):
 class PlaySessionOut(BaseModel):
     id: int
     played_at: date
+    started_at: date
+    finished_at: date | None = None
     note: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
+    @property
+    def is_current(self) -> bool:
+        return self.finished_at is None
+
 
 class PlaySessionCreate(BaseModel):
-    """Payload opcional para registrar manualmente uma nova sessão de jogo (replay)."""
-    played_at: date | None = None
+    """Payload para abrir uma nova jogada ("Jogar novamente") — fica em andamento até ser finalizada."""
+    started_at: date | None = None
     note: str | None = Field(default=None, max_length=255)
+
+
+class PlaySessionFinish(BaseModel):
+    """Payload para informar a data de término de uma jogada específica."""
+    finished_at: date | None = None
 
 
 class UserGameOut(BaseModel):
@@ -256,3 +276,87 @@ class UserGameOut(BaseModel):
         if value is None:
             return None
         return round(value / 60, 2)
+
+
+# --- Comunidade (perfil público, seguir, feed, ranking, busca) ---
+
+class PublicGameEntryOut(BaseModel):
+    """Versão enxuta de um jogo da biblioteca, para exibir no perfil público de outra pessoa."""
+    title: str
+    cover_url: str | None = None
+    platform: str | None = None
+    status: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PublicProfileOut(BaseModel):
+    id: int
+    display_name: str | None = None
+    avatar_data: str | None = None
+    bio: str | None = None
+    country: str | None = None
+
+    friend_code_3ds: str | None = None
+    ea_app_id: str | None = None
+    nintendo_network_id: str | None = None
+    nintendo_switch_id: str | None = None
+    psn_id: str | None = None
+    steam_id: str | None = None
+    twitch: str | None = None
+    ubisoft_connect: str | None = None
+    wii_friend_code: str | None = None
+    xbox_gamertag: str | None = None
+    discord: str | None = None
+    instagram: str | None = None
+    x_handle: str | None = None
+
+    followers_count: int = 0
+    following_count: int = 0
+    games_count: int = 0
+    is_following: bool = False
+    is_self: bool = False
+
+    currently_playing: list[PublicGameEntryOut] = []
+    recently_finished: list[PublicGameEntryOut] = []
+
+
+class FollowActionOut(BaseModel):
+    following: bool
+    followers_count: int
+
+
+class RankingEntryOut(BaseModel):
+    user_id: int
+    display_name: str | None = None
+    avatar_data: str | None = None
+    games_count: int
+
+
+class FeedItemOut(BaseModel):
+    user_id: int
+    display_name: str | None = None
+    avatar_data: str | None = None
+    game_title: str
+    cover_url: str | None = None
+    action: str  # "started" | "finished"
+    at: date
+
+
+class GameSearchHitOut(BaseModel):
+    external_id: str | None = None
+    title: str
+    cover_url: str | None = None
+    players_count: int = 0
+
+
+class UserSearchHitOut(BaseModel):
+    id: int
+    display_name: str | None = None
+    avatar_data: str | None = None
+    email_match: bool = False
+
+
+class GlobalSearchOut(BaseModel):
+    games: list[GameSearchHitOut] = []
+    users: list[UserSearchHitOut] = []

@@ -37,6 +37,7 @@
           <li class="nav-item"><a class="nav-link" href="dashboard.html" data-i18n="nav.myGames">Meus Jogos</a></li>
           <li class="nav-item"><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explorar</a></li>
           <li class="nav-item"><a class="nav-link" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a></li>
+          <li class="nav-item"><a class="nav-link" href="comunidade.html" data-i18n="nav.community">Comunidade</a></li>
         </ul>
         <div class="d-flex align-items-center gap-2">
           <div data-gt-lang-switcher></div>
@@ -106,8 +107,23 @@
 
           <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded" style="background-color: var(--gt-surface-raised); border: 1px solid var(--gt-border);">
             <i class="bi bi-calendar-check text-white-50"></i>
-            <span class="small text-white-50">Membro desde</span>
+            <span class="small text-white-50" data-i18n="account.memberSince">Membro desde</span>
             <span class="gt-mono" id="profile-joined-date">—</span>
+          </div>
+
+          <div class="d-flex justify-content-center gap-4 mt-4">
+            <div class="text-center">
+              <div class="fw-bold" id="profile-games-count">—</div>
+              <div class="text-white-50 small" data-i18n="community.games">Jogos</div>
+            </div>
+            <div class="text-center">
+              <div class="fw-bold" id="profile-followers-count">—</div>
+              <div class="text-white-50 small" data-i18n="community.followers">Seguidores</div>
+            </div>
+            <div class="text-center">
+              <div class="fw-bold" id="profile-following-count">—</div>
+              <div class="text-white-50 small" data-i18n="community.following">Seguindo</div>
+            </div>
           </div>
         </div>
 

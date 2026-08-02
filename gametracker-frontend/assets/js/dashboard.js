@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Textos gerados via JS (status do card, etc.) não são atualizados pelo
     // GT_I18N.apply() automático — precisam re-renderizar a grade.
-    document.addEventListener('gt:langchange', () => aplicarFiltros());
+    document.addEventListener('gt:langchange', () => carregarMeusJogos());
 });
 
 // --- Helper: toast simples (sem markup fixo no HTML — cria o container sob demanda) ---
@@ -178,7 +178,7 @@ async function carregarMeusJogos() {
     const grid = document.getElementById('games-grid');
 
     try {
-        const response = await authFetch('/games/');
+        const response = await authFetch(`/games/?lang=${gtBackendLang()}`);
 
         if (!response.ok) {
             grid.innerHTML = `<p class="text-danger text-center mt-5">${GT_I18N.t('grid.loadError')}</p>`;
@@ -258,7 +258,7 @@ function renderGridCards(jogos, grid) {
             </div>
             <div class="gt-card-body">
               <h3 class="gt-card-title mb-0">${escapeHtml(jogo.title)}</h3>
-              <p class="gt-card-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(jogo.genre || '—')}</p>
+              <p class="gt-card-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(gtTranslateGenre(jogo.genre) || '—')}</p>
               ${duracao ? `<p class="gt-card-duration"><i class="bi bi-hourglass-split"></i> ${duracao.titulo}</p>` : ''}
               <div class="gt-card-scores">
                 <span>Grf <span class="gt-score-value">${rating.graphics_score ?? '-'}</span></span>
@@ -292,7 +292,7 @@ function renderGridLista(jogos, grid) {
             </div>
             <div class="flex-grow-1 min-width-0">
               <div class="gt-card-list-title">${escapeHtml(jogo.title)}</div>
-              <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(jogo.genre || '—')}${duracao ? ` · ${duracao.titulo}` : ''}</div>
+              <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(gtTranslateGenre(jogo.genre) || '—')}${duracao ? ` · ${duracao.titulo}` : ''}</div>
             </div>
             <span class="gt-card-status position-relative ${isPlaying ? 'is-playing' : 'is-finished'}" style="top:auto; left:auto;">
                 ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
@@ -450,7 +450,7 @@ function setupSearch() {
                             : '<div style="width:50px;height:50px;" class="rounded bg-secondary d-flex align-items-center justify-content-center"><i class="bi bi-controller"></i></div>'}
                         <div class="ms-3">
                             <h6 class="mb-0 text-white">${escapeHtml(jogo.title)}</h6>
-                            <small class="text-white-50">${escapeHtml(jogo.genre || '')}</small>
+                            <small class="text-white-50">${escapeHtml(gtTranslateGenre(jogo.genre) || '')}</small>
                         </div>
                         <button class="btn btn-sm btn-primary ms-auto" onclick="adicionarJogo('${jogo.external_id}', this)" style="background-color: var(--gt-accent); border-color: var(--gt-accent);">Adicionar</button>
                     </div>
@@ -551,7 +551,9 @@ function setupDetailModal() {
 
     document.getElementById('btn-save-detail')?.addEventListener('click', salvarDetalhe);
     document.getElementById('btn-delete-detail')?.addEventListener('click', excluirJogoAtual);
-    document.getElementById('btn-log-play-session')?.addEventListener('click', registrarNovaJogada);
+    document.getElementById('btn-confirm-session')?.addEventListener('click', confirmarFormularioSessao);
+    document.getElementById('btn-cancel-session')?.addEventListener('click', fecharFormularioSessao);
+    document.getElementById('btn-fetch-duration')?.addEventListener('click', buscarDuracaoAutomatica);
 
     document.getElementById('detail-platform')?.addEventListener('change', (e) => {
         document.getElementById('detail-platform-custom').classList.toggle('d-none', e.target.value !== 'Outro');
@@ -593,7 +595,7 @@ function abrirDetalhe(userGameId) {
         ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title)}">`
         : '<i class="bi bi-controller"></i>';
 
-    document.getElementById('detail-genre').textContent = jogo.genre || 'Gênero não informado';
+    document.getElementById('detail-genre').textContent = gtTranslateGenre(jogo.genre) || GT_I18N.t('detail.noGenre');
     document.getElementById('detail-description').textContent = truncarDescricao(jogo.description);
 
     const badgesWrapper = document.getElementById('detail-platforms-badges');
@@ -645,17 +647,9 @@ function abrirDetalhe(userGameId) {
         duracaoWrapper.classList.add('d-none');
     }
 
-    // --- Replay: vezes jogado, última vez, horas jogadas, duração estimada ---
+    // --- Replay: contador, histórico de jogadas (início/fim), horas, duração ---
     document.getElementById('detail-play-count').textContent = item.play_count || 1;
-    const ultimaVezWrapper = document.getElementById('detail-last-played-wrapper');
-    const sessoes = item.sessions || [];
-    if (sessoes.length > 0) {
-        document.getElementById('detail-last-played').textContent =
-            new Date(`${sessoes[0].played_at}T00:00:00`).toLocaleDateString();
-        ultimaVezWrapper.classList.remove('d-none');
-    } else {
-        ultimaVezWrapper.classList.add('d-none');
-    }
+    renderizarHistoricoJogadas(item);
     document.getElementById('detail-hours-played').value = item.hours_played ?? '';
     document.getElementById('detail-time-to-beat-main').value = item.time_to_beat_main ?? '';
     document.getElementById('detail-time-to-beat-100').value = item.time_to_beat_completionist ?? '';
@@ -716,32 +710,127 @@ async function salvarDetalhe() {
     }
 }
 
-// Registra manualmente uma nova "vez jogada" (replay) pro jogo aberto no modal —
-// útil pra jogos rápidos (ex: Metal Slug) que a pessoa termina e joga de novo no mesmo dia.
-async function registrarNovaJogada() {
-    if (!jogoEmEdicaoId) return;
+// Formata uma sessão de jogo pro histórico (ex: "12/03/2026 — em andamento" ou "12/03/2026 → 15/03/2026")
+function formatarPeriodoSessao(sessao) {
+    const fmt = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString();
+    if (!sessao.finished_at) {
+        return `${fmt(sessao.started_at)} — ${GT_I18N.t('status.playing')}`;
+    }
+    if (sessao.started_at === sessao.finished_at) {
+        return fmt(sessao.started_at);
+    }
+    return `${fmt(sessao.started_at)} → ${fmt(sessao.finished_at)}`;
+}
+
+// Desenha os botões de ação (Jogar novamente / Finalizar esta jogada) e a
+// lista de histórico de jogadas (cada uma com data de início e de término).
+function renderizarHistoricoJogadas(item) {
+    const sessoes = (item.sessions || []).slice().sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
+    const sessaoAberta = sessoes.find(s => !s.finished_at);
+    const acoes = document.getElementById('detail-session-actions');
+    const historico = document.getElementById('detail-session-history');
+
+    if (sessaoAberta) {
+        acoes.innerHTML = `
+            <button type="button" class="btn btn-gt-primary btn-sm" id="btn-finish-session" data-session-id="${sessaoAberta.id}">
+                <i class="bi bi-check-lg me-1"></i><span data-i18n="detail.finishSession">Finalizar esta jogada</span>
+            </button>`;
+        document.getElementById('btn-finish-session').addEventListener('click', () => abrirFormularioSessao('finish', sessaoAberta.id));
+    } else {
+        acoes.innerHTML = `
+            <button type="button" class="btn btn-gt-outline btn-sm" id="btn-play-again">
+                <i class="bi bi-plus-lg me-1"></i><span data-i18n="detail.logSession">Jogar novamente</span>
+            </button>`;
+        document.getElementById('btn-play-again').addEventListener('click', () => abrirFormularioSessao('start'));
+    }
+    GT_I18N.apply(acoes);
+
+    if (sessoes.length === 0) {
+        historico.innerHTML = '';
+        return;
+    }
+    historico.innerHTML = sessoes.map(s => `<li><i class="bi bi-calendar3 me-1"></i>${formatarPeriodoSessao(s)}</li>`).join('');
+}
+
+let _sessaoFormModo = null; // 'start' | 'finish'
+let _sessaoFormId = null;   // id da sessão (só usado no modo 'finish')
+
+function abrirFormularioSessao(modo, sessionId = null) {
+    _sessaoFormModo = modo;
+    _sessaoFormId = sessionId;
+    const form = document.getElementById('detail-session-form');
+    const label = document.getElementById('detail-session-form-label');
+    const input = document.getElementById('detail-session-date-input');
+    label.textContent = modo === 'start' ? GT_I18N.t('detail.startDate') : GT_I18N.t('detail.endDate');
+    input.value = new Date().toISOString().slice(0, 10);
+    form.classList.remove('d-none');
+}
+
+function fecharFormularioSessao() {
+    document.getElementById('detail-session-form').classList.add('d-none');
+    _sessaoFormModo = null;
+    _sessaoFormId = null;
+}
+
+async function confirmarFormularioSessao() {
+    if (!jogoEmEdicaoId || !_sessaoFormModo) return;
+    const data = document.getElementById('detail-session-date-input').value || null;
+
     try {
-        const response = await authFetch(`/games/${jogoEmEdicaoId}/sessions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-        });
+        let response;
+        if (_sessaoFormModo === 'start') {
+            response = await authFetch(`/games/${jogoEmEdicaoId}/sessions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ started_at: data }),
+            });
+        } else {
+            response = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${_sessaoFormId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ finished_at: data }),
+            });
+        }
         if (!response.ok) {
-            alert('Não foi possível registrar a nova jogada.');
+            alert(GT_I18N.t('detail.sessionError'));
             return;
         }
-        const data = await response.json();
-        document.getElementById('detail-play-count').textContent = data.play_count;
-        const sessoes = data.sessions || [];
-        if (sessoes.length > 0) {
-            document.getElementById('detail-last-played').textContent =
-                new Date(`${sessoes[0].played_at}T00:00:00`).toLocaleDateString();
-            document.getElementById('detail-last-played-wrapper').classList.remove('d-none');
-        }
+        const atualizado = await response.json();
+        document.getElementById('detail-play-count').textContent = atualizado.play_count;
+        renderizarHistoricoJogadas(atualizado);
         const idx = meusJogos.findIndex(g => g.id === jogoEmEdicaoId);
-        if (idx !== -1) meusJogos[idx] = data;
+        if (idx !== -1) meusJogos[idx] = atualizado;
+        fecharFormularioSessao();
+        aplicarFiltros();
     } catch (error) {
         console.error('Erro ao registrar jogada:', error);
+    }
+}
+
+async function buscarDuracaoAutomatica() {
+    if (!jogoEmEdicaoId) return;
+    const btn = document.getElementById('btn-fetch-duration');
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${GT_I18N.t('common.loading')}`;
+
+    try {
+        const response = await authFetch(`/games/${jogoEmEdicaoId}/fetch-duration`, { method: 'POST' });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert(data.detail || GT_I18N.t('detail.durationNotFound'));
+            return;
+        }
+        const atualizado = await response.json();
+        document.getElementById('detail-time-to-beat-main').value = atualizado.time_to_beat_main ?? '';
+        document.getElementById('detail-time-to-beat-100').value = atualizado.time_to_beat_completionist ?? '';
+        const idx = meusJogos.findIndex(g => g.id === jogoEmEdicaoId);
+        if (idx !== -1) meusJogos[idx] = atualizado;
+    } catch (error) {
+        console.error('Erro ao buscar duração automática:', error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
     }
 }
 

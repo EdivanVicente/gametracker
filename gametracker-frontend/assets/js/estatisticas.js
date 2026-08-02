@@ -35,7 +35,7 @@ async function carregarRelatorios() {
         }
 
         renderResumo(jogos);
-        renderBarras('stat-genero', contarPor(jogos, j => j.game.genre));
+        renderBarras('stat-genero', contarPor(jogos, j => gtTranslateGenre(j.game.genre)));
         renderBarras('stat-plataforma', contarPor(jogos, j => j.platform));
         renderNotasMedias(jogos);
         renderTopJogos(jogos);
@@ -78,7 +78,7 @@ function contarPor(jogos, seletor) {
 function renderBarras(containerId, entradas) {
     const container = document.getElementById(containerId);
     if (entradas.length === 0) {
-        container.innerHTML = '<p class="text-white-50 small mb-0">Sem dados suficientes.</p>';
+        container.innerHTML = `<p class="text-white-50 small mb-0">${GT_I18N.t('stats.notEnoughData')}</p>`;
         return;
     }
 
@@ -95,10 +95,10 @@ function renderBarras(containerId, entradas) {
 
 function renderNotasMedias(jogos) {
     const categorias = [
-        { chave: 'graphics_score', label: 'Gráficos' },
-        { chave: 'sound_score', label: 'Som' },
-        { chave: 'gameplay_score', label: 'Jogabilidade' },
-        { chave: 'difficulty_score', label: 'Dificuldade' },
+        { chave: 'graphics_score', label: GT_I18N.t('detail.graphics') },
+        { chave: 'sound_score', label: GT_I18N.t('detail.sound') },
+        { chave: 'gameplay_score', label: GT_I18N.t('detail.gameplay') },
+        { chave: 'difficulty_score', label: GT_I18N.t('detail.difficulty') },
     ];
 
     const entradas = categorias.map(({ chave, label }) => {
@@ -113,7 +113,7 @@ function renderNotasMedias(jogos) {
     const algumaNota = entradas.some(([, v]) => v > 0);
 
     if (!algumaNota) {
-        container.innerHTML = '<p class="text-white-50 small mb-0">Ainda não há jogos avaliados.</p>';
+        container.innerHTML = `<p class="text-white-50 small mb-0">${GT_I18N.t('stats.noRatedGames')}</p>`;
         return;
     }
 
@@ -143,7 +143,7 @@ function renderTopJogos(jogos) {
     const lista = document.getElementById('stat-top-jogos');
 
     if (comMediaGeral.length === 0) {
-        lista.innerHTML = '<li class="text-white-50 small">Ainda não há jogos avaliados.</li>';
+        lista.innerHTML = `<li class="text-white-50 small">${GT_I18N.t('stats.noRatedGames')}</li>`;
         return;
     }
 
@@ -151,3 +151,7 @@ function renderTopJogos(jogos) {
         <li class="mb-2">${escapeHtml(titulo)} — <span class="gt-mono" style="color: var(--gt-amber);">${media.toFixed(1)}</span></li>
     `).join('');
 }
+
+
+// Re-renderiza os relatórios quando o idioma muda (nomes de categoria, gêneros, etc.)
+document.addEventListener('gt:langchange', carregarRelatorios);
