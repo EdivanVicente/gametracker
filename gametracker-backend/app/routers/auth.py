@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -162,6 +163,22 @@ def update_me(
 ):
     """Atualiza os campos de perfil enviados (nome, foto, bio, localização, redes sociais etc.)."""
     data = payload.model_dump(exclude_unset=True)
+
+    if "display_name" in data and data["display_name"]:
+        novo_nome = data["display_name"]
+        conflito = (
+            db.query(models.User)
+            .filter(
+                func.lower(models.User.display_name) == novo_nome.lower(),
+                models.User.id != current_user.id,
+            )
+            .first()
+        )
+        if conflito:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Esse nome de exibição já está sendo usado por outra pessoa. Escolha outro.",
+            )
 
     for campo, valor in data.items():
         setattr(current_user, campo, valor)

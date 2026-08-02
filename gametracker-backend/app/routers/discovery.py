@@ -27,14 +27,17 @@ async def search_games(
 
 
 @router.get("/games/{external_id}")
-async def get_game_details(external_id: str):
+async def get_game_details(external_id: str, lang: str = "pt"):
     """Detalhes completos de um jogo específico, usado ao confirmar a seleção no modal."""
-    return await games_api_service.get_game_details(external_id=external_id)
+    detalhes = await games_api_service.get_game_details(external_id=external_id)
+    detalhes["description"] = games_api_service.translate_description(detalhes.get("description"), lang)
+    return detalhes
 
 
 @router.get("/explore/gameplay")
 async def explore_gameplay(
     title: str = Query(..., min_length=2, description="Nome do jogo para buscar gameplay"),
+    lang: str = "pt",
 ):
     """
     Módulo 'Explorar': retorna metadados do jogo (RAWG) + vídeo de gameplay (YouTube)
@@ -52,6 +55,10 @@ async def explore_gameplay(
         resultados_busca = await games_api_service.search_games(query=title, page_size=1)
         if resultados_busca:
             game_data = await games_api_service.get_game_details(external_id=resultados_busca[0]["external_id"])
+            if game_data:
+                game_data["description"] = games_api_service.translate_description(
+                    game_data.get("description"), lang
+                )
     except HTTPException:
         game_data = None
 

@@ -153,22 +153,70 @@ class UserGame(Base):
         self.status = GameStatus.FINISHED if self.end_date else GameStatus.PLAYING
 
 
+class GameTranslation(Base):
+    """
+    Cache de descrições traduzidas por idioma, pra não chamar o tradutor de
+    novo toda vez que a lista de jogos é carregada. A descrição "canônica" em
+    `games.description` fica sempre em inglês (como vem da RAWG); aqui a gente
+    guarda as versões já traduzidas pra pt/es sob demanda (na primeira vez que
+    alguém pede aquele jogo naquele idioma).
+    """
+
+    __tablename__ = "game_translations"
+    __table_args__ = (
+        UniqueConstraint("game_id", "lang", name="uq_game_translation_lang"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(Integer, ForeignKey("games.id"), nullable=False)
+    lang = Column(String(5), nullable=False)  # "pt" | "es" (inglês não precisa, é o original)
+    description = Column(Text, nullable=True)
+
+    game = relationship("Game")
+
+
 class PlaySession(Base):
     """
-    Registro de uma "vez jogada" — usado para o contador de replays.
-    Toda vez que o usuário tenta adicionar um jogo que já está na biblioteca
-    (mesmo título + plataforma), em vez de duplicar o card, criamos aqui um
-    novo registro com a data e incrementamos UserGame.play_count.
+    Registro de uma "vez jogada" (playthrough) — usado tanto pro contador de
+    replays quanto pro histórico de datas de início/fim de cada jogada.
+
+    started_at: quando essa jogada específica começou.
+    finished_at: quando terminou — enquanto for None, essa jogada conta como
+                 "em andamento" e o UserGame correspondente fica com status
+                 PLAYING até o usuário informar a data de término.
     """
 
     __tablename__ = "play_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
     user_game_id = Column(Integer, ForeignKey("user_games.id"), nullable=False)
-    played_at = Column(Date, default=date.today, nullable=False)
+    played_at = Column(Date, default=date.today, nullable=False)  # mantido por compatibilidade (= started_at)
+    started_at = Column(Date, default=date.today, nullable=False)
+    finished_at = Column(Date, nullable=True)
     note = Column(String(255), nullable=True)
 
     user_game = relationship("UserGame", back_populates="sessions")
+
+    @property
+    def is_current(self) -> bool:
+        return self.finished_at is None
+
+
+class Follow(Base):
+    """Relação de 'seguir' entre dois usuários, usada no feed social e nos contadores de perfil."""
+
+    __tablename__ = "follows"
+    __table_args__ = (
+        UniqueConstraint("follower_id", "followee_id", name="uq_follow_pair"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    follower_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    followee_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    follower = relationship("User", foreign_keys=[follower_id])
+    followee = relationship("User", foreign_keys=[followee_id])
 
 
 class Rating(Base):

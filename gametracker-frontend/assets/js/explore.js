@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('token');
 
         try {
-            const response = await fetch(`${API_BASE}/explore/gameplay?title=${encodeURIComponent(titulo)}`, {
+            const response = await fetch(`${API_BASE}/explore/gameplay?title=${encodeURIComponent(titulo)}&lang=${gtBackendLang()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -56,6 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.gt-suggestion-chip').forEach(chip => {
         chip.addEventListener('click', () => buscar(chip.dataset.jogo));
     });
+
+    // Se o usuário trocar o idioma, refaz a busca atual pra a descrição vir
+    // traduzida de novo (o backend não guarda a tradução escolhida, só o cache).
+    document.addEventListener('gt:langchange', () => {
+        if (input.value.trim().length >= 2) buscar(input.value.trim());
+    });
 });
 
 function renderResultado(data, tituloBuscado) {
@@ -87,7 +93,7 @@ function renderResultado(data, tituloBuscado) {
                 ${jogo?.cover_url ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo?.title || '')}">` : '<i class="bi bi-controller"></i>'}
             </div>
             <h3 class="gt-card-title mb-1">${escapeHtml(jogo?.title || 'Jogo não encontrado na base')}</h3>
-            <p class="gt-detail-genre mb-2">${escapeHtml(jogo?.genre || '')}</p>
+            <p class="gt-detail-genre mb-2">${escapeHtml(gtTranslateGenre(jogo?.genre) || '')}</p>
             <div class="row g-4">
                 <div class="col-12 col-md-6">
                     <p class="small mb-2">${jogo?.description ? escapeHtml(jogo.description.split(/\s+/).slice(0, 50).join(' ')) + '…' : 'Sem descrição disponível para este jogo.'}</p>

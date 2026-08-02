@@ -72,7 +72,7 @@ function renderCard(containerId, item, mensagemVazio) {
             </div>
             <div>
                 <h5 class="mb-1">${escapeHtml(jogo.title)}</h5>
-                <p class="small text-white-50 mb-1">${escapeHtml(jogo.genre || '—')}</p>
+                <p class="small text-white-50 mb-1">${escapeHtml(gtTranslateGenre(jogo.genre) || '—')}</p>
                 <p class="small text-white-50 mb-0">${escapeHtml(item.platform || '—')}</p>
             </div>
         </div>

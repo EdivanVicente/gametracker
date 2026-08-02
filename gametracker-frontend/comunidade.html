@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GameTracker Pro — Resumo</title>
+  <title>GameTracker Pro — Comunidade</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,6 +17,18 @@
   <script src="assets/js/i18n.js"></script>
 
   <script src="assets/js/auth-check.js"></script>
+
+  <style>
+    .gt-feed-item { display: flex; gap: 0.75rem; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid var(--gt-border); }
+    .gt-feed-item:last-child { border-bottom: none; }
+    .gt-feed-avatar, .gt-rank-avatar, .gt-search-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: var(--gt-surface-raised); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+    .gt-feed-cover { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+    .gt-rank-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0; border-bottom: 1px solid var(--gt-border); cursor: pointer; }
+    .gt-rank-row:last-child { border-bottom: none; }
+    .gt-rank-row:hover { opacity: 0.85; }
+    .gt-search-hit { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem; border-radius: 0.4rem; cursor: pointer; }
+    .gt-search-hit:hover { background-color: var(--gt-surface-raised); }
+  </style>
 </head>
 <body>
 
@@ -37,7 +49,7 @@
           <li class="nav-item"><a class="nav-link" href="dashboard.html" data-i18n="nav.myGames">Meus Jogos</a></li>
           <li class="nav-item"><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explorar</a></li>
           <li class="nav-item"><a class="nav-link" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a></li>
-          <li class="nav-item"><a class="nav-link" href="comunidade.html" data-i18n="nav.community">Comunidade</a></li>
+          <li class="nav-item"><a class="nav-link active" href="comunidade.html" data-i18n="nav.community">Comunidade</a></li>
         </ul>
         <div class="d-flex align-items-center gap-2">
           <div data-gt-lang-switcher></div>
@@ -67,7 +79,7 @@
               </li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i><span data-i18n="nav.account">Minha conta</span></a></li>
-              <li><a class="dropdown-item active" href="games.html"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
+              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
               <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Configurações</span></a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="nav.logout">Sair</span></a></li>
@@ -79,41 +91,71 @@
   </nav>
 
   <main class="container-fluid gt-container-fluid px-3 px-md-4 py-4">
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-9">
 
-        <div id="games-summary-loading" class="text-center py-5">
-          <div class="spinner-border" role="status" style="color: var(--gt-accent);">
-            <span class="visually-hidden">Carregando...</span>
+    <button type="button" class="btn btn-gt-outline d-inline-flex align-items-center gap-2 mb-3" onclick="voltarPagina()">
+      <i class="bi bi-arrow-left"></i> <span data-i18n="common.back">Voltar</span>
+    </button>
+
+    <!-- ================================================
+         BUSCA GLOBAL — jogos (com nº de jogadores) e usuários
+         ================================================ -->
+    <div class="gt-panel p-3 p-md-4 mb-4">
+      <div class="input-group">
+        <span class="input-group-text bg-transparent border-0" style="background-color: var(--gt-surface-raised) !important; border-color: var(--gt-border) !important;">
+          <i class="bi bi-search text-white-50"></i>
+        </span>
+        <input type="text" class="form-control border-0 border-start-0" id="community-search-input"
+               placeholder="Buscar por jogo, nome de usuário ou e-mail..." data-i18n-placeholder="community.searchPlaceholder">
+      </div>
+      <div id="community-search-results" class="mt-3 d-none"></div>
+    </div>
+
+    <div class="row g-4">
+      <!-- ================================================
+           FEED — o que os membros estão jogando
+           ================================================ -->
+      <div class="col-12 col-lg-7">
+        <div class="gt-panel p-4">
+          <h5 class="gt-display mb-3">
+            <i class="bi bi-broadcast me-2"></i><span data-i18n="community.feedTitle">O que os membros estão jogando</span>
+          </h5>
+          <div id="community-feed">
+            <p class="text-white-50 small text-center py-4 mb-0" data-i18n="common.loading">Carregando...</p>
           </div>
         </div>
+      </div>
 
-        <div id="games-summary-content" class="d-none">
-          <div class="row g-4 mb-4">
-            <div class="col-12 col-md-6">
-              <h6 class="text-white-50 text-uppercase small mb-3" style="letter-spacing: 0.06em;">
-                <i class="bi bi-play-circle me-1"></i> <span data-i18n="gamesSummary.nowPlaying">Jogando agora</span>
-              </h6>
-              <div id="games-current-card"></div>
-            </div>
-            <div class="col-12 col-md-6">
-              <h6 class="text-white-50 text-uppercase small mb-3" style="letter-spacing: 0.06em;">
-                <i class="bi bi-check-circle me-1"></i> <span data-i18n="gamesSummary.lastFinished">Último finalizado</span>
-              </h6>
-              <div id="games-last-finished-card"></div>
-            </div>
-          </div>
-
-          <div class="text-center">
-            <a href="dashboard.html" class="btn btn-gt-primary px-4 py-2">
-              <i class="bi bi-grid-3x3-gap me-2"></i><span data-i18n="gamesSummary.viewAll">Ver todos os meus jogos</span>
-            </a>
+      <!-- ================================================
+           RANKING — usuários com mais jogos
+           ================================================ -->
+      <div class="col-12 col-lg-5">
+        <div class="gt-panel p-4">
+          <h5 class="gt-display mb-3">
+            <i class="bi bi-trophy me-2"></i><span data-i18n="community.rankingTitle">Ranking da comunidade</span>
+          </h5>
+          <div id="community-ranking">
+            <p class="text-white-50 small text-center py-4 mb-0" data-i18n="common.loading">Carregando...</p>
           </div>
         </div>
-
       </div>
     </div>
   </main>
+
+  <!-- ================================================
+       MODAL — perfil público (somente leitura) de um membro
+       ================================================ -->
+  <div class="modal fade" id="modalPublicProfile" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content gt-modal">
+        <div class="modal-header border-0">
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body pt-0" id="public-profile-body">
+          <p class="text-white-50 small text-center py-4 mb-0" data-i18n="common.loading">Carregando...</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <footer class="gt-footer py-4 text-center">
     <p class="small text-white-50 mb-0">
@@ -124,6 +166,6 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/main.js"></script>
   <script src="assets/js/navbar.js"></script>
-  <script src="assets/js/games-summary.js"></script>
+  <script src="assets/js/comunidade.js"></script>
 </body>
 </html>

@@ -15,10 +15,40 @@
 const GT_I18N_KEY = 'gt_lang';
 
 const GT_LANGUAGES = [
-  { code: 'pt-BR', flag: '🇧🇷', name: 'Português (Brasil)' },
-  { code: 'en', flag: '🇺🇸', name: 'English' },
-  { code: 'es', flag: '🇪🇸', name: 'Español' },
+  { code: 'pt-BR', flagCode: 'br', name: 'Português (Brasil)' },
+  { code: 'en', flagCode: 'us', name: 'English' },
+  { code: 'es', flagCode: 'es', name: 'Español' },
 ];
+
+// Bandeiras como SVG embutido — nada de imagem externa (flagcdn, etc), então
+// funciona sempre, mesmo offline ou com bloqueador de anúncios/CSP restritiva.
+// (A versão anterior usava <img src="flagcdn.com/..."> e, se essa requisição
+// falhasse silenciosamente por qualquer motivo de rede, a bandeira simplesmente
+// não aparecia — por isso trocamos para SVG inline, que sempre renderiza.)
+const GT_FLAG_SVGS = {
+  br: `<svg viewBox="0 0 24 18" width="20" height="15" xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="18" fill="#009739"/>
+    <polygon points="12,3 21,9 12,15 3,9" fill="#FEDD00"/>
+    <circle cx="12" cy="9" r="4" fill="#012169"/>
+  </svg>`,
+  us: `<svg viewBox="0 0 24 18" width="20" height="15" xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="18" fill="#B22234"/>
+    <g fill="#FFFFFF">
+      <rect y="1.38" width="24" height="1.38"/><rect y="4.15" width="24" height="1.38"/>
+      <rect y="6.92" width="24" height="1.38"/><rect y="9.69" width="24" height="1.38"/>
+      <rect y="12.46" width="24" height="1.38"/><rect y="15.23" width="24" height="1.38"/>
+    </g>
+    <rect width="10" height="9.69" fill="#3C3B6E"/>
+  </svg>`,
+  es: `<svg viewBox="0 0 24 18" width="20" height="15" xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="18" fill="#AA151B"/>
+    <rect y="4.5" width="24" height="9" fill="#F1BF00"/>
+  </svg>`,
+};
+
+function gtFlagImg(flagCode) {
+  return `<span style="display:inline-flex;vertical-align:middle;border-radius:2px;overflow:hidden;line-height:0;">${GT_FLAG_SVGS[flagCode] || ''}</span>`;
+}
 
 const GT_DICT = {
   'pt-BR': {
@@ -26,6 +56,7 @@ const GT_DICT = {
     'nav.myGames': 'Meus Jogos',
     'nav.explore': 'Explorar',
     'nav.stats': 'Estatísticas',
+    'nav.community': 'Comunidade',
     'nav.account': 'Minha conta',
     'nav.games': 'Jogos',
     'nav.settings': 'Configurações',
@@ -35,9 +66,11 @@ const GT_DICT = {
     'nav.profile': 'Perfil',
     'nav.loading': 'Carregando...',
     'common.cancel': 'Cancelar',
+    'common.confirm': 'Confirmar',
     'common.save': 'Salvar alterações',
     'common.delete': 'Excluir',
     'common.close': 'Fechar',
+    'common.back': 'Voltar',
     'common.loading': 'Carregando...',
     'common.search': 'Buscar',
     'footer.credit': 'GameTracker Pro © 2026 — desenvolvido por Edivan Vicente',
@@ -104,11 +137,15 @@ const GT_DICT = {
     'detail.endDate': 'Data de finalização',
     'detail.playCountLabel': 'Vezes jogado',
     'detail.lastPlayed': 'Última vez',
-    'detail.logSession': 'Registrar nova jogada',
+    'detail.logSession': 'Jogar novamente',
+    'detail.finishSession': 'Finalizar esta jogada',
+    'detail.sessionError': 'Não foi possível registrar essa jogada.',
     'detail.hoursPlayed': 'Horas jogadas',
     'detail.timeToBeatMain': 'Duração estimada (missão principal)',
     'detail.timeToBeat100': 'Duração estimada (100%)',
     'detail.timeToBeatHint': 'As durações estimadas são informativas — preencha manualmente com base na sua própria experiência ou em um guia externo (ex: HowLongToBeat).',
+    'detail.fetchDuration': 'Buscar duração automaticamente (HowLongToBeat)',
+    'detail.durationNotFound': 'Não encontramos duração para esse jogo. Preencha manualmente.',
     'detail.ratingByCategory': 'Avaliação por categoria',
     'detail.graphics': 'Gráficos',
     'detail.sound': 'Som',
@@ -117,6 +154,7 @@ const GT_DICT = {
     'detail.markFavorite': 'Marcar como favorito',
     'detail.gameplayLabel': 'Gameplay',
     'detail.noVideo': 'Buscando vídeo de gameplay...',
+    'detail.noGenre': 'Gênero não informado',
     'toast.replayLogged': '"{title}" já estava na sua biblioteca — registramos mais uma jogada (total: {count}x).',
 
     // --- Add game modal ---
@@ -147,6 +185,7 @@ const GT_DICT = {
     'account.title': 'Minha conta',
     'account.basicInfo': 'Informações básicas',
     'account.friendCodes': 'Redes e códigos de amigo',
+    'account.memberSince': 'Membro desde',
     'settings.title': 'Configurações',
     'settings.changeEmail': 'Trocar e-mail',
     'settings.changePassword': 'Trocar senha',
@@ -156,12 +195,42 @@ const GT_DICT = {
     'stats.byPlatform': 'Por plataforma',
     'stats.avgByCategory': 'Notas médias por categoria',
     'stats.topRated': 'Melhor avaliados',
+    'stats.gamesCataloged': 'Jogos catalogados',
+    'stats.completionRate': 'Taxa de conclusão',
+    'stats.avgScore': 'Nota média geral',
+    'stats.notEnoughData': 'Sem dados suficientes.',
+    'stats.noRatedGames': 'Ainda não há jogos avaliados.',
+
+    'community.searchPlaceholder': 'Buscar por jogo, nome de usuário ou e-mail...',
+    'community.feedTitle': 'O que os membros estão jogando',
+    'community.rankingTitle': 'Ranking da comunidade',
+    'community.feedEmpty': 'Nenhuma atividade recente. Siga outros membros para ver o que eles estão jogando.',
+    'community.feedStarted': 'começou a jogar',
+    'community.feedFinished': 'finalizou',
+    'community.anonymous': 'Jogador sem nome',
+    'community.loadError': 'Não foi possível carregar. Tente novamente.',
+    'community.rankingEmpty': 'Ainda não há dados suficientes pro ranking.',
+    'community.searchEmpty': 'Nada encontrado para essa busca.',
+    'community.searchGames': 'Jogos',
+    'community.searchUsers': 'Usuários',
+    'community.playersCount': 'jogadores',
+    'community.noPlayersYet': 'Ninguém adicionou esse jogo ainda.',
+    'community.privateProfile': 'Este perfil é privado.',
+    'community.games': 'Jogos',
+    'community.followers': 'Seguidores',
+    'community.following': 'Seguindo',
+    'community.follow': 'Seguir',
+    'community.unfollow': 'Deixar de seguir',
+    'community.nothingPlaying': 'Nada em andamento no momento.',
+    'community.nothingFinished': 'Nenhum jogo finalizado ainda.',
+    'community.recentlyFinished': 'Finalizados recentemente',
   },
 
   'en': {
     'nav.myGames': 'My Games',
     'nav.explore': 'Explore',
     'nav.stats': 'Statistics',
+    'nav.community': 'Community',
     'nav.account': 'My account',
     'nav.games': 'Games',
     'nav.settings': 'Settings',
@@ -171,9 +240,11 @@ const GT_DICT = {
     'nav.profile': 'Profile',
     'nav.loading': 'Loading...',
     'common.cancel': 'Cancel',
+    'common.confirm': 'Confirm',
     'common.save': 'Save changes',
     'common.delete': 'Delete',
     'common.close': 'Close',
+    'common.back': 'Back',
     'common.loading': 'Loading...',
     'common.search': 'Search',
     'footer.credit': 'GameTracker Pro © 2026 — built by Edivan Vicente',
@@ -235,11 +306,15 @@ const GT_DICT = {
     'detail.endDate': 'Finish date',
     'detail.playCountLabel': 'Times played',
     'detail.lastPlayed': 'Last played',
-    'detail.logSession': 'Log a new playthrough',
+    'detail.logSession': 'Play again',
+    'detail.finishSession': 'Finish this playthrough',
+    'detail.sessionError': 'Could not save this playthrough.',
     'detail.hoursPlayed': 'Hours played',
     'detail.timeToBeatMain': 'Estimated time (main story)',
     'detail.timeToBeat100': 'Estimated time (100%)',
     'detail.timeToBeatHint': 'Estimated durations are informational — fill them in manually based on your own experience or an external guide (e.g. HowLongToBeat).',
+    'detail.fetchDuration': 'Auto-fetch duration (HowLongToBeat)',
+    'detail.durationNotFound': 'We could not find a duration for this game. Please fill it in manually.',
     'detail.ratingByCategory': 'Rating by category',
     'detail.graphics': 'Graphics',
     'detail.sound': 'Sound',
@@ -248,6 +323,7 @@ const GT_DICT = {
     'detail.markFavorite': 'Mark as favorite',
     'detail.gameplayLabel': 'Gameplay',
     'detail.noVideo': 'Searching for gameplay video...',
+    'detail.noGenre': 'Genre not informed',
     'toast.replayLogged': '"{title}" was already in your library — we logged another playthrough (total: {count}x).',
 
     'addGame.title': 'Add game',
@@ -273,6 +349,7 @@ const GT_DICT = {
     'account.title': 'My account',
     'account.basicInfo': 'Basic information',
     'account.friendCodes': 'Networks & friend codes',
+    'account.memberSince': 'Member since',
     'settings.title': 'Settings',
     'settings.changeEmail': 'Change email',
     'settings.changePassword': 'Change password',
@@ -282,12 +359,42 @@ const GT_DICT = {
     'stats.byPlatform': 'By platform',
     'stats.avgByCategory': 'Average scores by category',
     'stats.topRated': 'Top rated',
+    'stats.gamesCataloged': 'Games cataloged',
+    'stats.completionRate': 'Completion rate',
+    'stats.avgScore': 'Overall average score',
+    'stats.notEnoughData': 'Not enough data yet.',
+    'stats.noRatedGames': 'No rated games yet.',
+
+    'community.searchPlaceholder': 'Search by game, username or email...',
+    'community.feedTitle': 'What members are playing',
+    'community.rankingTitle': 'Community ranking',
+    'community.feedEmpty': "No recent activity. Follow other members to see what they're playing.",
+    'community.feedStarted': 'started playing',
+    'community.feedFinished': 'finished',
+    'community.anonymous': 'Unnamed player',
+    'community.loadError': 'Could not load. Please try again.',
+    'community.rankingEmpty': 'Not enough data for the ranking yet.',
+    'community.searchEmpty': 'Nothing found for this search.',
+    'community.searchGames': 'Games',
+    'community.searchUsers': 'Users',
+    'community.playersCount': 'players',
+    'community.noPlayersYet': 'No one has added this game yet.',
+    'community.privateProfile': 'This profile is private.',
+    'community.games': 'Games',
+    'community.followers': 'Followers',
+    'community.following': 'Following',
+    'community.follow': 'Follow',
+    'community.unfollow': 'Unfollow',
+    'community.nothingPlaying': 'Nothing in progress right now.',
+    'community.nothingFinished': 'No finished games yet.',
+    'community.recentlyFinished': 'Recently finished',
   },
 
   'es': {
     'nav.myGames': 'Mis Juegos',
     'nav.explore': 'Explorar',
     'nav.stats': 'Estadísticas',
+    'nav.community': 'Comunidad',
     'nav.account': 'Mi cuenta',
     'nav.games': 'Juegos',
     'nav.settings': 'Configuración',
@@ -297,9 +404,11 @@ const GT_DICT = {
     'nav.profile': 'Perfil',
     'nav.loading': 'Cargando...',
     'common.cancel': 'Cancelar',
+    'common.confirm': 'Confirmar',
     'common.save': 'Guardar cambios',
     'common.delete': 'Eliminar',
     'common.close': 'Cerrar',
+    'common.back': 'Volver',
     'common.loading': 'Cargando...',
     'common.search': 'Buscar',
     'footer.credit': 'GameTracker Pro © 2026 — desarrollado por Edivan Vicente',
@@ -361,11 +470,15 @@ const GT_DICT = {
     'detail.endDate': 'Fecha de finalización',
     'detail.playCountLabel': 'Veces jugado',
     'detail.lastPlayed': 'Última vez',
-    'detail.logSession': 'Registrar nueva partida',
+    'detail.logSession': 'Jugar de nuevo',
+    'detail.finishSession': 'Finalizar esta partida',
+    'detail.sessionError': 'No fue posible registrar esta partida.',
     'detail.hoursPlayed': 'Horas jugadas',
     'detail.timeToBeatMain': 'Duración estimada (misión principal)',
     'detail.timeToBeat100': 'Duración estimada (100%)',
     'detail.timeToBeatHint': 'Las duraciones estimadas son informativas — complétalas manualmente según tu propia experiencia o una guía externa (ej: HowLongToBeat).',
+    'detail.fetchDuration': 'Buscar duración automáticamente (HowLongToBeat)',
+    'detail.durationNotFound': 'No encontramos duración para este juego. Complétala manualmente.',
     'detail.ratingByCategory': 'Calificación por categoría',
     'detail.graphics': 'Gráficos',
     'detail.sound': 'Sonido',
@@ -374,6 +487,7 @@ const GT_DICT = {
     'detail.markFavorite': 'Marcar como favorito',
     'detail.gameplayLabel': 'Gameplay',
     'detail.noVideo': 'Buscando video de gameplay...',
+    'detail.noGenre': 'Género no informado',
     'toast.replayLogged': '"{title}" ya estaba en tu biblioteca — registramos otra partida (total: {count}x).',
 
     'addGame.title': 'Añadir juego',
@@ -399,6 +513,7 @@ const GT_DICT = {
     'account.title': 'Mi cuenta',
     'account.basicInfo': 'Información básica',
     'account.friendCodes': 'Redes y códigos de amigo',
+    'account.memberSince': 'Miembro desde',
     'settings.title': 'Configuración',
     'settings.changeEmail': 'Cambiar correo',
     'settings.changePassword': 'Cambiar contraseña',
@@ -408,9 +523,74 @@ const GT_DICT = {
     'stats.byPlatform': 'Por plataforma',
     'stats.avgByCategory': 'Notas promedio por categoría',
     'stats.topRated': 'Mejor calificados',
+    'stats.gamesCataloged': 'Juegos catalogados',
+    'stats.completionRate': 'Tasa de finalización',
+    'stats.avgScore': 'Nota promedio general',
+    'stats.notEnoughData': 'No hay suficientes datos.',
+    'stats.noRatedGames': 'Todavía no hay juegos calificados.',
+
+    'community.searchPlaceholder': 'Buscar por juego, usuario o correo...',
+    'community.feedTitle': 'Qué están jugando los miembros',
+    'community.rankingTitle': 'Ranking de la comunidad',
+    'community.feedEmpty': 'Sin actividad reciente. Sigue a otros miembros para ver qué están jugando.',
+    'community.feedStarted': 'empezó a jugar',
+    'community.feedFinished': 'terminó',
+    'community.anonymous': 'Jugador sin nombre',
+    'community.loadError': 'No fue posible cargar. Inténtalo de nuevo.',
+    'community.rankingEmpty': 'Todavía no hay suficientes datos para el ranking.',
+    'community.searchEmpty': 'No se encontró nada para esta búsqueda.',
+    'community.searchGames': 'Juegos',
+    'community.searchUsers': 'Usuarios',
+    'community.playersCount': 'jugadores',
+    'community.noPlayersYet': 'Nadie ha añadido este juego todavía.',
+    'community.privateProfile': 'Este perfil es privado.',
+    'community.games': 'Juegos',
+    'community.followers': 'Seguidores',
+    'community.following': 'Siguiendo',
+    'community.follow': 'Seguir',
+    'community.unfollow': 'Dejar de seguir',
+    'community.nothingPlaying': 'Nada en curso por ahora.',
+    'community.nothingFinished': 'Todavía no hay juegos finalizados.',
+    'community.recentlyFinished': 'Finalizados recientemente',
   },
 };
 
+// A RAWG devolve os gêneros sempre em inglês (ex: "Action, Adventure, RPG"),
+// independente do idioma escolhido no site. Esse mapa traduz os nomes mais
+// comuns — gêneros fora da lista são exibidos como vieram da API (em inglês).
+const GT_GENRE_MAP = {
+  'en': {}, // já vem em inglês, não precisa mapear
+  'pt-BR': {
+    'Action': 'Ação', 'Adventure': 'Aventura', 'RPG': 'RPG', 'Strategy': 'Estratégia',
+    'Shooter': 'Tiro', 'Casual': 'Casual', 'Simulation': 'Simulação', 'Puzzle': 'Quebra-cabeça',
+    'Arcade': 'Arcade', 'Platformer': 'Plataforma', 'Racing': 'Corrida', 'Sports': 'Esportes',
+    'Fighting': 'Luta', 'Family': 'Família', 'Board Games': 'Jogos de tabuleiro',
+    'Educational': 'Educativo', 'Card': 'Cartas', 'Massively Multiplayer': 'Multiplayer massivo',
+    'Indie': 'Indie',
+  },
+  'es': {
+    'Action': 'Acción', 'Adventure': 'Aventura', 'RPG': 'RPG', 'Strategy': 'Estrategia',
+    'Shooter': 'Disparos', 'Casual': 'Casual', 'Simulation': 'Simulación', 'Puzzle': 'Rompecabezas',
+    'Arcade': 'Arcade', 'Platformer': 'Plataformas', 'Racing': 'Carreras', 'Sports': 'Deportes',
+    'Fighting': 'Lucha', 'Family': 'Familia', 'Board Games': 'Juegos de mesa',
+    'Educational': 'Educativo', 'Card': 'Cartas', 'Massively Multiplayer': 'Multijugador masivo',
+    'Indie': 'Indie',
+  },
+};
+
+function gtTranslateGenre(genreString) {
+  if (!genreString) return genreString;
+  const map = GT_GENRE_MAP[GT_I18N.currentLang] || {};
+  return genreString.split(',').map(g => {
+    const nome = g.trim();
+    return map[nome] || nome;
+  }).join(', ');
+}
+
+// O backend traduz descrições com códigos curtos (pt/en/es) — o front usa 'pt-BR'.
+function gtBackendLang() {
+  return GT_I18N.currentLang === 'pt-BR' ? 'pt' : GT_I18N.currentLang;
+}
 function gtSupportedLang(lang) {
   return GT_DICT[lang] ? lang : 'pt-BR';
 }
@@ -474,9 +654,9 @@ const GT_I18N = {
       if (container.dataset.gtRendered === 'true') {
         const current = GT_LANGUAGES.find(l => l.code === this.currentLang);
         const label = container.querySelector('.gt-lang-current-label');
-        const flag = container.querySelector('.gt-lang-current-flag');
+        const flagSlot = container.querySelector('.gt-lang-current-flag');
         if (label) label.textContent = current.code === 'pt-BR' ? 'PT-BR' : current.code.toUpperCase();
-        if (flag) flag.textContent = current.flag;
+        if (flagSlot) flagSlot.innerHTML = gtFlagImg(current.flagCode, 18);
         container.querySelectorAll('[data-lang-option]').forEach(item => {
           item.classList.toggle('active', item.getAttribute('data-lang-option') === this.currentLang);
         });
@@ -489,7 +669,7 @@ const GT_I18N = {
       container.innerHTML = `
         <button class="btn btn-gt-outline d-flex align-items-center gap-2 px-2 py-1" type="button"
                 data-bs-toggle="dropdown" aria-expanded="false" title="${this.t('nav.language')}">
-          <span class="gt-lang-current-flag">${current.flag}</span>
+          <span class="gt-lang-current-flag d-inline-flex">${gtFlagImg(current.flagCode, 18)}</span>
           <span class="gt-lang-current-label small d-none d-sm-inline">${current.code === 'pt-BR' ? 'PT-BR' : current.code.toUpperCase()}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -497,7 +677,7 @@ const GT_I18N = {
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2 ${l.code === this.currentLang ? 'active' : ''}"
                  href="#" data-lang-option="${l.code}">
-                <span>${l.flag}</span><span>${l.name}</span>
+                <span class="d-inline-flex">${gtFlagImg(l.flagCode, 18)}</span><span>${l.name}</span>
               </a>
             </li>`).join('')}
         </ul>`;

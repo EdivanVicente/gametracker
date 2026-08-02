@@ -58,6 +58,9 @@
           <li class="nav-item">
             <a class="nav-link" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="comunidade.html" data-i18n="nav.community">Comunidade</a>
+          </li>
         </ul>
 
         <div class="d-flex align-items-center gap-2">
@@ -375,19 +378,28 @@
           </div>
 
           <!-- ================================================
-               REPLAY — quantas vezes já jogou + horas jogadas
+               REPLAY — histórico de jogadas (início/fim de cada uma)
                ================================================ -->
-          <div class="d-flex align-items-center justify-content-between gt-panel p-2 px-3 mb-3">
-            <div>
-              <p class="small text-white-50 mb-0" data-i18n="detail.playCountLabel">Vezes jogado</p>
-              <p class="fw-semibold mb-0"><i class="bi bi-arrow-repeat me-1"></i><span id="detail-play-count">1</span></p>
-              <p class="small text-white-50 mb-0 d-none" id="detail-last-played-wrapper">
-                <span data-i18n="detail.lastPlayed">Última vez</span>: <span id="detail-last-played">—</span>
-              </p>
+          <div class="gt-panel p-2 px-3 mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div>
+                <p class="small text-white-50 mb-0" data-i18n="detail.playCountLabel">Vezes jogado</p>
+                <p class="fw-semibold mb-0"><i class="bi bi-arrow-repeat me-1"></i><span id="detail-play-count">1</span></p>
+              </div>
+              <div id="detail-session-actions"></div>
             </div>
-            <button type="button" class="btn btn-gt-outline btn-sm" id="btn-log-play-session">
-              <i class="bi bi-plus-lg me-1"></i><span data-i18n="detail.logSession">Registrar nova jogada</span>
-            </button>
+
+            <!-- Formulário inline (aparece ao clicar em "Jogar novamente" / "Finalizar") -->
+            <div class="d-none mt-2 d-flex gap-2 align-items-end" id="detail-session-form">
+              <div class="flex-fill">
+                <label class="form-label small text-white-50 mb-1" id="detail-session-form-label"></label>
+                <input type="date" class="form-control form-control-sm" id="detail-session-date-input">
+              </div>
+              <button type="button" class="btn btn-gt-primary btn-sm" id="btn-confirm-session" data-i18n="common.confirm">Confirmar</button>
+              <button type="button" class="btn btn-gt-outline btn-sm" id="btn-cancel-session" data-i18n="common.cancel">Cancelar</button>
+            </div>
+
+            <ul class="list-unstyled small text-white-50 mb-0 mt-2" id="detail-session-history"></ul>
           </div>
 
           <div class="row g-3 mb-3">
@@ -404,9 +416,12 @@
               <input type="number" min="0" step="0.5" class="form-control" id="detail-time-to-beat-100" placeholder="h">
             </div>
           </div>
-          <p class="small text-white-50 mb-3" style="margin-top: -0.5rem;" data-i18n="detail.timeToBeatHint">
-            As durações estimadas são informativas — preencha manualmente com base na sua própria experiência ou em um guia externo (ex: HowLongToBeat).
+          <p class="small text-white-50 mb-2" style="margin-top: -0.5rem;" data-i18n="detail.timeToBeatHint">
+            As durações estimadas são informativas — se não vierem preenchidas automaticamente, você pode inserir manualmente com base na sua própria experiência ou em um guia externo (ex: HowLongToBeat).
           </p>
+          <button type="button" class="btn btn-gt-outline btn-sm mb-3" id="btn-fetch-duration">
+            <i class="bi bi-cloud-download me-1"></i><span data-i18n="detail.fetchDuration">Buscar duração automaticamente (HowLongToBeat)</span>
+          </button>
 
           <hr class="border-secondary">
 

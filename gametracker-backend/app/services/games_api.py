@@ -137,18 +137,28 @@ class GamesApiService:
             modos.append("Multiplayer")
 
         descricao_original = item.get("description_raw") or item.get("description")
-        descricao_traduzida = _traduzir_texto(descricao_original, idioma_destino="pt") if descricao_original else None
 
         return {
             "external_id": str(item.get("id")),
             "title": item.get("name"),
             "cover_url": item.get("background_image"),
-            "description": descricao_traduzida,
+            "description": descricao_original,
             "platforms": platforms,
             "genre": ", ".join(genres) if genres else None,
             "release_date": item.get("released"),
             "multiplayer_info": ", ".join(modos) if modos else None,
         }
+
+    @staticmethod
+    def translate_description(texto: str | None, idioma_destino: str) -> str | None:
+        """
+        Ponto único usado pelas rotas pra traduzir uma descrição já buscada,
+        pro idioma escolhido pelo usuário (a descrição fica em inglês, como
+        vem da RAWG, até esse ponto).
+        """
+        if not texto or idioma_destino == "en":
+            return texto  # já vem em inglês da RAWG, não precisa traduzir
+        return _traduzir_texto(texto, idioma_destino=idioma_destino)
 
 
 games_api_service = GamesApiService()
