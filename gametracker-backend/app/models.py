@@ -49,6 +49,7 @@ class User(Base):
     state = Column(String(100), nullable=True)
     gender = Column(String(20), nullable=True)  # "male" | "female" | "other" | "private"
     profile_visibility = Column(String(20), default="public", nullable=False)  # public | friends | private
+    onboarding_completed = Column(Boolean, default=False, nullable=False)
 
     # --- Redes sociais / friend codes ---
     friend_code_3ds = Column(String(100), nullable=True)

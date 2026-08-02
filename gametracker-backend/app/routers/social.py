@@ -142,6 +142,69 @@ def unfollow_user(
     return schemas.FollowActionOut(following=False, followers_count=followers_count)
 
 
+def _pode_ver_lista(db: Session, alvo_id: int, visitante_id: int) -> bool:
+    """Mesma regra de privacidade do perfil: só pode ver seguidores/seguindo de quem o perfil permite ver."""
+    if alvo_id == visitante_id:
+        return True
+    alvo = db.query(models.User).filter(models.User.id == alvo_id).first()
+    if not alvo:
+        return False
+    if alvo.profile_visibility == "private":
+        return False
+    if alvo.profile_visibility == "friends":
+        segue = (
+            db.query(models.Follow)
+            .filter(models.Follow.follower_id == visitante_id, models.Follow.followee_id == alvo_id)
+            .first()
+        )
+        return segue is not None
+    return True
+
+
+@router.get("/followers/{user_id}", response_model=list[schemas.UserSearchHitOut])
+def get_followers(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Lista quem segue esse usuário (igual à lista de 'seguidores' do Instagram)."""
+    if not _pode_ver_lista(db, user_id, current_user.id):
+        raise HTTPException(status_code=403, detail="Este perfil é privado.")
+
+    seguidores = (
+        db.query(models.User)
+        .join(models.Follow, models.Follow.follower_id == models.User.id)
+        .filter(models.Follow.followee_id == user_id)
+        .all()
+    )
+    return [
+        schemas.UserSearchHitOut(id=u.id, display_name=u.display_name, avatar_data=u.avatar_data)
+        for u in seguidores
+    ]
+
+
+@router.get("/following/{user_id}", response_model=list[schemas.UserSearchHitOut])
+def get_following(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Lista quem esse usuário está seguindo (igual à lista de 'seguindo' do Instagram)."""
+    if not _pode_ver_lista(db, user_id, current_user.id):
+        raise HTTPException(status_code=403, detail="Este perfil é privado.")
+
+    seguindo = (
+        db.query(models.User)
+        .join(models.Follow, models.Follow.followee_id == models.User.id)
+        .filter(models.Follow.follower_id == user_id)
+        .all()
+    )
+    return [
+        schemas.UserSearchHitOut(id=u.id, display_name=u.display_name, avatar_data=u.avatar_data)
+        for u in seguindo
+    ]
+
+
 @router.get("/ranking", response_model=list[schemas.RankingEntryOut])
 def get_ranking(
     db: Session = Depends(get_db),

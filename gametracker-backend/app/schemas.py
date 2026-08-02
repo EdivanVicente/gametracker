@@ -48,6 +48,7 @@ class UserOut(BaseModel):
     state: str | None = None
     gender: str | None = None
     profile_visibility: str = "public"
+    onboarding_completed: bool = False
 
     friend_code_3ds: str | None = None
     ea_app_id: str | None = None
@@ -79,6 +80,7 @@ class UserProfileUpdate(BaseModel):
     state: str | None = Field(default=None, max_length=100)
     gender: str | None = None
     profile_visibility: str | None = None
+    onboarding_completed: bool | None = None
 
     friend_code_3ds: str | None = Field(default=None, max_length=100)
     ea_app_id: str | None = Field(default=None, max_length=100)

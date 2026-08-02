@@ -289,6 +289,59 @@
        MODAL: Adicionar Jogo (busca na API externa)
        Estrutura pronta para a Etapa 4 conectar o fetch de busca.
        ============================================================ -->
+  <!-- ================================================
+       MODAL — boas-vindas / onboarding (só aparece no primeiro acesso)
+       ================================================ -->
+  <div class="modal fade" id="modalOnboarding" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content gt-modal">
+        <div class="modal-body p-4 p-md-5 text-center">
+          <i class="bi bi-joystick fs-1 mb-3 d-block" style="color: var(--gt-accent);"></i>
+          <h4 class="gt-display mb-2" data-i18n="onboarding.title">Boas-vindas ao GameTracker Pro!</h4>
+          <p class="text-white-50 mb-4" data-i18n="onboarding.subtitle">
+            Só mais um passinho pra deixar sua conta com a sua cara — leva 10 segundos.
+          </p>
+
+          <div class="text-start">
+            <label for="onboarding-display-name" class="form-label small text-white-50" data-i18n="onboarding.nameLabel">Como devemos te chamar?</label>
+            <input type="text" class="form-control mb-3" id="onboarding-display-name" maxlength="120"
+                   placeholder="Ex: Edivan" data-i18n-placeholder="onboarding.namePlaceholder">
+
+            <p class="small text-white-50 mb-2" data-i18n="onboarding.platformsLabel">
+              IDs de plataforma (opcional — ajuda a comunidade a te achar na busca)
+            </p>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label for="onboarding-psn" class="form-label small text-white-50 mb-1">PSN ID</label>
+                <input type="text" class="form-control form-control-sm" id="onboarding-psn" maxlength="100">
+              </div>
+              <div class="col-6">
+                <label for="onboarding-steam" class="form-label small text-white-50 mb-1">Steam ID</label>
+                <input type="text" class="form-control form-control-sm" id="onboarding-steam" maxlength="100">
+              </div>
+              <div class="col-6">
+                <label for="onboarding-xbox" class="form-label small text-white-50 mb-1">Xbox Gamertag</label>
+                <input type="text" class="form-control form-control-sm" id="onboarding-xbox" maxlength="100">
+              </div>
+              <div class="col-6">
+                <label for="onboarding-switch" class="form-label small text-white-50 mb-1" data-i18n="onboarding.switchLabel">Nintendo Switch ID</label>
+                <input type="text" class="form-control form-control-sm" id="onboarding-switch" maxlength="100">
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-gt-outline flex-fill" id="btn-onboarding-skip" data-i18n="onboarding.skip">Pular</button>
+            <button type="button" class="btn btn-gt-primary flex-fill" id="btn-onboarding-save" data-i18n="onboarding.save">Salvar</button>
+          </div>
+          <p class="small text-white-50 mt-3 mb-0" data-i18n="onboarding.laterHint">
+            Você pode preencher ou mudar tudo isso depois em "Minha conta".
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="modalAddGame" tabindex="-1" aria-labelledby="modalAddGameLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content gt-modal">

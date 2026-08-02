@@ -40,6 +40,7 @@ def _run_light_migrations() -> None:
                 "state": "VARCHAR(100)",
                 "gender": "VARCHAR(20)",
                 "profile_visibility": "VARCHAR(20) DEFAULT 'public'",
+                "onboarding_completed": "BOOLEAN DEFAULT 0",
                 "friend_code_3ds": "VARCHAR(100)",
                 "ea_app_id": "VARCHAR(100)",
                 "nintendo_network_id": "VARCHAR(100)",

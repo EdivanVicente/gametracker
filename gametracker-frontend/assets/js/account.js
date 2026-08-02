@@ -13,7 +13,52 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-cancel-profile').addEventListener('click', () => {
         window.location.href = 'dashboard.html';
     });
+
+    document.getElementById('stat-followers-trigger').addEventListener('click', () => abrirListaSeguidores('followers'));
+    document.getElementById('stat-following-trigger').addEventListener('click', () => abrirListaSeguidores('following'));
 });
+
+function escapeHtml(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto ?? '';
+    return div.innerHTML;
+}
+
+// Abre o modal estilo Instagram com a lista de seguidores ou de quem a
+// própria conta está seguindo. Clicar em alguém da lista leva pro perfil
+// público dessa pessoa na aba Comunidade.
+async function abrirListaSeguidores(tipo) {
+    if (!perfilOriginal) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFollowList'));
+    const titulo = document.getElementById('follow-list-title');
+    const body = document.getElementById('follow-list-body');
+
+    titulo.textContent = tipo === 'followers' ? GT_I18N.t('community.followers') : GT_I18N.t('community.following');
+    body.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('common.loading')}</p>`;
+    modal.show();
+
+    try {
+        const response = await authFetch(`/social/${tipo}/${perfilOriginal.id}`);
+        if (!response.ok) throw new Error('erro');
+        const lista = await response.json();
+
+        if (lista.length === 0) {
+            body.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('community.emptyFollowList')}</p>`;
+            return;
+        }
+
+        body.innerHTML = lista.map(u => `
+            <a href="comunidade.html?profile=${u.id}" class="d-flex align-items-center gap-2 text-decoration-none py-2">
+                <div class="rounded-circle overflow-hidden d-flex align-items-center justify-content-center"
+                     style="width:36px;height:36px;background-color:var(--gt-surface-raised);flex-shrink:0;">
+                    ${u.avatar_data ? `<img src="${u.avatar_data}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="bi bi-person text-white-50"></i>'}
+                </div>
+                <span class="small">${escapeHtml(u.display_name || GT_I18N.t('community.anonymous'))}</span>
+            </a>`).join('');
+    } catch (error) {
+        body.innerHTML = `<p class="text-danger small text-center py-4 mb-0">${GT_I18N.t('community.loadError')}</p>`;
+    }
+}
 
 async function authFetch(path, options = {}) {
     const token = localStorage.getItem('token');
