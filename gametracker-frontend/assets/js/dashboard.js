@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDetailModal();
     aplicarFiltroDaUrl();
     carregarMeusJogos();
+    verificarOnboarding();
+    document.getElementById('btn-onboarding-save')?.addEventListener('click', () => concluirOnboarding(true));
+    document.getElementById('btn-onboarding-skip')?.addEventListener('click', () => concluirOnboarding(false));
 
     // Recalcula os contadores de "dias jogando" periodicamente, sem precisar
     // recarregar a página (usa o cache local, não faz nenhuma chamada à API).
@@ -45,6 +48,49 @@ document.addEventListener('DOMContentLoaded', () => {
     // GT_I18N.apply() automático — precisam re-renderizar a grade.
     document.addEventListener('gt:langchange', () => carregarMeusJogos());
 });
+
+// --- Onboarding: pergunta nome de exibição + IDs de plataforma só no primeiro acesso ---
+async function verificarOnboarding() {
+    try {
+        const response = await authFetch('/auth/me');
+        if (!response.ok) return;
+        const user = await response.json();
+        if (user.onboarding_completed) return;
+
+        // Pré-preenche caso o usuário já tenha algo salvo (ex: veio de um cadastro antigo).
+        document.getElementById('onboarding-display-name').value = user.display_name || '';
+        document.getElementById('onboarding-psn').value = user.psn_id || '';
+        document.getElementById('onboarding-steam').value = user.steam_id || '';
+        document.getElementById('onboarding-xbox').value = user.xbox_gamertag || '';
+        document.getElementById('onboarding-switch').value = user.nintendo_switch_id || '';
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalOnboarding')).show();
+    } catch (error) {
+        console.error('Erro ao verificar onboarding:', error);
+    }
+}
+
+async function concluirOnboarding(comDados) {
+    const payload = { onboarding_completed: true };
+    if (comDados) {
+        payload.display_name = document.getElementById('onboarding-display-name').value.trim() || null;
+        payload.psn_id = document.getElementById('onboarding-psn').value.trim() || null;
+        payload.steam_id = document.getElementById('onboarding-steam').value.trim() || null;
+        payload.xbox_gamertag = document.getElementById('onboarding-xbox').value.trim() || null;
+        payload.nintendo_switch_id = document.getElementById('onboarding-switch').value.trim() || null;
+    }
+    try {
+        await authFetch('/auth/me', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    } catch (error) {
+        console.error('Erro ao salvar onboarding:', error);
+    } finally {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalOnboarding')).hide();
+    }
+}
 
 // --- Helper: toast simples (sem markup fixo no HTML — cria o container sob demanda) ---
 function mostrarToast(mensagem) {

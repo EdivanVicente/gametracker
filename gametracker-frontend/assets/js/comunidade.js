@@ -246,8 +246,8 @@ function renderizarPerfilPublico(p) {
 
             <div class="d-flex justify-content-center gap-4 my-3">
                 <div><div class="fw-bold">${p.games_count}</div><div class="text-white-50 small">${GT_I18N.t('community.games')}</div></div>
-                <div><div class="fw-bold">${p.followers_count}</div><div class="text-white-50 small">${GT_I18N.t('community.followers')}</div></div>
-                <div><div class="fw-bold">${p.following_count}</div><div class="text-white-50 small">${GT_I18N.t('community.following')}</div></div>
+                <div id="public-followers-trigger" role="button"><div class="fw-bold">${p.followers_count}</div><div class="text-white-50 small">${GT_I18N.t('community.followers')}</div></div>
+                <div id="public-following-trigger" role="button"><div class="fw-bold">${p.following_count}</div><div class="text-white-50 small">${GT_I18N.t('community.following')}</div></div>
             </div>
 
             ${p.is_self ? '' : `
@@ -280,6 +280,45 @@ function renderizarPerfilPublico(p) {
     if (btnFollow) {
         btnFollow.addEventListener('click', () => alternarSeguir(btnFollow));
     }
+    document.getElementById('public-followers-trigger')?.addEventListener('click', () => abrirListaSeguidores('followers', p.id));
+    document.getElementById('public-following-trigger')?.addEventListener('click', () => abrirListaSeguidores('following', p.id));
+}
+
+// Modal estilo Instagram com a lista de seguidores/seguindo de qualquer perfil.
+async function abrirListaSeguidores(tipo, userId) {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFollowList'));
+    const titulo = document.getElementById('follow-list-title');
+    const body = document.getElementById('follow-list-body');
+
+    titulo.textContent = tipo === 'followers' ? GT_I18N.t('community.followers') : GT_I18N.t('community.following');
+    body.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('common.loading')}</p>`;
+    modal.show();
+
+    try {
+        const response = await authFetch(`/social/${tipo}/${userId}`);
+        if (!response.ok) throw new Error('erro');
+        const lista = await response.json();
+
+        if (lista.length === 0) {
+            body.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('community.emptyFollowList')}</p>`;
+            return;
+        }
+
+        body.innerHTML = lista.map(u => `
+            <div class="d-flex align-items-center gap-2 py-2" data-user-id="${u.id}" role="button">
+                <div class="gt-search-avatar">${avatarOuIcone(u.avatar_data, 30)}</div>
+                <span class="small">${escapeHtml(u.display_name || GT_I18N.t('community.anonymous'))}</span>
+            </div>`).join('');
+
+        body.querySelectorAll('[data-user-id]').forEach(el => {
+            el.addEventListener('click', () => {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFollowList')).hide();
+                abrirPerfilPublico(el.getAttribute('data-user-id'));
+            });
+        });
+    } catch (error) {
+        body.innerHTML = `<p class="text-danger small text-center py-4 mb-0">${GT_I18N.t('community.loadError')}</p>`;
+    }
 }
 
 async function alternarSeguir(btn) {
@@ -306,6 +345,10 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarFeed();
     carregarRanking();
     setupBuscaGlobal();
+
+    const params = new URLSearchParams(window.location.search);
+    const profileId = params.get('profile');
+    if (profileId) abrirPerfilPublico(profileId);
 });
 
 document.addEventListener('gt:langchange', () => {

@@ -224,6 +224,17 @@ const GT_DICT = {
     'community.nothingPlaying': 'Nada em andamento no momento.',
     'community.nothingFinished': 'Nenhum jogo finalizado ainda.',
     'community.recentlyFinished': 'Finalizados recentemente',
+    'community.emptyFollowList': 'Ninguém por aqui ainda.',
+
+    'onboarding.title': 'Boas-vindas ao GameTracker Pro!',
+    'onboarding.subtitle': 'Só mais um passinho pra deixar sua conta com a sua cara — leva 10 segundos.',
+    'onboarding.nameLabel': 'Como devemos te chamar?',
+    'onboarding.namePlaceholder': 'Ex: Edivan',
+    'onboarding.platformsLabel': 'IDs de plataforma (opcional — ajuda a comunidade a te achar na busca)',
+    'onboarding.switchLabel': 'Nintendo Switch ID',
+    'onboarding.skip': 'Pular',
+    'onboarding.save': 'Salvar',
+    'onboarding.laterHint': 'Você pode preencher ou mudar tudo isso depois em \'Minha conta\'.',
   },
 
   'en': {
@@ -388,6 +399,17 @@ const GT_DICT = {
     'community.nothingPlaying': 'Nothing in progress right now.',
     'community.nothingFinished': 'No finished games yet.',
     'community.recentlyFinished': 'Recently finished',
+    'community.emptyFollowList': 'No one here yet.',
+
+    'onboarding.title': 'Welcome to GameTracker Pro!',
+    'onboarding.subtitle': "Just one more step to make your account yours — takes 10 seconds.",
+    'onboarding.nameLabel': 'What should we call you?',
+    'onboarding.namePlaceholder': 'E.g. Edivan',
+    'onboarding.platformsLabel': 'Platform IDs (optional — helps the community find you in search)',
+    'onboarding.switchLabel': 'Nintendo Switch ID',
+    'onboarding.skip': 'Skip',
+    'onboarding.save': 'Save',
+    'onboarding.laterHint': "You can fill in or change all of this later in 'My account'.",
   },
 
   'es': {
@@ -552,6 +574,17 @@ const GT_DICT = {
     'community.nothingPlaying': 'Nada en curso por ahora.',
     'community.nothingFinished': 'Todavía no hay juegos finalizados.',
     'community.recentlyFinished': 'Finalizados recientemente',
+    'community.emptyFollowList': 'Todavía no hay nadie aquí.',
+
+    'onboarding.title': '¡Bienvenido a GameTracker Pro!',
+    'onboarding.subtitle': 'Solo un paso más para personalizar tu cuenta — toma 10 segundos.',
+    'onboarding.nameLabel': '¿Cómo debemos llamarte?',
+    'onboarding.namePlaceholder': 'Ej: Edivan',
+    'onboarding.platformsLabel': 'IDs de plataforma (opcional — ayuda a la comunidad a encontrarte en la búsqueda)',
+    'onboarding.switchLabel': 'Nintendo Switch ID',
+    'onboarding.skip': 'Omitir',
+    'onboarding.save': 'Guardar',
+    'onboarding.laterHint': 'Puedes completar o cambiar todo esto después en \'Mi cuenta\'.',
   },
 };
 
