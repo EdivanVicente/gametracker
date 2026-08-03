@@ -217,22 +217,29 @@ async function abrirPerfilPublico(userId) {
     }
 }
 
+const GT_PLATFORM_ID_FIELDS = [
+    ['psn_id', 'PlayStation Network', 'bi-playstation'],
+    ['steam_id', 'Steam', 'bi-steam'],
+    ['xbox_gamertag', 'Xbox', 'bi-xbox'],
+    ['nintendo_switch_id', 'Nintendo Switch', 'bi-nintendo-switch'],
+    ['nintendo_network_id', 'Nintendo Network', 'bi-controller'],
+    ['friend_code_3ds', '3DS', 'bi-controller'],
+    ['wii_friend_code', 'Wii', 'bi-controller'],
+    ['ea_app_id', 'EA App', 'bi-controller'],
+    ['ubisoft_connect', 'Ubisoft Connect', 'bi-controller'],
+    ['discord', 'Discord', 'bi-discord'],
+    ['twitch', 'Twitch', 'bi-twitch'],
+    ['instagram', 'Instagram', 'bi-instagram'],
+    ['x_handle', 'X (Twitter)', 'bi-twitter-x'],
+];
+
+let _perfilPublicoAtual = null; // cache do último perfil aberto, usado pelo filtro de jogos
+
 function renderizarPerfilPublico(p) {
+    _perfilPublicoAtual = p;
     const body = document.getElementById('public-profile-body');
 
-    const redes = [
-        ['psn_id', 'PSN'], ['steam_id', 'Steam'], ['xbox_gamertag', 'Xbox'],
-        ['nintendo_switch_id', 'Switch'], ['discord', 'Discord'],
-    ].filter(([campo]) => p[campo]);
-
-    const listaJogos = (jogos, vazio) => jogos.length === 0
-        ? `<p class="text-white-50 small mb-0">${vazio}</p>`
-        : jogos.map(j => `
-            <div class="d-flex align-items-center gap-2 mb-2">
-                ${j.cover_url ? `<img src="${j.cover_url}" class="gt-feed-cover" alt="">` : '<div class="gt-feed-cover"></div>'}
-                <span class="small">${escapeHtml(j.title)}</span>
-                <span class="text-white-50 small ms-auto">${escapeHtml(j.platform || '')}</span>
-            </div>`).join('');
+    const idsPreenchidos = GT_PLATFORM_ID_FIELDS.filter(([campo]) => p[campo]);
 
     body.innerHTML = `
         <div class="text-center mb-3">
@@ -256,25 +263,33 @@ function renderizarPerfilPublico(p) {
                     <span>${p.is_following ? GT_I18N.t('community.unfollow') : GT_I18N.t('community.follow')}</span>
                 </button>`}
 
-            ${redes.length > 0 ? `
+            ${idsPreenchidos.length > 0 ? `
                 <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
-                    ${redes.map(([, label]) => `<span class="badge text-bg-secondary">${label}</span>`).join('')}
+                    ${idsPreenchidos.map(([campo, label, icone]) => `
+                        <span class="badge text-bg-secondary d-inline-flex align-items-center gap-1" style="font-weight: 400;">
+                            <i class="bi ${icone}"></i> ${label}: ${escapeHtml(p[campo])}
+                        </span>`).join('')}
                 </div>` : ''}
         </div>
 
         <hr class="border-secondary">
 
-        <div class="row g-3">
-            <div class="col-12 col-sm-6">
-                <p class="small text-white-50 text-uppercase mb-2" style="letter-spacing:0.05em;">${GT_I18N.t('gamesSummary.nowPlaying')}</p>
-                ${listaJogos(p.currently_playing, GT_I18N.t('community.nothingPlaying'))}
-            </div>
-            <div class="col-12 col-sm-6">
-                <p class="small text-white-50 text-uppercase mb-2" style="letter-spacing:0.05em;">${GT_I18N.t('community.recentlyFinished')}</p>
-                ${listaJogos(p.recently_finished, GT_I18N.t('community.nothingFinished'))}
-            </div>
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <input type="text" class="form-control form-control-sm" id="public-profile-search"
+                   placeholder="${GT_I18N.t('community.searchInLibrary')}">
+            <select class="form-select form-select-sm" id="public-profile-status-filter" style="max-width: 160px;">
+                <option value="">${GT_I18N.t('toolbar.status')}</option>
+                <option value="playing">${GT_I18N.t('status.playing')}</option>
+                <option value="finished">${GT_I18N.t('status.finished')}</option>
+            </select>
         </div>
+
+        <div id="public-profile-games-grid" class="row g-3"></div>
     `;
+
+    renderizarGradeJogosPublico(p.games);
+    document.getElementById('public-profile-search').addEventListener('input', filtrarJogosPublico);
+    document.getElementById('public-profile-status-filter').addEventListener('change', filtrarJogosPublico);
 
     const btnFollow = document.getElementById('btn-toggle-follow');
     if (btnFollow) {
@@ -282,6 +297,52 @@ function renderizarPerfilPublico(p) {
     }
     document.getElementById('public-followers-trigger')?.addEventListener('click', () => abrirListaSeguidores('followers', p.id));
     document.getElementById('public-following-trigger')?.addEventListener('click', () => abrirListaSeguidores('following', p.id));
+}
+
+// Grade de jogos SOMENTE LEITURA no perfil público — mesma ideia visual dos
+// cards do dashboard, mas sem nenhuma ação de edição/exclusão/favoritar.
+function renderizarGradeJogosPublico(jogos) {
+    const grid = document.getElementById('public-profile-games-grid');
+    if (!grid) return;
+
+    if (jogos.length === 0) {
+        grid.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('community.emptyLibrary')}</p>`;
+        return;
+    }
+
+    grid.innerHTML = jogos.map(j => {
+        const isPlaying = j.status === 'playing';
+        return `
+            <div class="col-6 col-sm-4 col-lg-3">
+                <div class="gt-panel h-100 overflow-hidden" style="padding: 0;">
+                    <div class="position-relative" style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
+                        ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                        <span class="badge ${isPlaying ? 'text-bg-primary' : 'text-bg-success'} position-absolute top-0 start-0 m-2" style="font-size: 0.65rem;">
+                            ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
+                        </span>
+                    </div>
+                    <div class="p-2">
+                        <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</p>
+                        <p class="text-white-50 mb-0" style="font-size: 0.72rem;">
+                            ${escapeHtml(j.platform || '—')}${j.genre ? ` · ${escapeHtml(gtTranslateGenre(j.genre))}` : ''}
+                        </p>
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+function filtrarJogosPublico() {
+    if (!_perfilPublicoAtual) return;
+    const termo = document.getElementById('public-profile-search').value.trim().toLowerCase();
+    const status = document.getElementById('public-profile-status-filter').value;
+
+    const filtrados = _perfilPublicoAtual.games.filter(j => {
+        const bateNome = !termo || j.title.toLowerCase().includes(termo);
+        const bateStatus = !status || j.status === status;
+        return bateNome && bateStatus;
+    });
+    renderizarGradeJogosPublico(filtrados);
 }
 
 // Modal estilo Instagram com a lista de seguidores/seguindo de qualquer perfil.

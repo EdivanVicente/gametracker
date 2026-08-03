@@ -58,8 +58,6 @@ def get_public_profile(
         .order_by(models.UserGame.created_at.desc())
         .all()
     )
-    jogando_agora = [j for j in jogos if j.status == models.GameStatus.PLAYING][:6]
-    finalizados = [j for j in jogos if j.status == models.GameStatus.FINISHED][:6]
 
     return schemas.PublicProfileOut(
         id=alvo.id,
@@ -85,15 +83,11 @@ def get_public_profile(
         games_count=games_count,
         is_following=segue,
         is_self=(alvo.id == current_user.id),
-        currently_playing=[
+        games=[
             schemas.PublicGameEntryOut(
-                title=j.game.title, cover_url=j.game.cover_url, platform=j.platform, status=j.status.value,
-            ) for j in jogando_agora
-        ],
-        recently_finished=[
-            schemas.PublicGameEntryOut(
-                title=j.game.title, cover_url=j.game.cover_url, platform=j.platform, status=j.status.value,
-            ) for j in finalizados
+                title=j.game.title, cover_url=j.game.cover_url, genre=j.game.genre,
+                platform=j.platform, status=j.status.value,
+            ) for j in jogos
         ],
     )
 

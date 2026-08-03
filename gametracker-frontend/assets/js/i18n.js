@@ -235,6 +235,8 @@ const GT_DICT = {
     'onboarding.skip': 'Pular',
     'onboarding.save': 'Salvar',
     'onboarding.laterHint': 'Você pode preencher ou mudar tudo isso depois em \'Minha conta\'.',
+    'community.searchInLibrary': 'Buscar na biblioteca desta pessoa...',
+    'community.emptyLibrary': 'Nenhum jogo encontrado.',
   },
 
   'en': {
@@ -410,6 +412,8 @@ const GT_DICT = {
     'onboarding.skip': 'Skip',
     'onboarding.save': 'Save',
     'onboarding.laterHint': "You can fill in or change all of this later in 'My account'.",
+    'community.searchInLibrary': "Search this person's library...",
+    'community.emptyLibrary': 'No games found.',
   },
 
   'es': {
@@ -585,6 +589,8 @@ const GT_DICT = {
     'onboarding.skip': 'Omitir',
     'onboarding.save': 'Guardar',
     'onboarding.laterHint': 'Puedes completar o cambiar todo esto después en \'Mi cuenta\'.',
+    'community.searchInLibrary': 'Buscar en la biblioteca de esta persona...',
+    'community.emptyLibrary': 'No se encontraron juegos.',
   },
 };
 

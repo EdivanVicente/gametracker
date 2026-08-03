@@ -286,6 +286,7 @@ class PublicGameEntryOut(BaseModel):
     """Versão enxuta de um jogo da biblioteca, para exibir no perfil público de outra pessoa."""
     title: str
     cover_url: str | None = None
+    genre: str | None = None
     platform: str | None = None
     status: str
 
@@ -319,8 +320,10 @@ class PublicProfileOut(BaseModel):
     is_following: bool = False
     is_self: bool = False
 
-    currently_playing: list[PublicGameEntryOut] = []
-    recently_finished: list[PublicGameEntryOut] = []
+    # Biblioteca completa (jogando + finalizados) — a busca/filtro é feita no
+    # front, já que a lista de uma única pessoa dificilmente é grande o
+    # suficiente pra justificar paginação/filtro no servidor.
+    games: list[PublicGameEntryOut] = []
 
 
 class FollowActionOut(BaseModel):
