@@ -45,8 +45,39 @@ async function carregarNavbarUsuario() {
                 dropdownAvatar.innerHTML = `<img src="${user.avatar_data}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
             }
         }
+
+        carregarEstatisticasNavbar(user.id, token);
     } catch (error) {
         // Silencioso: a navbar simplesmente mantém os valores padrão.
+    }
+}
+
+// Games/seguidores/seguindo no dropdown do perfil (abaixo do e-mail). Clicar em
+// "Seguidores"/"Seguindo" leva pro perfil público (aba Comunidade), onde dá
+// pra ver a lista completa de quem segue/é seguido, igual Instagram.
+async function carregarEstatisticasNavbar(userId, token) {
+    try {
+        const response = await fetch(`${GT_API_BASE}/social/profile/${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) return;
+        const p = await response.json();
+
+        const gamesEl = document.getElementById('dropdown-games-count');
+        const followersEl = document.getElementById('dropdown-followers-count');
+        const followingEl = document.getElementById('dropdown-following-count');
+        if (gamesEl) gamesEl.textContent = p.games_count;
+        if (followersEl) followersEl.textContent = p.followers_count;
+        if (followingEl) followingEl.textContent = p.following_count;
+
+        document.getElementById('dropdown-followers-trigger')?.addEventListener('click', () => {
+            window.location.href = `comunidade.html?profile=${userId}`;
+        });
+        document.getElementById('dropdown-following-trigger')?.addEventListener('click', () => {
+            window.location.href = `comunidade.html?profile=${userId}`;
+        });
+    } catch (error) {
+        // Silencioso.
     }
 }
 
