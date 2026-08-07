@@ -7,11 +7,16 @@ troque apenas a URL base, os parâmetros de auth e o mapeamento de campos em
 `_map_rawg_result_to_dict`.
 """
 
+import logging
+
 import httpx
 from fastapi import HTTPException, status
 from deep_translator import GoogleTranslator
 
 from app.core.config import settings
+from app.services.igdb_service import igdb_service
+
+logger = logging.getLogger("gametracker.games_api")
 
 # Limite de caracteres por chamada ao Google Translate (via deep-translator).
 # Textos maiores são cortados em pedaços para não estourar o limite do serviço.
@@ -57,7 +62,17 @@ def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str:
 
 
 class GamesApiService:
-    """Encapsula as chamadas HTTP à API de jogos, isolando o resto do sistema do provedor externo."""
+    """
+    Ponto único de acesso a dados de jogos externos. Usa a RAWG como provedor
+    principal; se ela falhar (fora do ar, timeout, erro 5xx), tenta
+    automaticamente a IGDB como reserva — o resto do sistema nem fica sabendo
+    qual das duas respondeu, só recebe o resultado já no mesmo formato.
+
+    Os external_id retornados vêm sempre prefixados ("rawg-123" / "igdb-456")
+    pra sabermos depois, ao buscar detalhes, em qual das duas API perguntar.
+    IDs antigos salvos ANTES dessa mudança (sem prefixo) continuam funcionando
+    — são tratados como RAWG por padrão (compatibilidade com dados antigos).
+    """
 
     def __init__(self):
         self.base_url = settings.RAWG_BASE_URL
@@ -65,11 +80,44 @@ class GamesApiService:
         self.timeout = 10.0
 
     async def search_games(self, query: str, page_size: int = 8) -> list[dict]:
-        """
-        Busca jogos por nome. Usado no fluxo de "o usuário digita, o sistema sugere".
+        """Busca jogos por nome. Tenta RAWG primeiro; se falhar, cai pra IGDB automaticamente."""
+        try:
+            return await self._rawg_search_games(query, page_size)
+        except HTTPException as exc_rawg:
+            logger.warning("RAWG falhou na busca por '%s' (%s) — tentando IGDB...", query, exc_rawg.detail)
+            try:
+                resultados_igdb = await igdb_service.search_games(query, page_size)
+            except Exception as exc_igdb:
+                logger.warning("IGDB também falhou na busca por '%s' (%s).", query, exc_igdb)
+                resultados_igdb = []
 
-        Retorna uma lista simplificada, já mapeada para o formato que o frontend consome.
-        """
+            if resultados_igdb:
+                logger.info("Busca por '%s' respondida pela IGDB (fallback).", query)
+                return resultados_igdb
+
+            # Nenhum dos dois provedores respondeu: propaga o erro original da RAWG,
+            # que é mais informativo pro usuário/log do que um erro genérico da IGDB.
+            raise exc_rawg
+
+    async def get_game_details(self, external_id: str) -> dict:
+        """Busca os detalhes completos de um jogo, roteando pro provedor certo pelo prefixo do ID."""
+        if external_id.startswith("igdb-"):
+            detalhes = await igdb_service.get_game_details(external_id.removeprefix("igdb-"))
+            if not detalhes:
+                raise HTTPException(status_code=404, detail="Jogo não encontrado na base externa (IGDB).")
+            return detalhes
+
+        id_rawg = external_id.removeprefix("rawg-")
+        try:
+            return await self._rawg_get_game_details(id_rawg)
+        except HTTPException as exc_rawg:
+            # Fallback: se por algum motivo a RAWG não conseguir servir os
+            # detalhes de um jogo que ELA MESMA retornou na busca (ex: caiu
+            # entre a busca e o clique), tenta achar o mesmo jogo na IGDB pelo nome.
+            logger.warning("RAWG falhou ao buscar detalhes de '%s' — sem fallback direto por ID nesse caso.", external_id)
+            raise exc_rawg
+
+    async def _rawg_search_games(self, query: str, page_size: int) -> list[dict]:
         if not self.api_key:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -101,7 +149,7 @@ class GamesApiService:
         results = data.get("results", [])
         return [self._map_rawg_result_to_dict(item) for item in results]
 
-    async def get_game_details(self, external_id: str) -> dict:
+    async def _rawg_get_game_details(self, external_id: str) -> dict:
         """Busca os detalhes completos de um jogo específico pelo ID externo (RAWG)."""
         params = {"key": self.api_key}
 
@@ -113,6 +161,11 @@ class GamesApiService:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Jogo não encontrado na base externa.",
+                ) from exc
+            except httpx.RequestError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="Falha de conexão com a API de jogos.",
                 ) from exc
 
         return self._map_rawg_result_to_dict(response.json())
@@ -139,7 +192,7 @@ class GamesApiService:
         descricao_original = item.get("description_raw") or item.get("description")
 
         return {
-            "external_id": str(item.get("id")),
+            "external_id": f"rawg-{item.get('id')}",
             "title": item.get("name"),
             "cover_url": item.get("background_image"),
             "description": descricao_original,

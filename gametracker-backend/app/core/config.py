@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     RAWG_API_KEY: str = os.getenv("RAWG_API_KEY", "")
     RAWG_BASE_URL: str = "https://api.rawg.io/api"
 
+    # --- Provedor reserva (fallback), usado automaticamente quando a RAWG falha ---
+    # Gere gratuitamente em https://dev.twitch.tv/console/apps
+    IGDB_CLIENT_ID: str = os.getenv("IGDB_CLIENT_ID", "")
+    IGDB_CLIENT_SECRET: str = os.getenv("IGDB_CLIENT_SECRET", "")
+
     YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")
     YOUTUBE_BASE_URL: str = "https://www.googleapis.com/youtube/v3"
 
