@@ -52,13 +52,13 @@ function renderizarGameplay(container, candidatos, tituloBusca) {
         return `
             ${mensagem}
             <a href="${url}" target="_blank" rel="noopener noreferrer" class="gt-gameplay-channel-link d-inline-flex mt-2">
-                <i class="bi bi-youtube"></i> Buscar no YouTube <i class="bi bi-box-arrow-up-right"></i>
+                <i class="bi bi-youtube"></i> ${GT_I18N.t('gameplay.searchOnYoutube')} <i class="bi bi-box-arrow-up-right"></i>
             </a>
         `;
     };
 
     if (!candidatos || candidatos.length === 0) {
-        container.innerHTML = linkBuscaManual('<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay encontrado.</p>');
+        container.innerHTML = linkBuscaManual(`<p class="small text-white-50 mb-0">${GT_I18N.t('gameplay.notFound')}</p>`);
         return;
     }
 
@@ -67,7 +67,7 @@ function renderizarGameplay(container, candidatos, tituloBusca) {
     const mostrarThumbnail = () => {
         const video = candidatos[indiceAtual];
         if (!video) {
-            container.innerHTML = linkBuscaManual('<p class="small text-white-50 mb-0">Nenhum vídeo de gameplay disponível no momento.</p>');
+            container.innerHTML = linkBuscaManual(`<p class="small text-white-50 mb-0">${GT_I18N.t('gameplay.notAvailable')}</p>`);
             return;
         }
 
@@ -78,11 +78,11 @@ function renderizarGameplay(container, candidatos, tituloBusca) {
                     <div class="gt-gameplay-play"><i class="bi bi-play-fill"></i></div>
                 </div>
                 <div class="min-width-0">
-                    <div class="gt-gameplay-title">${_escapeHtmlLocal(video.title || 'Ver gameplay')}</div>
+                    <div class="gt-gameplay-title">${_escapeHtmlLocal(video.title || GT_I18N.t('gameplay.watchGameplay'))}</div>
                     <div class="gt-gameplay-channel">${_escapeHtmlLocal(video.channel_title || '')}</div>
                 </div>
             </div>
-            ${video.channel_url ? `<a href="${video.channel_url}" target="_blank" rel="noopener noreferrer" class="gt-gameplay-channel-link">Ver canal <i class="bi bi-box-arrow-up-right"></i></a>` : ''}
+            ${video.channel_url ? `<a href="${video.channel_url}" target="_blank" rel="noopener noreferrer" class="gt-gameplay-channel-link">${GT_I18N.t('gameplay.viewChannel')} <i class="bi bi-box-arrow-up-right"></i></a>` : ''}
         `;
 
         const disparar = () => tocarVideo();
@@ -99,7 +99,7 @@ function renderizarGameplay(container, candidatos, tituloBusca) {
             // Já estava tocando: tenta o próximo direto, sem exigir novo clique.
             tocarVideo();
         } else {
-            container.innerHTML = linkBuscaManual('<p class="small text-white-50 mb-0">Não foi possível carregar nenhum vídeo disponível para este jogo.</p>');
+            container.innerHTML = linkBuscaManual(`<p class="small text-white-50 mb-0">${GT_I18N.t('gameplay.noneAvailable')}</p>`);
         }
     };
 

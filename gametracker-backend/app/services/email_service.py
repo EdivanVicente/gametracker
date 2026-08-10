@@ -11,6 +11,7 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formatdate, make_msgid
 
 from app.core.config import settings
 
@@ -31,19 +32,27 @@ def send_verification_email(to_email: str, token: str) -> None:
 
     _send(
         to_email=to_email,
-        subject="Confirme seu e-mail — GameTracker Pro",
-        heading="GameTracker Pro",
+        subject="Bem-vindo(a) ao GameTracker Pro — confirme seu e-mail",
+        heading="Bem-vindo(a) ao GameTracker Pro! 🎮",
         body_html=f"""
-          <p>Olá! Confirme seu cadastro clicando no botão abaixo:</p>
+          <p>Que bom ter você aqui! Falta só um passo pra começar a catalogar seus jogos,
+          acompanhar seu progresso e avaliar tudo o que você já jogou.</p>
+          <p>Confirme seu e-mail clicando no botão abaixo:</p>
           <p style="text-align:center; margin: 24px 0;">
             <a href="{link}" style="background:#7c5cff; color:#fff; padding:12px 24px;
-               border-radius:6px; text-decoration:none; font-weight:bold;">
-               Confirmar e-mail
+               border-radius:6px; text-decoration:none; font-weight:bold; display:inline-block;">
+               Confirmar e-mail e começar
             </a>
           </p>
-          <p style="color:#888; font-size: 0.85rem;">Se você não criou essa conta, ignore este e-mail.</p>
+          <p style="color:#888; font-size: 0.85rem;">Este link expira em 24 horas. Se você não criou essa conta, é só ignorar este e-mail — nada será ativado.</p>
         """,
-        body_text=f"Olá!\n\nConfirme seu cadastro no GameTracker Pro clicando no link:\n{link}\n\nSe você não criou essa conta, ignore este e-mail.",
+        body_text=(
+            f"Bem-vindo(a) ao GameTracker Pro!\n\n"
+            f"Falta só um passo pra começar a catalogar seus jogos, acompanhar seu progresso "
+            f"e avaliar tudo o que você já jogou.\n\n"
+            f"Confirme seu e-mail clicando no link abaixo (válido por 24 horas):\n{link}\n\n"
+            f"Se você não criou essa conta, é só ignorar este e-mail."
+        ),
     )
 
 
@@ -142,11 +151,20 @@ def _send(to_email: str, subject: str, heading: str, body_html: str, body_text: 
     message["Subject"] = subject
     message["From"] = settings.SMTP_FROM
     message["To"] = to_email
+    # Sem esses dois headers, boa parte dos provedores de e-mail (Gmail, Outlook
+    # etc.) penaliza a mensagem no filtro de spam por parecer "malformada" —
+    # é um erro comum e silencioso em envios feitos via smtplib puro.
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid(domain=settings.SMTP_FROM.split("@")[-1])
 
     html_wrapper = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-      <h2 style="color:#7c5cff;">{heading}</h2>
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+      <h2 style="color:#7c5cff; margin-bottom: 4px;">{heading}</h2>
       {body_html}
+      <hr style="border:none; border-top:1px solid #eee; margin: 32px 0 16px;">
+      <p style="color:#aaa; font-size: 0.75rem; text-align:center;">
+        GameTracker Pro — este é um e-mail automático, não é necessário responder.
+      </p>
     </div>
     """
 

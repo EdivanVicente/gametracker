@@ -163,6 +163,25 @@
   </div>
 
   <!-- ================================================
+       MODAL — visualização rápida de um jogo (perfil de terceiros)
+       Leve e isolada: só vídeo, capa, plataforma e resumo. Sem nenhuma
+       ação de edição — não carrega nada do editor de perfil/jogo.
+       ================================================ -->
+  <div class="modal fade" id="modalGameQuickView" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content gt-modal">
+        <div class="modal-header border-0">
+          <h5 class="modal-title" id="quickview-title">—</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body pt-0" id="quickview-body">
+          <p class="text-white-50 small text-center py-4 mb-0" data-i18n="common.loading">Carregando...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================
        MODAL — lista de seguidores / seguindo (estilo Instagram)
        ================================================ -->
   <div class="modal fade" id="modalFollowList" tabindex="-1" aria-hidden="true">
@@ -188,6 +207,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/main.js"></script>
   <script src="assets/js/navbar.js"></script>
+  <script src="assets/js/youtube-player.js"></script>
   <script src="assets/js/comunidade.js"></script>
 </body>
 </html>

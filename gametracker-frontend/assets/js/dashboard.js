@@ -8,8 +8,13 @@ const API_BASE = 'http://127.0.0.1:8000';
 let meusJogos = [];
 // ID do UserGame atualmente aberto no modal de detalhe/edição.
 let jogoEmEdicaoId = null;
-// Densidade da grade: 'list' | 'small' | 'medium' | 'large'
+// Densidade da grade: 'list' | 'medium' | 'large'
+// ('small' foi descontinuado — usuários que tinham essa opção salva migram pra 'medium' automaticamente)
 let modoVisualizacao = localStorage.getItem('gt-view-mode') || 'medium';
+if (modoVisualizacao === 'small') {
+    modoVisualizacao = 'medium';
+    localStorage.setItem('gt-view-mode', 'medium');
+}
 // Ordenação atual: 'recent' | 'name-asc' | 'name-desc' | 'score-desc'
 let modoOrdenacao = localStorage.getItem('gt-sort-mode') || 'recent';
 
@@ -254,7 +259,6 @@ function atualizarHud(jogos) {
 
 // Mapeia cada modo de grade pra classe de coluna Bootstrap (não se aplica ao modo 'list').
 const CLASSES_POR_MODO = {
-    small: 'col-6 col-sm-4 col-md-3 col-lg-2 col-xxl-1',
     medium: 'col-12 col-sm-6 col-md-4 col-xl-3 col-xxl-2',
     large: 'col-12 col-sm-6 col-md-6 col-lg-4 col-xl-3',
 };
@@ -391,10 +395,9 @@ function ligarEventosDosCards(grid, seletorCard = '.gt-card') {
     });
 }
 
-// --- Alterna entre os modos de densidade da grade (lista/pequeno/médio/grande), estilo Google Drive ---
+// --- Alterna entre os modos de densidade da grade (lista/médio/grande), estilo Google Drive ---
 const ICONE_POR_MODO = {
     list: 'bi-list-ul',
-    small: 'bi-grid-3x3-gap-fill',
     medium: 'bi-grid-3x2-gap-fill',
     large: 'bi-grid-1x2-gap-fill',
 };

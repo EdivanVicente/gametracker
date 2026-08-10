@@ -114,6 +114,16 @@ def _run_light_migrations() -> None:
                 # indevidamente no histórico — o status real do card não muda.
                 conn.execute(text("UPDATE play_sessions SET finished_at = started_at WHERE finished_at IS NULL"))
 
+        if "game_translations" in inspector.get_table_names():
+            # Correção de um bug anterior: quando a tradução falhava, o app
+            # gravava um registro de cache com descrição vazia (NULL) e passava
+            # a devolver "nada" pra sempre pro jogo naquele idioma, mesmo depois
+            # do serviço de tradução voltar a funcionar. Aqui a gente limpa
+            # esses registros "envenenados" pra forçar uma nova tentativa.
+            resultado = conn.execute(text("DELETE FROM game_translations WHERE description IS NULL"))
+            if resultado.rowcount:
+                logger.info("Migração: removidos %s registros de tradução vazios (bug corrigido).", resultado.rowcount)
+
 
 _run_light_migrations()
 
