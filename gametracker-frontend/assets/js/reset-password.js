@@ -34,12 +34,12 @@ async function redefinirSenha(token) {
     erroEl.classList.add('d-none');
 
     if (!novaSenha || !confirmacao) {
-        erroEl.textContent = 'Preencha os dois campos.';
+        erroEl.textContent = GT_I18N.t('resetPassword.fillBothFields');
         erroEl.classList.remove('d-none');
         return;
     }
     if (novaSenha !== confirmacao) {
-        erroEl.textContent = 'A confirmação não bate com a nova senha.';
+        erroEl.textContent = GT_I18N.t('resetPassword.mismatch');
         erroEl.classList.remove('d-none');
         return;
     }
@@ -59,11 +59,11 @@ async function redefinirSenha(token) {
         } else if (response.status === 400) {
             mostrarLinkInvalido();
         } else {
-            erroEl.textContent = extrairMensagemErro(data, 'Não foi possível redefinir a senha.');
+            erroEl.textContent = extrairMensagemErro(data, GT_I18N.t('resetPassword.genericError'));
             erroEl.classList.remove('d-none');
         }
     } catch (error) {
-        erroEl.textContent = 'Erro de conexão com o servidor.';
+        erroEl.textContent = GT_I18N.t('auth.connectionError');
         erroEl.classList.remove('d-none');
     } finally {
         btn.disabled = false;

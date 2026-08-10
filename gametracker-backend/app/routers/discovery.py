@@ -30,7 +30,9 @@ async def search_games(
 async def get_game_details(external_id: str, lang: str = "pt"):
     """Detalhes completos de um jogo específico, usado ao confirmar a seleção no modal."""
     detalhes = await games_api_service.get_game_details(external_id=external_id)
-    detalhes["description"] = games_api_service.translate_description(detalhes.get("description"), lang)
+    original = detalhes.get("description")
+    traduzida = games_api_service.translate_description(original, lang)
+    detalhes["description"] = traduzida if traduzida is not None else original
     return detalhes
 
 
@@ -56,9 +58,9 @@ async def explore_gameplay(
         if resultados_busca:
             game_data = await games_api_service.get_game_details(external_id=resultados_busca[0]["external_id"])
             if game_data:
-                game_data["description"] = games_api_service.translate_description(
-                    game_data.get("description"), lang
-                )
+                original = game_data.get("description")
+                traduzida = games_api_service.translate_description(original, lang)
+                game_data["description"] = traduzida if traduzida is not None else original
     except HTTPException:
         game_data = None
 

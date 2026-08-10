@@ -282,6 +282,17 @@ function renderizarPerfilPublico(p) {
                 <option value="playing">${GT_I18N.t('status.playing')}</option>
                 <option value="finished">${GT_I18N.t('status.finished')}</option>
             </select>
+            <div class="dropdown">
+                <button class="btn btn-gt-outline btn-sm d-flex align-items-center gap-2" type="button"
+                        id="public-view-mode-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${GT_I18N.t('toolbar.viewMode')}">
+                    <i class="bi bi-grid-3x2-gap-fill" id="public-view-mode-icon"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-public-view="list"><i class="bi bi-list-ul"></i> ${GT_I18N.t('toolbar.viewList')}</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-public-view="medium"><i class="bi bi-grid-3x2-gap-fill"></i> ${GT_I18N.t('toolbar.viewMedium')}</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-public-view="large"><i class="bi bi-grid-1x2-gap-fill"></i> ${GT_I18N.t('toolbar.viewLarge')}</a></li>
+                </ul>
+            </div>
         </div>
 
         <div id="public-profile-games-grid" class="row g-3"></div>
@@ -290,6 +301,12 @@ function renderizarPerfilPublico(p) {
     renderizarGradeJogosPublico(p.games);
     document.getElementById('public-profile-search').addEventListener('input', filtrarJogosPublico);
     document.getElementById('public-profile-status-filter').addEventListener('change', filtrarJogosPublico);
+    document.querySelectorAll('[data-public-view]').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            definirModoVisualizacaoPublico(item.getAttribute('data-public-view'));
+        });
+    });
 
     const btnFollow = document.getElementById('btn-toggle-follow');
     if (btnFollow) {
@@ -299,37 +316,85 @@ function renderizarPerfilPublico(p) {
     document.getElementById('public-following-trigger')?.addEventListener('click', () => abrirListaSeguidores('following', p.id));
 }
 
-// Grade de jogos SOMENTE LEITURA no perfil público — mesma ideia visual dos
-// cards do dashboard, mas sem nenhuma ação de edição/exclusão/favoritar.
+const CLASSES_POR_MODO_PUBLICO = {
+    medium: 'col-6 col-sm-4 col-lg-3',
+    large: 'col-12 col-sm-6 col-lg-4',
+};
+let modoVisualizacaoPublico = localStorage.getItem('gt-view-mode') || 'medium';
+if (modoVisualizacaoPublico === 'small') modoVisualizacaoPublico = 'medium';
+
+const ICONE_POR_MODO_PUBLICO = { list: 'bi-list-ul', medium: 'bi-grid-3x2-gap-fill', large: 'bi-grid-1x2-gap-fill' };
+
+function definirModoVisualizacaoPublico(modo) {
+    modoVisualizacaoPublico = modo;
+    localStorage.setItem('gt-view-mode', modo);
+    const icone = document.getElementById('public-view-mode-icon');
+    if (icone) icone.className = `bi ${ICONE_POR_MODO_PUBLICO[modo] || ICONE_POR_MODO_PUBLICO.medium}`;
+    filtrarJogosPublico();
+}
+
+// Grade de jogos SOMENTE LEITURA no perfil público — usa o mesmo seletor de
+// visualização (lista/médio/grande) do painel principal. Clicar num jogo abre
+// um modal leve e isolado (vídeo, capa, plataforma, resumo) — sem nenhuma
+// ação de edição/exclusão/favoritar, sem carregar a complexidade do editor.
 function renderizarGradeJogosPublico(jogos) {
     const grid = document.getElementById('public-profile-games-grid');
     if (!grid) return;
+
+    const icone = document.getElementById('public-view-mode-icon');
+    if (icone) icone.className = `bi ${ICONE_POR_MODO_PUBLICO[modoVisualizacaoPublico] || ICONE_POR_MODO_PUBLICO.medium}`;
 
     if (jogos.length === 0) {
         grid.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('community.emptyLibrary')}</p>`;
         return;
     }
 
-    grid.innerHTML = jogos.map(j => {
-        const isPlaying = j.status === 'playing';
-        return `
-            <div class="col-6 col-sm-4 col-lg-3">
-                <div class="gt-panel h-100 overflow-hidden" style="padding: 0;">
-                    <div class="position-relative" style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
-                        ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
-                        <span class="badge ${isPlaying ? 'text-bg-primary' : 'text-bg-success'} position-absolute top-0 start-0 m-2" style="font-size: 0.65rem;">
+    if (modoVisualizacaoPublico === 'list') {
+        grid.innerHTML = jogos.map((j, idx) => {
+            const isPlaying = j.status === 'playing';
+            return `
+                <div class="col-12">
+                    <div class="gt-panel d-flex align-items-center gap-3 p-2" data-game-idx="${idx}" role="button">
+                        <div style="width:48px;height:48px;border-radius:6px;overflow:hidden;background-color:var(--gt-surface-raised);flex-shrink:0;">
+                            ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                        </div>
+                        <div class="flex-fill min-width-0">
+                            <p class="small fw-semibold mb-0 text-truncate">${escapeHtml(j.title)}</p>
+                            <p class="text-white-50 mb-0" style="font-size: 0.72rem;">${escapeHtml(j.platform || '—')}</p>
+                        </div>
+                        <span class="badge ${isPlaying ? 'text-bg-primary' : 'text-bg-success'}" style="font-size: 0.65rem;">
                             ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
                         </span>
                     </div>
-                    <div class="p-2">
-                        <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</p>
-                        <p class="text-white-50 mb-0" style="font-size: 0.72rem;">
-                            ${escapeHtml(j.platform || '—')}${j.genre ? ` · ${escapeHtml(gtTranslateGenre(j.genre))}` : ''}
-                        </p>
+                </div>`;
+        }).join('');
+    } else {
+        const colClass = CLASSES_POR_MODO_PUBLICO[modoVisualizacaoPublico] || CLASSES_POR_MODO_PUBLICO.medium;
+        grid.innerHTML = jogos.map((j, idx) => {
+            const isPlaying = j.status === 'playing';
+            return `
+                <div class="${colClass}">
+                    <div class="gt-panel h-100 overflow-hidden" style="padding: 0; cursor: pointer;" data-game-idx="${idx}" role="button">
+                        <div class="position-relative" style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
+                            ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                            <span class="badge ${isPlaying ? 'text-bg-primary' : 'text-bg-success'} position-absolute top-0 start-0 m-2" style="font-size: 0.65rem;">
+                                ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
+                            </span>
+                        </div>
+                        <div class="p-2">
+                            <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</p>
+                            <p class="text-white-50 mb-0" style="font-size: 0.72rem;">
+                                ${escapeHtml(j.platform || '—')}${j.genre ? ` · ${escapeHtml(gtTranslateGenre(j.genre))}` : ''}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </div>`;
-    }).join('');
+                </div>`;
+        }).join('');
+    }
+
+    grid.querySelectorAll('[data-game-idx]').forEach(el => {
+        el.addEventListener('click', () => abrirQuickViewJogo(jogos[parseInt(el.getAttribute('data-game-idx'), 10)]));
+    });
 }
 
 function filtrarJogosPublico() {
@@ -399,6 +464,58 @@ async function alternarSeguir(btn) {
         alert(GT_I18N.t('community.loadError'));
     } finally {
         btn.disabled = false;
+    }
+}
+
+// Visualização rápida e leve de um jogo do perfil de terceiros: capa,
+// plataforma, resumo da história e vídeo de gameplay. Sem nenhuma ação de
+// edição — usa o mesmo endpoint de dados da aba Explorar, mas num modal à parte.
+async function abrirQuickViewJogo(jogo) {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGameQuickView'));
+    const titulo = document.getElementById('quickview-title');
+    const body = document.getElementById('quickview-body');
+
+    titulo.textContent = jogo.title;
+    body.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('common.loading')}</p>`;
+    modal.show();
+
+    body.innerHTML = `
+        <div class="row g-3 mb-3">
+            <div class="col-4 col-sm-3">
+                <div style="aspect-ratio: 3/4; border-radius: 8px; overflow: hidden; background-color: var(--gt-surface-raised);">
+                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                </div>
+            </div>
+            <div class="col-8 col-sm-9">
+                <p class="small text-white-50 mb-1">${GT_I18N.t('detail.platform')}</p>
+                <p class="mb-2">${escapeHtml(jogo.platform || '—')}</p>
+                ${jogo.genre ? `<p class="small text-white-50 mb-1">${GT_I18N.t('toolbar.genre')}</p><p class="mb-0">${escapeHtml(gtTranslateGenre(jogo.genre))}</p>` : ''}
+            </div>
+        </div>
+        <p class="small text-white-50 mb-2">${GT_I18N.t('detail.gameplayLabel')}</p>
+        <div id="quickview-video-wrapper" class="mb-3">
+            <p class="text-white-50 small mb-0">${GT_I18N.t('common.loading')}</p>
+        </div>
+        <div id="quickview-summary-wrapper" class="d-none">
+            <p class="small text-white-50 mb-1">${GT_I18N.t('quickview.summary')}</p>
+            <p class="small mb-0" id="quickview-summary"></p>
+        </div>
+    `;
+
+    try {
+        const response = await authFetch(`/explore/gameplay?title=${encodeURIComponent(jogo.title)}&lang=${gtBackendLang()}`);
+        const data = await response.json();
+
+        renderizarGameplay(document.getElementById('quickview-video-wrapper'), data.videos || [], jogo.title);
+
+        const resumo = data.game?.description;
+        if (resumo) {
+            document.getElementById('quickview-summary').textContent = resumo;
+            document.getElementById('quickview-summary-wrapper').classList.remove('d-none');
+        }
+    } catch (error) {
+        document.getElementById('quickview-video-wrapper').innerHTML =
+            `<p class="text-danger small mb-0">${GT_I18N.t('community.loadError')}</p>`;
     }
 }
 

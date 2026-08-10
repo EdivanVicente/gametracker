@@ -23,16 +23,16 @@ logger = logging.getLogger("gametracker.games_api")
 _TAMANHO_MAX_TRADUCAO = 4500
 
 
-def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str:
+def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str | None:
     """
     Traduz um texto (descrição de jogo, vinda da RAWG normalmente em inglês) para
     o idioma pedido. Se a tradução falhar por qualquer motivo (sem internet,
-    serviço fora do ar, texto vazio etc.), devolve o texto original em vez de
-    quebrar a requisição — a descrição em inglês é melhor do que nenhuma descrição.
-
-    `idioma_destino` já vem parametrizado pensando na futura versão multi-idioma
-    do site (pt/en/es) — hoje sempre chamado com "pt", mas pronto para receber
-    o idioma escolhido pelo usuário quando essa opção existir.
+    serviço fora do ar, texto vazio etc.), devolve None — IMPORTANTE: não
+    devolve o texto original aqui, pra quem chama conseguir diferenciar
+    "traduziu com sucesso" de "falhou" e decidir se vale a pena cachear o
+    resultado ou tentar de novo na próxima vez (ver `_descricao_no_idioma`
+    em app/routers/games.py — cachear uma falha faria o app ficar "preso"
+    mostrando o texto errado pra sempre, mesmo depois do serviço voltar).
     """
     if not texto:
         return texto
@@ -56,9 +56,9 @@ def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str:
 
         traduzido = [GoogleTranslator(source="auto", target=idioma_destino).translate(p) for p in partes]
         return " ".join(traduzido)
-    except Exception:
-        # Qualquer falha do serviço de tradução: devolve o texto original.
-        return texto
+    except Exception as exc:
+        logger.warning("Falha ao traduzir texto pra '%s' (%s) — não será cacheado.", idioma_destino, exc)
+        return None
 
 
 class GamesApiService:
@@ -208,6 +208,9 @@ class GamesApiService:
         Ponto único usado pelas rotas pra traduzir uma descrição já buscada,
         pro idioma escolhido pelo usuário (a descrição fica em inglês, como
         vem da RAWG, até esse ponto).
+
+        Devolve None se a tradução falhou de verdade (pra quem chama saber
+        que NÃO deve cachear esse resultado como se fosse definitivo).
         """
         if not texto or idioma_destino == "en":
             return texto  # já vem em inglês da RAWG, não precisa traduzir

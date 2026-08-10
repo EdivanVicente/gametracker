@@ -121,6 +121,12 @@ def _descricao_no_idioma(db: Session, jogo: models.Game, lang: str) -> str | Non
         return cache.description
 
     traduzida = games_api_service.translate_description(jogo.description, lang)
+    if traduzida is None:
+        # A tradução falhou agora (ex: serviço de tradução instável) — devolve
+        # a descrição original SEM gravar nada no cache, pra tentar de novo
+        # na próxima vez em vez de ficar "preso" mostrando texto vazio pra sempre.
+        return jogo.description
+
     db.add(models.GameTranslation(game_id=jogo.id, lang=lang, description=traduzida))
     db.commit()
     return traduzida
