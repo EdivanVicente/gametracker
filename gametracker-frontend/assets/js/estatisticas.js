@@ -1,4 +1,3 @@
-const API_BASE = 'http://127.0.0.1:8000';
 
 document.addEventListener('DOMContentLoaded', carregarRelatorios);
 
@@ -67,7 +66,7 @@ function renderResumo(jogos) {
 function contarPor(jogos, seletor) {
     const contagem = {};
     jogos.forEach(item => {
-        const chaveBruta = seletor(item) || 'Não informado';
+        const chaveBruta = seletor(item) || GT_I18N.t('stats.notInformed');
         // Gêneros vêm como "Action, Adventure, RPG" da RAWG — considera o primeiro como principal.
         const chave = chaveBruta.split(',')[0].trim();
         contagem[chave] = (contagem[chave] || 0) + 1;
@@ -93,7 +92,13 @@ function renderBarras(containerId, entradas) {
     `).join('');
 }
 
+// Notas médias por categoria — cada barra é clicável e mostra a lista de
+// jogos ordenada pela nota naquela categoria específica (ex: clicar em
+// "Gráficos" mostra quais jogos você avaliou melhor/pior em gráficos).
+let _jogosParaNotas = [];
+
 function renderNotasMedias(jogos) {
+    _jogosParaNotas = jogos;
     const categorias = [
         { chave: 'graphics_score', label: GT_I18N.t('detail.graphics') },
         { chave: 'sound_score', label: GT_I18N.t('detail.sound') },
@@ -106,24 +111,62 @@ function renderNotasMedias(jogos) {
             .map(j => j.rating?.[chave])
             .filter(n => typeof n === 'number');
         const media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
-        return [label, Number(media.toFixed(1))];
+        return { chave, label, media: Number(media.toFixed(1)) };
     });
 
     const container = document.getElementById('stat-notas');
-    const algumaNota = entradas.some(([, v]) => v > 0);
+    const algumaNota = entradas.some(({ media }) => media > 0);
 
     if (!algumaNota) {
         container.innerHTML = `<p class="text-white-50 small mb-0">${GT_I18N.t('stats.noRatedGames')}</p>`;
         return;
     }
 
-    container.innerHTML = entradas.map(([nome, valor]) => `
-        <div class="gt-bar-row">
-            <span class="gt-bar-label">${nome}</span>
-            <div class="gt-bar-track"><div class="gt-bar-fill" style="width:${(valor / 5) * 100}%"></div></div>
-            <span class="gt-bar-value">${valor || '-'}</span>
-        </div>
-    `).join('');
+    container.innerHTML = `
+        <p class="small text-white-50 mb-2">${GT_I18N.t('stats.categoryHint')}</p>
+        ${entradas.map(({ chave, label, media }) => `
+            <div class="gt-bar-row gt-bar-row-clickable" data-categoria="${chave}" role="button" tabindex="0">
+                <span class="gt-bar-label">${label}</span>
+                <div class="gt-bar-track"><div class="gt-bar-fill" style="width:${(media / 5) * 100}%"></div></div>
+                <span class="gt-bar-value">${media || '-'}</span>
+                <i class="bi bi-chevron-right text-white-50 small"></i>
+            </div>
+        `).join('')}
+        <div id="stat-notas-detalhe" class="mt-3"></div>
+    `;
+
+    container.querySelectorAll('[data-categoria]').forEach(el => {
+        const abrir = () => mostrarJogosPorCategoria(el.getAttribute('data-categoria'), entradas.find(e => e.chave === el.getAttribute('data-categoria')).label);
+        el.addEventListener('click', abrir);
+        el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); } });
+    });
+}
+
+function mostrarJogosPorCategoria(chave, label) {
+    const detalhe = document.getElementById('stat-notas-detalhe');
+    if (!detalhe) return;
+
+    const jogosComNota = _jogosParaNotas
+        .filter(j => typeof j.rating?.[chave] === 'number')
+        .sort((a, b) => b.rating[chave] - a.rating[chave]);
+
+    if (jogosComNota.length === 0) {
+        detalhe.innerHTML = `<p class="text-white-50 small mb-0">${GT_I18N.t('stats.noGamesInCategory')}</p>`;
+        return;
+    }
+
+    detalhe.innerHTML = `
+        <hr class="border-secondary">
+        <p class="small text-white-50 mb-2">${GT_I18N.t('stats.gamesRatedIn', { category: label })}</p>
+        <ul class="list-unstyled mb-0">
+            ${jogosComNota.map(j => `
+                <li class="d-flex justify-content-between align-items-center py-1">
+                    <span class="small">${escapeHtml(j.game.title)}</span>
+                    <span class="gt-mono small text-white-50">${j.rating[chave]} <i class="bi bi-star-fill" style="color: var(--gt-accent); font-size: 0.7rem;"></i></span>
+                </li>
+            `).join('')}
+        </ul>
+    `;
 }
 
 function renderTopJogos(jogos) {

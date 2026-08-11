@@ -2,7 +2,6 @@
  * Dashboard JavaScript - Gerencia a interação do utilizador com a API
  */
 
-const API_BASE = 'http://127.0.0.1:8000';
 
 // Cache local da última lista carregada, usado pelos filtros (evita chamada extra à API a cada filtro).
 let meusJogos = [];

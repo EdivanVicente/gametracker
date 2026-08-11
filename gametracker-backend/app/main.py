@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
+from app.core.config import settings
 from app.database import Base, engine
 from app.routers import auth, discovery, games, social, search
 
@@ -137,9 +138,13 @@ app = FastAPI(
 # allow_credentials=False porque a autenticação usa Bearer token (Authorization header),
 # não cookies — combinar allow_origins=["*"] com allow_credentials=True é inválido
 # e é bloqueado pelos navegadores modernos.
+#
+# Por padrão libera qualquer origem (mais simples pra colocar no ar rápido).
+# Pra travar só no seu domínio do Vercel em produção, defina no .env:
+#   CORS_ALLOWED_ORIGINS=https://seu-projeto.vercel.app,https://seu-dominio.com
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
