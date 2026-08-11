@@ -175,6 +175,10 @@ const GT_DICT = {
     'explore.searchBtn': 'Explorar',
     'explore.suggestions': 'Sugestões:',
     'explore.emptyState': 'Escolha uma sugestão acima ou digite o nome de um jogo para começar.',
+    'explore.notFound': 'Nenhuma informação encontrada na nossa base para "{title}".',
+    'explore.searchOnYoutube': 'Buscar "{title}" no YouTube',
+    'explore.gameNotFound': 'Jogo não encontrado na base',
+    'explore.noDescription': 'Sem descrição disponível para este jogo.',
 
     // --- Estatísticas ---
     'stats.title': 'Estatísticas',
@@ -198,6 +202,10 @@ const GT_DICT = {
     'stats.avgScore': 'Nota média geral',
     'stats.notEnoughData': 'Sem dados suficientes.',
     'stats.noRatedGames': 'Ainda não há jogos avaliados.',
+    'stats.notInformed': 'Não informado',
+    'stats.categoryHint': 'Clique numa categoria para ver quais jogos você avaliou nela.',
+    'stats.gamesRatedIn': 'Jogos avaliados em {category}',
+    'stats.noGamesInCategory': 'Nenhum jogo avaliado nessa categoria ainda.',
 
     'community.searchPlaceholder': 'Buscar por jogo, nome de usuário ou e-mail...',
     'community.feedTitle': 'O que os membros estão jogando',
@@ -373,6 +381,10 @@ const GT_DICT = {
     'explore.searchBtn': 'Explore',
     'explore.suggestions': 'Suggestions:',
     'explore.emptyState': 'Pick a suggestion above or type a game name to get started.',
+    'explore.notFound': 'No information found in our database for "{title}".',
+    'explore.searchOnYoutube': 'Search "{title}" on YouTube',
+    'explore.gameNotFound': 'Game not found in database',
+    'explore.noDescription': 'No description available for this game.',
 
     'stats.title': 'Statistics',
 
@@ -394,6 +406,10 @@ const GT_DICT = {
     'stats.avgScore': 'Overall average score',
     'stats.notEnoughData': 'Not enough data yet.',
     'stats.noRatedGames': 'No rated games yet.',
+    'stats.notInformed': 'Not informed',
+    'stats.categoryHint': 'Click a category to see which games you rated in it.',
+    'stats.gamesRatedIn': 'Games rated in {category}',
+    'stats.noGamesInCategory': 'No games rated in this category yet.',
 
     'community.searchPlaceholder': 'Search by game, username or email...',
     'community.feedTitle': 'What members are playing',
@@ -569,6 +585,10 @@ const GT_DICT = {
     'explore.searchBtn': 'Explorar',
     'explore.suggestions': 'Sugerencias:',
     'explore.emptyState': 'Elige una sugerencia arriba o escribe el nombre de un juego para empezar.',
+    'explore.notFound': 'No se encontró información en nuestra base para "{title}".',
+    'explore.searchOnYoutube': 'Buscar "{title}" en YouTube',
+    'explore.gameNotFound': 'Juego no encontrado en la base',
+    'explore.noDescription': 'No hay descripción disponible para este juego.',
 
     'stats.title': 'Estadísticas',
 
@@ -590,6 +610,10 @@ const GT_DICT = {
     'stats.avgScore': 'Nota promedio general',
     'stats.notEnoughData': 'No hay suficientes datos.',
     'stats.noRatedGames': 'Todavía no hay juegos calificados.',
+    'stats.notInformed': 'No informado',
+    'stats.categoryHint': 'Haz clic en una categoría para ver qué juegos calificaste en ella.',
+    'stats.gamesRatedIn': 'Juegos calificados en {category}',
+    'stats.noGamesInCategory': 'Todavía no hay juegos calificados en esta categoría.',
 
     'community.searchPlaceholder': 'Buscar por juego, usuario o correo...',
     'community.feedTitle': 'Qué están jugando los miembros',

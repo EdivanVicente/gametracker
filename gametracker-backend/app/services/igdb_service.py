@@ -15,11 +15,14 @@ inativo (retorna listas vazias / None) — o app continua funcionando só com a
 RAWG, sem quebrar nada.
 """
 
+import logging
 import time
 
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger("gametracker.igdb")
 
 _TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 _IGDB_BASE_URL = "https://api.igdb.com/v4"
@@ -57,38 +60,58 @@ class IGDBService:
 
     async def search_games(self, query: str, page_size: int = 8) -> list[dict]:
         if not self.configurado:
+            logger.warning(
+                "IGDB: IGDB_CLIENT_ID/IGDB_CLIENT_SECRET não configurados no .env — "
+                "fallback desativado, só a RAWG está ativa."
+            )
             return []
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            token = await self._get_access_token(client)
-            headers = {
-                "Client-ID": self.client_id,
-                "Authorization": f"Bearer {token}",
-                "Accept": "application/json",
-            }
-            corpo = f'search "{query}"; fields {_CAMPOS}; limit {page_size};'
-            resp = await client.post(f"{_IGDB_BASE_URL}/games", headers=headers, content=corpo)
-            resp.raise_for_status()
-            return [self._map_igdb_result_to_dict(item) for item in resp.json()]
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                token = await self._get_access_token(client)
+                headers = {
+                    "Client-ID": self.client_id,
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/json",
+                }
+                corpo = f'search "{query}"; fields {_CAMPOS}; limit {page_size};'
+                resp = await client.post(f"{_IGDB_BASE_URL}/games", headers=headers, content=corpo)
+                resp.raise_for_status()
+                resultados = [self._map_igdb_result_to_dict(item) for item in resp.json()]
+                logger.info("IGDB: busca por '%s' devolveu %s resultado(s).", query, len(resultados))
+                return resultados
+        except httpx.HTTPStatusError as exc:
+            logger.warning(
+                "IGDB: erro HTTP %s ao buscar '%s' — resposta: %s",
+                exc.response.status_code, query, exc.response.text[:300],
+            )
+            return []
+        except Exception as exc:
+            logger.warning("IGDB: falha inesperada ao buscar '%s' (%s)", query, exc)
+            return []
 
     async def get_game_details(self, external_id: str) -> dict | None:
         if not self.configurado:
             return None
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            token = await self._get_access_token(client)
-            headers = {
-                "Client-ID": self.client_id,
-                "Authorization": f"Bearer {token}",
-                "Accept": "application/json",
-            }
-            corpo = f"fields {_CAMPOS}; where id = {external_id};"
-            resp = await client.post(f"{_IGDB_BASE_URL}/games", headers=headers, content=corpo)
-            resp.raise_for_status()
-            resultados = resp.json()
-            if not resultados:
-                return None
-            return self._map_igdb_result_to_dict(resultados[0])
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                token = await self._get_access_token(client)
+                headers = {
+                    "Client-ID": self.client_id,
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/json",
+                }
+                corpo = f"fields {_CAMPOS}; where id = {external_id};"
+                resp = await client.post(f"{_IGDB_BASE_URL}/games", headers=headers, content=corpo)
+                resp.raise_for_status()
+                resultados = resp.json()
+                if not resultados:
+                    return None
+                return self._map_igdb_result_to_dict(resultados[0])
+        except Exception as exc:
+            logger.warning("IGDB: falha ao buscar detalhes de '%s' (%s)", external_id, exc)
+            return None
 
     @staticmethod
     def _map_igdb_result_to_dict(item: dict) -> dict:

@@ -1,4 +1,3 @@
-const API_BASE = 'http://127.0.0.1:8000';
 
 function escapeHtml(unsafe) {
     return String(unsafe ?? '')
@@ -71,11 +70,11 @@ function renderResultado(data, tituloBuscado) {
 
     if (!jogo && !video) {
         resultDiv.innerHTML = `
-            <p class="text-white-50 text-center py-3 mb-2">Nenhuma informação encontrada na nossa base para "${escapeHtml(tituloBuscado)}".</p>
+            <p class="text-white-50 text-center py-3 mb-2">${GT_I18N.t('explore.notFound', { title: escapeHtml(tituloBuscado) })}</p>
             <div class="text-center">
                 <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(tituloBuscado + ' gameplay')}"
                    target="_blank" rel="noopener noreferrer" class="gt-gameplay-channel-link d-inline-flex">
-                    <i class="bi bi-youtube"></i> Buscar "${escapeHtml(tituloBuscado)}" no YouTube <i class="bi bi-box-arrow-up-right"></i>
+                    <i class="bi bi-youtube"></i> ${GT_I18N.t('explore.searchOnYoutube', { title: escapeHtml(tituloBuscado) })} <i class="bi bi-box-arrow-up-right"></i>
                 </a>
             </div>
         `;
@@ -92,11 +91,11 @@ function renderResultado(data, tituloBuscado) {
             <div class="gt-detail-cover mb-3">
                 ${jogo?.cover_url ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo?.title || '')}">` : '<i class="bi bi-controller"></i>'}
             </div>
-            <h3 class="gt-card-title mb-1">${escapeHtml(jogo?.title || 'Jogo não encontrado na base')}</h3>
+            <h3 class="gt-card-title mb-1">${escapeHtml(jogo?.title || GT_I18N.t('explore.gameNotFound'))}</h3>
             <p class="gt-detail-genre mb-2">${escapeHtml(gtTranslateGenre(jogo?.genre) || '')}</p>
             <div class="row g-4">
                 <div class="col-12 col-md-6">
-                    <p class="small mb-2">${jogo?.description ? escapeHtml(jogo.description.split(/\s+/).slice(0, 50).join(' ')) + '…' : 'Sem descrição disponível para este jogo.'}</p>
+                    <p class="small mb-2">${jogo?.description ? escapeHtml(jogo.description.split(/\s+/).slice(0, 50).join(' ')) + '…' : GT_I18N.t('explore.noDescription')}</p>
                     <div class="d-flex flex-wrap gap-1">${badgesPlataformas}</div>
                 </div>
                 <div class="col-12 col-md-6">

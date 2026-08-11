@@ -48,6 +48,19 @@ class Settings(BaseSettings):
 
     EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
 
+    # --- CORS ---
+    # Lista separada por vírgula das origens autorizadas a chamar a API.
+    # Deixe em branco (padrão) para liberar qualquer origem — mais simples
+    # pra colocar no ar rápido. Em produção, defina no .env algo como:
+    #   CORS_ALLOWED_ORIGINS=https://seu-projeto.vercel.app,https://seudominio.com
+    CORS_ALLOWED_ORIGINS_RAW: str = os.getenv("CORS_ALLOWED_ORIGINS", "")
+
+    @property
+    def CORS_ALLOWED_ORIGINS(self) -> list[str]:
+        if not self.CORS_ALLOWED_ORIGINS_RAW.strip():
+            return ["*"]
+        return [origem.strip() for origem in self.CORS_ALLOWED_ORIGINS_RAW.split(",") if origem.strip()]
+
     class Config:
         env_file = ".env"
 

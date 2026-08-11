@@ -1,4 +1,3 @@
-const API_BASE = 'http://127.0.0.1:8000';
 
 async function authFetch(path, options = {}) {
     const token = localStorage.getItem('token');
@@ -274,18 +273,19 @@ function renderizarPerfilPublico(p) {
 
         <hr class="border-secondary">
 
-        <div class="d-flex align-items-center gap-2 mb-3">
-            <input type="text" class="form-control form-control-sm" id="public-profile-search"
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <input type="text" class="form-control form-control-sm flex-fill" style="min-width: 160px;" id="public-profile-search"
                    placeholder="${GT_I18N.t('community.searchInLibrary')}">
-            <select class="form-select form-select-sm" id="public-profile-status-filter" style="max-width: 160px;">
+            <select class="form-select form-select-sm flex-shrink-0" style="max-width: 160px;" id="public-profile-status-filter">
                 <option value="">${GT_I18N.t('toolbar.status')}</option>
                 <option value="playing">${GT_I18N.t('status.playing')}</option>
                 <option value="finished">${GT_I18N.t('status.finished')}</option>
             </select>
-            <div class="dropdown">
+            <div class="dropdown flex-shrink-0">
                 <button class="btn btn-gt-outline btn-sm d-flex align-items-center gap-2" type="button"
                         id="public-view-mode-btn" data-bs-toggle="dropdown" aria-expanded="false" title="${GT_I18N.t('toolbar.viewMode')}">
                     <i class="bi bi-grid-3x2-gap-fill" id="public-view-mode-icon"></i>
+                    <span class="d-none d-sm-inline small">${GT_I18N.t('toolbar.viewMode')}</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item d-flex align-items-center gap-2" href="#" data-public-view="list"><i class="bi bi-list-ul"></i> ${GT_I18N.t('toolbar.viewList')}</a></li>

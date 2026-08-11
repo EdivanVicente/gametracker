@@ -127,8 +127,21 @@ def _descricao_no_idioma(db: Session, jogo: models.Game, lang: str) -> str | Non
         # na próxima vez em vez de ficar "preso" mostrando texto vazio pra sempre.
         return jogo.description
 
-    db.add(models.GameTranslation(game_id=jogo.id, lang=lang, description=traduzida))
-    db.commit()
+    try:
+        db.add(models.GameTranslation(game_id=jogo.id, lang=lang, description=traduzida))
+        db.commit()
+    except IntegrityError:
+        # Duas requisições simultâneas traduziram o mesmo jogo/idioma ao mesmo
+        # tempo (ex: duas abas abertas) — a outra já gravou primeiro, então só
+        # descarta essa tentativa e usa o que já foi cacheado por ela.
+        db.rollback()
+        cache = (
+            db.query(models.GameTranslation)
+            .filter(models.GameTranslation.game_id == jogo.id, models.GameTranslation.lang == lang)
+            .first()
+        )
+        if cache:
+            return cache.description
     return traduzida
 
 

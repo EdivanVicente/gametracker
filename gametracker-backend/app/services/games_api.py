@@ -8,6 +8,7 @@ troque apenas a URL base, os parâmetros de auth e o mapeamento de campos em
 """
 
 import logging
+import threading
 
 import httpx
 from fastapi import HTTPException, status
@@ -21,6 +22,16 @@ logger = logging.getLogger("gametracker.games_api")
 # Limite de caracteres por chamada ao Google Translate (via deep-translator).
 # Textos maiores são cortados em pedaços para não estourar o limite do serviço.
 _TAMANHO_MAX_TRADUCAO = 4500
+
+# A rota que chama a tradução (GET /games/) é síncrona, então o FastAPI roda
+# cada requisição numa thread separada do threadpool — e há relatos
+# documentados de que o deep-translator devolve resultados errados/trocados
+# quando chamado concorrentemente por múltiplas threads ao mesmo tempo
+# (https://github.com/nidhaloff/deep-translator/issues/273). Esse lock
+# serializa as chamadas de tradução pra eliminar esse risco por completo —
+# o custo é uma fila curta em vez de tradução paralela, o que é totalmente
+# aceitável pra escala de uso deste app.
+_lock_traducao = threading.Lock()
 
 
 def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str | None:
@@ -38,24 +49,25 @@ def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str | None:
         return texto
 
     try:
-        if len(texto) <= _TAMANHO_MAX_TRADUCAO:
-            return GoogleTranslator(source="auto", target=idioma_destino).translate(texto)
+        with _lock_traducao:
+            if len(texto) <= _TAMANHO_MAX_TRADUCAO:
+                return GoogleTranslator(source="auto", target=idioma_destino).translate(texto)
 
-        # Textos longos: traduz em pedaços e junta de novo, quebrando em frases
-        # para não cortar uma tradução no meio de uma palavra.
-        partes = []
-        pedaco_atual = ""
-        for frase in texto.split(". "):
-            if len(pedaco_atual) + len(frase) + 2 > _TAMANHO_MAX_TRADUCAO:
+            # Textos longos: traduz em pedaços e junta de novo, quebrando em frases
+            # para não cortar uma tradução no meio de uma palavra.
+            partes = []
+            pedaco_atual = ""
+            for frase in texto.split(". "):
+                if len(pedaco_atual) + len(frase) + 2 > _TAMANHO_MAX_TRADUCAO:
+                    partes.append(pedaco_atual)
+                    pedaco_atual = frase
+                else:
+                    pedaco_atual = f"{pedaco_atual}. {frase}" if pedaco_atual else frase
+            if pedaco_atual:
                 partes.append(pedaco_atual)
-                pedaco_atual = frase
-            else:
-                pedaco_atual = f"{pedaco_atual}. {frase}" if pedaco_atual else frase
-        if pedaco_atual:
-            partes.append(pedaco_atual)
 
-        traduzido = [GoogleTranslator(source="auto", target=idioma_destino).translate(p) for p in partes]
-        return " ".join(traduzido)
+            traduzido = [GoogleTranslator(source="auto", target=idioma_destino).translate(p) for p in partes]
+            return " ".join(traduzido)
     except Exception as exc:
         logger.warning("Falha ao traduzir texto pra '%s' (%s) — não será cacheado.", idioma_destino, exc)
         return None

@@ -6,7 +6,6 @@
  *   #navbar-avatar-btn  -> botão/imagem do avatar
  *   #navbar-user-name   -> texto com o nome de exibição
  */
-const GT_API_BASE = 'http://127.0.0.1:8000';
 
 async function carregarNavbarUsuario() {
     const token = localStorage.getItem('token');
