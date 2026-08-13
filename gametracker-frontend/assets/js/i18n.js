@@ -94,7 +94,7 @@ const GT_DICT = {
     'auth.selectLanguage': 'Escolha seu idioma',
 
     // --- Toolbar / filtros (dashboard) ---
-    'toolbar.searchPlaceholder': 'Buscar nos meus jogos',
+    'toolbar.searchPlaceholder': 'Buscar por nome do jogo...',
     'toolbar.filters': 'Filtros',
     'toolbar.console': 'Console',
     'toolbar.genre': 'Gênero',
@@ -311,7 +311,7 @@ const GT_DICT = {
     'auth.sendLink': 'Send link',
     'auth.selectLanguage': 'Choose your language',
 
-    'toolbar.searchPlaceholder': 'Search my games',
+    'toolbar.searchPlaceholder': 'Search by game name...',
     'toolbar.filters': 'Filters',
     'toolbar.console': 'Console',
     'toolbar.genre': 'Genre',
@@ -520,7 +520,7 @@ const GT_DICT = {
     'auth.sendLink': 'Enviar enlace',
     'auth.selectLanguage': 'Elige tu idioma',
 
-    'toolbar.searchPlaceholder': 'Buscar en mis juegos',
+    'toolbar.searchPlaceholder': 'Buscar por nombre del juego...',
     'toolbar.filters': 'Filtros',
     'toolbar.console': 'Consola',
     'toolbar.genre': 'Género',

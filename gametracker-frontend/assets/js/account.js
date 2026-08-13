@@ -131,9 +131,9 @@ async function carregarContadoresSociais(userId) {
         const response = await authFetch(`/social/profile/${userId}`);
         if (!response.ok) return;
         const p = await response.json();
-        document.getElementById('profile-games-count').textContent = p.games_count;
-        document.getElementById('profile-followers-count').textContent = p.followers_count;
-        document.getElementById('profile-following-count').textContent = p.following_count;
+        document.getElementById('profile-games-count').textContent = p.games_count ?? 0;
+        document.getElementById('profile-followers-count').textContent = p.followers_count ?? 0;
+        document.getElementById('profile-following-count').textContent = p.following_count ?? 0;
     } catch (error) {
         console.error('Erro ao carregar contadores sociais:', error);
     }
