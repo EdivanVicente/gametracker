@@ -1,45 +1,55 @@
-
 function escapeHtml(unsafe) {
     return String(unsafe ?? '')
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+async function authFetch(path, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = Object.assign({ 'Authorization': `Bearer ${token}` }, options.headers || {});
+    const response = await fetch(`${API_BASE}${path}`, Object.assign({}, options, { headers }));
+    if (response.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = 'index.html';
+        throw new Error('Sessão expirada.');
+    }
+    return response;
+}
+
+let _ultimosResultados = [];
+let _ultimaBusca = '';
+
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('explore-btn');
     const input = document.getElementById('explore-input');
     const resultDiv = document.getElementById('explore-result');
+    const filtroPlataforma = document.getElementById('explore-platform-filter');
+    let debounceTimer = null;
 
+    // Busca flexível por nome — traz TODAS as variações encontradas (diferentes
+    // jogos e plataformas), não só o primeiro resultado como era antes.
     const buscar = async (tituloForcado) => {
         const titulo = (tituloForcado ?? input.value).trim();
         if (titulo.length < 2) return;
 
         input.value = titulo;
-        resultDiv.innerHTML = '<p class="text-white-50 text-center py-5">Buscando...</p>';
-
-        const token = localStorage.getItem('token');
+        _ultimaBusca = titulo;
+        resultDiv.innerHTML = `<p class="text-white-50 text-center py-5">${GT_I18N.t('common.loading')}</p>`;
 
         try {
-            const response = await fetch(`${API_BASE}/explore/gameplay?title=${encodeURIComponent(titulo)}&lang=${gtBackendLang()}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                window.location.href = 'index.html';
-                return;
-            }
+            const response = await authFetch(`/games/search?q=${encodeURIComponent(titulo)}&page_size=24`);
 
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                resultDiv.innerHTML = `<p class="text-danger text-center py-5">${escapeHtml(data.detail || 'Erro ao buscar.')}</p>`;
+                resultDiv.innerHTML = `<p class="text-danger text-center py-5">${escapeHtml(data.detail || GT_I18N.t('explore.searchError'))}</p>`;
                 return;
             }
 
-            const data = await response.json();
-            renderResultado(data, titulo);
+            _ultimosResultados = await response.json();
+            popularFiltroPlataformas(_ultimosResultados);
+            renderizarListaResultados(_ultimosResultados, titulo);
         } catch (error) {
-            resultDiv.innerHTML = '<p class="text-danger text-center py-5">Erro de conexão com o servidor.</p>';
+            resultDiv.innerHTML = `<p class="text-danger text-center py-5">${GT_I18N.t('auth.connectionError')}</p>`;
         }
     };
 
@@ -50,25 +60,94 @@ document.addEventListener('DOMContentLoaded', () => {
             buscar();
         }
     });
-
-    // Chips de sugestão: clicar já dispara a busca com aquele jogo.
-    document.querySelectorAll('.gt-suggestion-chip').forEach(chip => {
-        chip.addEventListener('click', () => buscar(chip.dataset.jogo));
+    // Busca também enquanto digita (com um pequeno atraso, pra não disparar uma
+    // requisição a cada tecla).
+    input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const valor = input.value.trim();
+        if (valor.length < 2) return;
+        debounceTimer = setTimeout(() => buscar(valor), 450);
     });
 
-    // Se o usuário trocar o idioma, refaz a busca atual pra a descrição vir
-    // traduzida de novo (o backend não guarda a tradução escolhida, só o cache).
+    filtroPlataforma.addEventListener('change', () => {
+        renderizarListaResultados(_ultimosResultados, _ultimaBusca);
+    });
+
+    // Chips de sugestão: pool grande de jogos populares e variados — a cada
+    // visita à página, sorteia 5 diferentes, pra não ficar sempre os mesmos.
+    const POOL_SUGESTOES = [
+        'Hollow Knight', 'The Witcher 3', 'Elden Ring', 'Stardew Valley', 'Celeste',
+        'God of War', 'The Legend of Zelda', 'Red Dead Redemption 2',
+        'Super Mario Odyssey', 'Metroid', 'Dark Souls III', 'Persona 5',
+        'Hades', 'Cyberpunk 2077', 'Animal Crossing', 'Resident Evil',
+        'Final Fantasy VII', 'Sekiro: Shadows Die Twice', 'Undertale', 'Portal 2',
+        'Minecraft', 'Terraria', 'Mortal Kombat', 'Street Fighter', 'Chrono Trigger',
+        'Castlevania', 'Ori and the Blind Forest', 'Disco Elysium', 'It Takes Two',
+        'Aladdin',
+    ];
+
+    function sortearSugestoes(qtd = 5) {
+        const embaralhado = [...POOL_SUGESTOES].sort(() => Math.random() - 0.5);
+        return embaralhado.slice(0, qtd);
+    }
+
+    function renderizarSugestoes() {
+        const container = document.getElementById('explore-suggestions');
+        container.querySelectorAll('.gt-suggestion-chip').forEach(el => el.remove());
+
+        sortearSugestoes().forEach(jogo => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'gt-suggestion-chip';
+            chip.dataset.jogo = jogo;
+            chip.textContent = jogo;
+            chip.addEventListener('click', () => buscar(jogo));
+            container.appendChild(chip);
+        });
+    }
+
+    renderizarSugestoes();
+
+    // Se o usuário trocar o idioma, refaz a busca atual pra os gêneros virem
+    // traduzidos de novo.
     document.addEventListener('gt:langchange', () => {
-        if (input.value.trim().length >= 2) buscar(input.value.trim());
+        if (_ultimaBusca.length >= 2) buscar(_ultimaBusca);
     });
 });
 
-function renderResultado(data, tituloBuscado) {
-    const resultDiv = document.getElementById('explore-result');
-    const jogo = data.game;
-    const video = data.video;
+// Monta o filtro "Todas as plataformas" + uma opção pra cada plataforma
+// diferente encontrada nos resultados da busca atual.
+function popularFiltroPlataformas(resultados) {
+    const select = document.getElementById('explore-platform-filter');
+    const valorAtual = select.value;
 
-    if (!jogo && !video) {
+    const plataformas = new Set();
+    resultados.forEach(jogo => (jogo.platforms || []).forEach(p => plataformas.add(p)));
+
+    select.innerHTML = `<option value="">${GT_I18N.t('explore.allPlatforms')}</option>`;
+    [...plataformas].sort().forEach(p => {
+        const option = document.createElement('option');
+        option.value = p;
+        option.textContent = p;
+        select.appendChild(option);
+    });
+
+    // Mantém a plataforma selecionada, se ela ainda existir na nova lista.
+    if ([...plataformas].includes(valorAtual)) select.value = valorAtual;
+}
+
+// Lista de cards compactos (nome + plataforma + botão "Saiba mais") — sem
+// carregar vídeo/descrição pra cada um, isso só é buscado quando o usuário
+// clica em "Saiba mais" de um jogo específico (mais rápido e mais leve).
+function renderizarListaResultados(resultados, tituloBuscado) {
+    const resultDiv = document.getElementById('explore-result');
+    const plataformaFiltro = document.getElementById('explore-platform-filter').value;
+
+    const filtrados = plataformaFiltro
+        ? resultados.filter(j => (j.platforms || []).includes(plataformaFiltro))
+        : resultados;
+
+    if (filtrados.length === 0) {
         resultDiv.innerHTML = `
             <p class="text-white-50 text-center py-3 mb-2">${GT_I18N.t('explore.notFound', { title: escapeHtml(tituloBuscado) })}</p>
             <div class="text-center">
@@ -81,30 +160,81 @@ function renderResultado(data, tituloBuscado) {
         return;
     }
 
-    const plataformas = (jogo?.platforms || []);
+    resultDiv.innerHTML = `
+        <p class="small text-white-50 mb-3">${GT_I18N.t('explore.resultsCount', { count: filtrados.length })}</p>
+        <div class="row g-3" id="explore-results-grid"></div>
+    `;
+
+    const grid = document.getElementById('explore-results-grid');
+    grid.innerHTML = filtrados.map((jogo, idx) => `
+        <div class="col-6 col-sm-4 col-lg-3">
+            <div class="gt-panel h-100 overflow-hidden" style="padding: 0;">
+                <div style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
+                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                </div>
+                <div class="p-2">
+                    <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(jogo.title)}">${escapeHtml(jogo.title)}</p>
+                    <p class="text-white-50 mb-2" style="font-size: 0.72rem;">
+                        ${escapeHtml((jogo.platforms || []).slice(0, 2).join(', ') || GT_I18N.t('stats.notInformed'))}
+                    </p>
+                    <button type="button" class="btn btn-gt-outline btn-sm w-100" data-explore-idx="${idx}">
+                        ${GT_I18N.t('explore.learnMore')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    grid.querySelectorAll('[data-explore-idx]').forEach(el => {
+        el.addEventListener('click', () => abrirDetalheJogo(filtrados[parseInt(el.getAttribute('data-explore-idx'), 10)]));
+    });
+}
+
+// Modal "Saiba mais" — reaproveita a MESMA estrutura de detalhe (capa, gênero,
+// plataformas, resumo, vídeo de gameplay) usada em outros pontos do site.
+async function abrirDetalheJogo(jogo) {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalExploreDetail'));
+    const titulo = document.getElementById('explore-detail-title');
+    const body = document.getElementById('explore-detail-body');
+
+    titulo.textContent = jogo.title;
+    body.innerHTML = `<p class="text-white-50 small text-center py-4 mb-0">${GT_I18N.t('common.loading')}</p>`;
+    modal.show();
+
+    try {
+        const response = await authFetch(
+            `/explore/gameplay?title=${encodeURIComponent(jogo.title)}&external_id=${encodeURIComponent(jogo.external_id)}&lang=${gtBackendLang()}`
+        );
+        const data = await response.json();
+        renderizarDetalheJogo(body, data, jogo);
+    } catch (error) {
+        body.innerHTML = `<p class="text-danger small text-center py-4 mb-0">${GT_I18N.t('community.loadError')}</p>`;
+    }
+}
+
+function renderizarDetalheJogo(body, data, jogoResumo) {
+    const jogo = data.game || jogoResumo;
+    const plataformas = jogo.platforms || [];
     const badgesPlataformas = plataformas.length
         ? plataformas.map(p => `<span class="gt-platform-badge">${escapeHtml(p)}</span>`).join('')
         : '';
 
-    resultDiv.innerHTML = `
-        <div class="gt-card p-3 mb-4">
-            <div class="gt-detail-cover mb-3">
-                ${jogo?.cover_url ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo?.title || '')}">` : '<i class="bi bi-controller"></i>'}
+    body.innerHTML = `
+        <div class="row g-4">
+            <div class="col-12 col-md-5">
+                <div class="gt-detail-cover mb-3">
+                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title || '')}">` : '<i class="bi bi-controller"></i>'}
+                </div>
+                <p class="gt-detail-genre mb-2">${escapeHtml(gtTranslateGenre(jogo.genre) || '')}</p>
+                <div class="d-flex flex-wrap gap-1">${badgesPlataformas}</div>
             </div>
-            <h3 class="gt-card-title mb-1">${escapeHtml(jogo?.title || GT_I18N.t('explore.gameNotFound'))}</h3>
-            <p class="gt-detail-genre mb-2">${escapeHtml(gtTranslateGenre(jogo?.genre) || '')}</p>
-            <div class="row g-4">
-                <div class="col-12 col-md-6">
-                    <p class="small mb-2">${jogo?.description ? escapeHtml(jogo.description.split(/\s+/).slice(0, 50).join(' ')) + '…' : GT_I18N.t('explore.noDescription')}</p>
-                    <div class="d-flex flex-wrap gap-1">${badgesPlataformas}</div>
-                </div>
-                <div class="col-12 col-md-6">
-                    <p class="small text-white-50 mb-2">Gameplay</p>
-                    <div id="explore-video-wrapper"></div>
-                </div>
+            <div class="col-12 col-md-7">
+                <p class="small mb-3">${jogo.description ? escapeHtml(jogo.description.split(/\s+/).slice(0, 60).join(' ')) + '…' : GT_I18N.t('explore.noDescription')}</p>
+                <p class="small text-white-50 mb-2">${GT_I18N.t('detail.gameplayLabel')}</p>
+                <div id="explore-video-wrapper"></div>
             </div>
         </div>
     `;
 
-    renderizarGameplay(document.getElementById('explore-video-wrapper'), data.videos || (video ? [video] : []), tituloBuscado);
+    renderizarGameplay(document.getElementById('explore-video-wrapper'), data.videos || (data.video ? [data.video] : []), jogo.title);
 }

@@ -21,9 +21,15 @@ router = APIRouter(dependencies=[Depends(get_current_user)], tags=["Descoberta"]
 @router.get("/games/search")
 async def search_games(
     q: str = Query(..., min_length=2, description="Nome do jogo a ser pesquisado"),
+    page_size: int = Query(20, ge=1, le=40, description="Quantidade de resultados"),
 ):
-    """Etapa 1 do fluxo de catalogação: o usuário digita, o backend consulta a RAWG."""
-    return await games_api_service.search_games(query=q)
+    """
+    Busca flexível (partial match) de jogos por nome — usada tanto na etapa 1 do
+    fluxo de catalogação quanto na página Explorar, que agora mostra TODAS as
+    variações encontradas (ex: buscar "Zelda" traz vários títulos e plataformas
+    diferentes, em vez de só o primeiro resultado).
+    """
+    return await games_api_service.search_games(query=q, page_size=page_size)
 
 
 @router.get("/games/{external_id}")
@@ -39,28 +45,34 @@ async def get_game_details(external_id: str, lang: str = "pt"):
 @router.get("/explore/gameplay")
 async def explore_gameplay(
     title: str = Query(..., min_length=2, description="Nome do jogo para buscar gameplay"),
+    external_id: str | None = Query(None, description="Se informado, busca os detalhes EXATOS desse jogo (não faz nova busca por nome)"),
     lang: str = "pt",
 ):
     """
-    Módulo 'Explorar': retorna metadados do jogo (RAWG) + vídeo de gameplay (YouTube)
-    para exibição lado a lado no frontend (card + player de vídeo).
+    Módulo 'Explorar': retorna metadados do jogo (RAWG/IGDB) + vídeo de gameplay
+    (YouTube) para exibição no modal "Saiba mais".
 
-    Importante: usamos a busca em lista só para achar o ID do jogo, e depois
-    buscamos os DETALHES completos dele (get_game_details) — a busca em lista da
-    RAWG não retorna a descrição do jogo, só os detalhes completos retornam.
+    Se `external_id` for informado (usuário clicou num resultado específico da
+    lista de busca), buscamos os detalhes EXATOS daquele jogo — evita o problema
+    de re-buscar por nome e cair num título diferente (ex: outra versão/plataforma).
+    Sem `external_id` (uso legado/compatibilidade), faz o comportamento antigo:
+    pega o primeiro resultado da busca por nome.
 
-    Se a YOUTUBE_API_KEY não estiver configurada, ou a RAWG falhar, os campos
-    correspondentes vêm como `None`/lista vazia em vez de quebrar a rota inteira.
+    Se a YOUTUBE_API_KEY não estiver configurada, ou a RAWG/IGDB falharem, os
+    campos correspondentes vêm como `None`/lista vazia em vez de quebrar a rota inteira.
     """
     game_data = None
     try:
-        resultados_busca = await games_api_service.search_games(query=title, page_size=1)
-        if resultados_busca:
-            game_data = await games_api_service.get_game_details(external_id=resultados_busca[0]["external_id"])
-            if game_data:
-                original = game_data.get("description")
-                traduzida = games_api_service.translate_description(original, lang)
-                game_data["description"] = traduzida if traduzida is not None else original
+        if external_id:
+            game_data = await games_api_service.get_game_details(external_id=external_id)
+        else:
+            resultados_busca = await games_api_service.search_games(query=title, page_size=1)
+            if resultados_busca:
+                game_data = await games_api_service.get_game_details(external_id=resultados_busca[0]["external_id"])
+        if game_data:
+            original = game_data.get("description")
+            traduzida = games_api_service.translate_description(original, lang)
+            game_data["description"] = traduzida if traduzida is not None else original
     except HTTPException:
         game_data = None
 
