@@ -34,8 +34,8 @@ async function carregarRelatorios() {
         }
 
         renderResumo(jogos);
-        renderBarras('stat-genero', contarPor(jogos, j => gtTranslateGenre(j.game.genre)));
-        renderBarras('stat-plataforma', contarPor(jogos, j => j.platform));
+        renderBarras('stat-genero', contarPor(jogos, j => gtTranslateGenre(j.game.genre)), jogos, j => gtTranslateGenre(j.game.genre));
+        renderBarras('stat-plataforma', contarPor(jogos, j => j.platform), jogos, j => j.platform);
         renderNotasMedias(jogos);
         renderTopJogos(jogos);
     } catch (error) {
@@ -74,7 +74,7 @@ function contarPor(jogos, seletor) {
     return Object.entries(contagem).sort((a, b) => b[1] - a[1]);
 }
 
-function renderBarras(containerId, entradas) {
+function renderBarras(containerId, entradas, jogos, seletor) {
     const container = document.getElementById(containerId);
     if (entradas.length === 0) {
         container.innerHTML = `<p class="text-white-50 small mb-0">${GT_I18N.t('stats.notEnoughData')}</p>`;
@@ -83,13 +83,54 @@ function renderBarras(containerId, entradas) {
 
     const max = Math.max(...entradas.map(([, valor]) => valor));
 
-    container.innerHTML = entradas.map(([nome, valor]) => `
-        <div class="gt-bar-row">
-            <span class="gt-bar-label">${escapeHtml(nome)}</span>
-            <div class="gt-bar-track"><div class="gt-bar-fill" style="width:${(valor / max) * 100}%"></div></div>
-            <span class="gt-bar-value">${valor}</span>
-        </div>
-    `).join('');
+    container.innerHTML = `
+        ${entradas.map(([nome, valor]) => `
+            <div class="gt-bar-row gt-bar-row-clickable" data-valor-barra="${escapeHtml(nome)}" role="button" tabindex="0">
+                <span class="gt-bar-label">${escapeHtml(nome)}</span>
+                <div class="gt-bar-track"><div class="gt-bar-fill" style="width:${(valor / max) * 100}%"></div></div>
+                <span class="gt-bar-value">${valor}</span>
+                <i class="bi bi-chevron-right text-white-50 small"></i>
+            </div>
+        `).join('')}
+        <div class="mt-3" data-detalhe-barra></div>
+    `;
+
+    const detalhe = container.querySelector('[data-detalhe-barra]');
+    container.querySelectorAll('[data-valor-barra]').forEach(el => {
+        const abrir = () => mostrarJogosPorValor(detalhe, el.getAttribute('data-valor-barra'), jogos, seletor);
+        el.addEventListener('click', abrir);
+        el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); } });
+    });
+}
+
+// Mostra os 5 principais jogos (jogando ou já jogados) que caem naquele valor
+// específico de gênero/plataforma — mesma ideia da seção de notas por categoria.
+function mostrarJogosPorValor(detalheEl, valorAlvo, jogos, seletor) {
+    if (!detalheEl) return;
+
+    const filtrados = jogos.filter(j => {
+        const bruto = seletor(j) || GT_I18N.t('stats.notInformed');
+        const principal = bruto.split(',')[0].trim();
+        return principal === valorAlvo;
+    }).slice(0, 5);
+
+    if (filtrados.length === 0) {
+        detalheEl.innerHTML = `<p class="text-white-50 small mb-0">${GT_I18N.t('stats.noGamesInCategory')}</p>`;
+        return;
+    }
+
+    detalheEl.innerHTML = `
+        <hr class="border-secondary">
+        <p class="small text-white-50 mb-2">${GT_I18N.t('stats.top5In', { value: valorAlvo })}</p>
+        <ul class="list-unstyled mb-0">
+            ${filtrados.map(j => `
+                <li class="d-flex justify-content-between align-items-center py-1">
+                    <span class="small">${escapeHtml(j.game.title)}</span>
+                    <span class="small text-white-50">${escapeHtml(j.platform || '—')}</span>
+                </li>
+            `).join('')}
+        </ul>
+    `;
 }
 
 // Notas médias por categoria — cada barra é clicável e mostra a lista de

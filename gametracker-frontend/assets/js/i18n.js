@@ -179,6 +179,10 @@ const GT_DICT = {
     'explore.searchOnYoutube': 'Buscar "{title}" no YouTube',
     'explore.gameNotFound': 'Jogo não encontrado na base',
     'explore.noDescription': 'Sem descrição disponível para este jogo.',
+    'explore.allPlatforms': 'Todas as plataformas',
+    'explore.resultsCount': '{count} jogo(s) encontrado(s)',
+    'explore.learnMore': 'Saiba mais',
+    'explore.searchError': 'Erro ao buscar.',
 
     // --- Estatísticas ---
     'stats.title': 'Estatísticas',
@@ -206,6 +210,7 @@ const GT_DICT = {
     'stats.categoryHint': 'Clique numa categoria para ver quais jogos você avaliou nela.',
     'stats.gamesRatedIn': 'Jogos avaliados em {category}',
     'stats.noGamesInCategory': 'Nenhum jogo avaliado nessa categoria ainda.',
+    'stats.top5In': '5 principais jogos em "{value}"',
 
     'community.searchPlaceholder': 'Buscar por jogo, nome de usuário ou e-mail...',
     'community.feedTitle': 'O que os membros estão jogando',
@@ -241,7 +246,7 @@ const GT_DICT = {
     'onboarding.skip': 'Pular',
     'onboarding.save': 'Salvar',
     'onboarding.laterHint': 'Você pode preencher ou mudar tudo isso depois em \'Minha conta\'.',
-    'community.searchInLibrary': 'Buscar na biblioteca desta pessoa...',
+    'community.searchInLibrary': 'Pesquisar jogos de {name}',
     'community.emptyLibrary': 'Nenhum jogo encontrado.',
 
     'gameplay.searchOnYoutube': 'Buscar no YouTube',
@@ -385,6 +390,10 @@ const GT_DICT = {
     'explore.searchOnYoutube': 'Search "{title}" on YouTube',
     'explore.gameNotFound': 'Game not found in database',
     'explore.noDescription': 'No description available for this game.',
+    'explore.allPlatforms': 'All platforms',
+    'explore.resultsCount': '{count} game(s) found',
+    'explore.learnMore': 'Learn more',
+    'explore.searchError': 'Search error.',
 
     'stats.title': 'Statistics',
 
@@ -410,6 +419,7 @@ const GT_DICT = {
     'stats.categoryHint': 'Click a category to see which games you rated in it.',
     'stats.gamesRatedIn': 'Games rated in {category}',
     'stats.noGamesInCategory': 'No games rated in this category yet.',
+    'stats.top5In': 'Top 5 games in "{value}"',
 
     'community.searchPlaceholder': 'Search by game, username or email...',
     'community.feedTitle': 'What members are playing',
@@ -445,7 +455,7 @@ const GT_DICT = {
     'onboarding.skip': 'Skip',
     'onboarding.save': 'Save',
     'onboarding.laterHint': "You can fill in or change all of this later in 'My account'.",
-    'community.searchInLibrary': "Search this person's library...",
+    'community.searchInLibrary': 'Search {name}\'s games',
     'community.emptyLibrary': 'No games found.',
 
     'gameplay.searchOnYoutube': 'Search on YouTube',
@@ -589,6 +599,10 @@ const GT_DICT = {
     'explore.searchOnYoutube': 'Buscar "{title}" en YouTube',
     'explore.gameNotFound': 'Juego no encontrado en la base',
     'explore.noDescription': 'No hay descripción disponible para este juego.',
+    'explore.allPlatforms': 'Todas las plataformas',
+    'explore.resultsCount': '{count} juego(s) encontrado(s)',
+    'explore.learnMore': 'Saber más',
+    'explore.searchError': 'Error de búsqueda.',
 
     'stats.title': 'Estadísticas',
 
@@ -614,6 +628,7 @@ const GT_DICT = {
     'stats.categoryHint': 'Haz clic en una categoría para ver qué juegos calificaste en ella.',
     'stats.gamesRatedIn': 'Juegos calificados en {category}',
     'stats.noGamesInCategory': 'Todavía no hay juegos calificados en esta categoría.',
+    'stats.top5In': 'Top 5 juegos en "{value}"',
 
     'community.searchPlaceholder': 'Buscar por juego, usuario o correo...',
     'community.feedTitle': 'Qué están jugando los miembros',
@@ -649,7 +664,7 @@ const GT_DICT = {
     'onboarding.skip': 'Omitir',
     'onboarding.save': 'Guardar',
     'onboarding.laterHint': 'Puedes completar o cambiar todo esto después en \'Mi cuenta\'.',
-    'community.searchInLibrary': 'Buscar en la biblioteca de esta persona...',
+    'community.searchInLibrary': 'Buscar juegos de {name}',
     'community.emptyLibrary': 'No se encontraron juegos.',
 
     'gameplay.searchOnYoutube': 'Buscar en YouTube',
