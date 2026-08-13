@@ -251,9 +251,9 @@ function renderizarPerfilPublico(p) {
             ${p.bio ? `<p class="small mb-2">${escapeHtml(p.bio)}</p>` : ''}
 
             <div class="d-flex justify-content-center gap-4 my-3">
-                <div><div class="fw-bold">${p.games_count}</div><div class="text-white-50 small">${GT_I18N.t('community.games')}</div></div>
-                <div id="public-followers-trigger" role="button"><div class="fw-bold">${p.followers_count}</div><div class="text-white-50 small">${GT_I18N.t('community.followers')}</div></div>
-                <div id="public-following-trigger" role="button"><div class="fw-bold">${p.following_count}</div><div class="text-white-50 small">${GT_I18N.t('community.following')}</div></div>
+                <div><div class="fw-bold">${p.games_count ?? 0}</div><div class="text-white-50 small">${GT_I18N.t('community.games')}</div></div>
+                <div id="public-followers-trigger" role="button"><div class="fw-bold">${p.followers_count ?? 0}</div><div class="text-white-50 small">${GT_I18N.t('community.followers')}</div></div>
+                <div id="public-following-trigger" role="button"><div class="fw-bold">${p.following_count ?? 0}</div><div class="text-white-50 small">${GT_I18N.t('community.following')}</div></div>
             </div>
 
             ${p.is_self ? '' : `

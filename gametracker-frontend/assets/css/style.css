@@ -678,6 +678,36 @@ body {
   width: 44px;
 }
 
+/* Barra de pesquisa "limpa" — ícone e input dentro do mesmo bloco arredondado,
+   sem a divisão visual dupla do .input-group padrão do Bootstrap. */
+.gt-search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--gt-surface-raised);
+  border: 1px solid var(--gt-border);
+  border-radius: 0.5rem;
+  padding: 0 0.85rem;
+  height: 100%;
+  transition: border-color 0.15s;
+}
+.gt-search-input-group:focus-within {
+  border-color: var(--gt-accent);
+}
+.gt-search-input-group input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--gt-text);
+  padding: 0.6rem 0;
+  font-size: 0.95rem;
+}
+.gt-search-input-group input::placeholder {
+  color: var(--gt-text-muted);
+}
+
 @media (min-width: 768px) {
   .gt-toolbar-row {
     flex-wrap: nowrap;

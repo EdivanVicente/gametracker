@@ -73,6 +73,16 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarListaResultados(_ultimosResultados, _ultimaBusca);
     });
 
+    // Filtro de visualização (lista/médio/grande) — mesmo padrão e mesma
+    // preferência salva da tela "Meus Jogos".
+    document.querySelectorAll('#explore-view-mode-btn ~ .dropdown-menu [data-explore-view]').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            definirModoVisualizacaoExplore(item.getAttribute('data-explore-view'));
+        });
+    });
+    atualizarIconeModoExplore();
+
     // Chips de sugestão: pool grande de jogos populares e variados — a cada
     // visita à página, sorteia 5 diferentes, pra não ficar sempre os mesmos.
     const POOL_SUGESTOES = [
@@ -136,6 +146,28 @@ function popularFiltroPlataformas(resultados) {
     if ([...plataformas].includes(valorAtual)) select.value = valorAtual;
 }
 
+const CLASSES_POR_MODO_EXPLORE = {
+    medium: 'col-6 col-sm-4 col-lg-3',
+    large: 'col-12 col-sm-6 col-lg-4',
+};
+const ICONE_POR_MODO_EXPLORE = { list: 'bi-list-ul', medium: 'bi-grid-3x2-gap-fill', large: 'bi-grid-1x2-gap-fill' };
+
+function modoVisualizacaoExplore() {
+    const salvo = localStorage.getItem('gt-view-mode') || 'medium';
+    return salvo === 'small' ? 'medium' : salvo;
+}
+
+function definirModoVisualizacaoExplore(modo) {
+    localStorage.setItem('gt-view-mode', modo);
+    atualizarIconeModoExplore();
+    renderizarListaResultados(_ultimosResultados, _ultimaBusca);
+}
+
+function atualizarIconeModoExplore() {
+    const icone = document.getElementById('explore-view-mode-icon');
+    if (icone) icone.className = `bi ${ICONE_POR_MODO_EXPLORE[modoVisualizacaoExplore()] || ICONE_POR_MODO_EXPLORE.medium}`;
+}
+
 // Lista de cards compactos (nome + plataforma + botão "Saiba mais") — sem
 // carregar vídeo/descrição pra cada um, isso só é buscado quando o usuário
 // clica em "Saiba mais" de um jogo específico (mais rápido e mais leve).
@@ -166,27 +198,50 @@ function renderizarListaResultados(resultados, tituloBuscado) {
     `;
 
     const grid = document.getElementById('explore-results-grid');
-    grid.innerHTML = filtrados.map((jogo, idx) => `
-        <div class="col-6 col-sm-4 col-lg-3">
-            <div class="gt-panel h-100 overflow-hidden" style="padding: 0;">
-                <div style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
-                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+    const modo = modoVisualizacaoExplore();
+
+    if (modo === 'list') {
+        grid.innerHTML = filtrados.map((jogo, idx) => `
+            <div class="col-12">
+                <div class="gt-panel d-flex align-items-center gap-3 p-2" data-explore-idx="${idx}" role="button">
+                    <div style="width:48px;height:48px;border-radius:6px;overflow:hidden;background-color:var(--gt-surface-raised);flex-shrink:0;">
+                        ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                    </div>
+                    <div class="flex-fill min-width-0">
+                        <p class="small fw-semibold mb-0 text-truncate">${escapeHtml(jogo.title)}</p>
+                        <p class="text-white-50 mb-0" style="font-size: 0.72rem;">${escapeHtml((jogo.platforms || []).join(', ') || GT_I18N.t('stats.notInformed'))}</p>
+                    </div>
+                    <button type="button" class="btn btn-gt-outline btn-sm flex-shrink-0" data-explore-idx-btn="${idx}">${GT_I18N.t('explore.learnMore')}</button>
                 </div>
-                <div class="p-2">
-                    <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(jogo.title)}">${escapeHtml(jogo.title)}</p>
-                    <p class="text-white-50 mb-2" style="font-size: 0.72rem;">
-                        ${escapeHtml((jogo.platforms || []).slice(0, 2).join(', ') || GT_I18N.t('stats.notInformed'))}
-                    </p>
-                    <button type="button" class="btn btn-gt-outline btn-sm w-100" data-explore-idx="${idx}">
-                        ${GT_I18N.t('explore.learnMore')}
-                    </button>
+            </div>`).join('');
+    } else {
+        const colClass = CLASSES_POR_MODO_EXPLORE[modo] || CLASSES_POR_MODO_EXPLORE.medium;
+        grid.innerHTML = filtrados.map((jogo, idx) => `
+            <div class="${colClass}">
+                <div class="gt-panel h-100 overflow-hidden" style="padding: 0; cursor: pointer;" data-explore-idx="${idx}" role="button">
+                    <div style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
+                        ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                    </div>
+                    <div class="p-2">
+                        <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(jogo.title)}">${escapeHtml(jogo.title)}</p>
+                        <p class="text-white-50 mb-2" style="font-size: 0.72rem;">
+                            ${escapeHtml((jogo.platforms || []).slice(0, 2).join(', ') || GT_I18N.t('stats.notInformed'))}
+                        </p>
+                        <button type="button" class="btn btn-gt-outline btn-sm w-100" data-explore-idx-btn="${idx}">
+                            ${GT_I18N.t('explore.learnMore')}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    }
 
-    grid.querySelectorAll('[data-explore-idx]').forEach(el => {
-        el.addEventListener('click', () => abrirDetalheJogo(filtrados[parseInt(el.getAttribute('data-explore-idx'), 10)]));
+    grid.querySelectorAll('[data-explore-idx], [data-explore-idx-btn]').forEach(el => {
+        const idx = parseInt(el.getAttribute('data-explore-idx') ?? el.getAttribute('data-explore-idx-btn'), 10);
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            abrirDetalheJogo(filtrados[idx]);
+        });
     });
 }
 
