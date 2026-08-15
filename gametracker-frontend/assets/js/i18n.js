@@ -73,7 +73,7 @@ const GT_DICT = {
     'common.back': 'Voltar',
     'common.loading': 'Carregando...',
     'common.search': 'Buscar',
-    'footer.credit': 'GameTracker Pro © 2026 — desenvolvido por Edivan Vicente',
+    'footer.credit': 'GameTracker Pro © 2026 — desenvolvido por Edivan Vicente e Gleison Torres',
 
     // --- Login / cadastro (index.html) ---
     'auth.tagline': 'Todo jogo que você joga, em um único save.',
