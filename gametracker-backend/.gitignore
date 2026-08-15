@@ -1,5 +1,30 @@
-venv/
-__pycache__/
-*.pyc
-*.db
+# --- Arquivos de Ambiente e Variáveis Sensíveis ---
 .env
+.env.*
+!.env.example
+
+# --- Ambiente Virtual Python ---
+.venv/
+venv/
+ENV/
+env/
+
+# --- Banco de Dados Local ---
+*.db
+*.sqlite
+*.sqlite3
+gametracker-backend/gametracker.db
+
+# --- Cache do Python e Pytest ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# --- Configurações de IDEs (PyCharm / VS Code) ---
+.idea/
+.vscode/
+
+# --- Arquivos do Sistema Operacional ---
+.DS_Store
+Thumbs.db
