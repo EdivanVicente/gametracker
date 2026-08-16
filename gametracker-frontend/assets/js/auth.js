@@ -30,8 +30,18 @@ let ultimoEmailLogin = '';
 // --- Registro ---
 document.getElementById('panel-register')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    hideError('register-error');
+    hideError('register-confirm-error');
+
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
+    const confirmacao = document.getElementById('register-confirm-password').value;
+
+    // Validação estrita: as duas senhas precisam ser exatamente iguais antes de submeter.
+    if (password !== confirmacao) {
+        showError('register-confirm-error', GT_I18N.t('auth.passwordMismatch'));
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE}/auth/register`, {
@@ -43,15 +53,36 @@ document.getElementById('panel-register')?.addEventListener('submit', async (e) 
         const data = await response.json();
 
         if (response.ok) {
-            alert(data.message || 'Cadastro realizado! Verifique seu e-mail para confirmar a conta antes de entrar.');
-            document.getElementById('tab-login-btn').click();
-            document.getElementById('login-email').value = email;
+            mostrarModalCadastroConcluido(email);
         } else {
             showError('register-error', extrairMensagemErro(data, 'Erro ao registrar.'));
         }
     } catch (err) {
         showError('register-error', 'Erro de conexão com o servidor.');
     }
+});
+
+// Exibe o modal de "verifique seu e-mail" e, ao fechar, já deixa a tela
+// pronta para o login (aba certa + e-mail pré-preenchido).
+function mostrarModalCadastroConcluido(email) {
+    document.getElementById('register-success-email').textContent = email;
+
+    const modalElement = document.getElementById('modalRegisterSuccess');
+    const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+    modal.show();
+
+    const irParaLogin = () => {
+        document.getElementById('tab-login-btn').click();
+        document.getElementById('login-email').value = email;
+        document.getElementById('panel-register').reset();
+        modalElement.removeEventListener('hidden.bs.modal', irParaLogin);
+    };
+    modalElement.addEventListener('hidden.bs.modal', irParaLogin);
+}
+
+// Limpa o aviso de "senhas não coincidem" assim que o usuário volta a digitar.
+['register-password', 'register-confirm-password'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', () => hideError('register-confirm-error'));
 });
 
 // --- Login ---

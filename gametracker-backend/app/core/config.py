@@ -48,6 +48,20 @@ class Settings(BaseSettings):
 
     EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
 
+    def frontend_url(self, path: str) -> str:
+        """
+        Monta uma URL absoluta para o frontend, sem risco de barra dupla
+        (bug clássico quando FRONTEND_BASE_URL termina com "/" no .env).
+        Ex: settings.frontend_url("reset-password.html?token=abc")
+        """
+        base = self.FRONTEND_BASE_URL.rstrip("/")
+        return f"{base}/{path.lstrip('/')}"
+
+    def backend_url(self, path: str) -> str:
+        """Mesma ideia de frontend_url(), mas para links que apontam pro próprio backend."""
+        base = self.BACKEND_BASE_URL.rstrip("/")
+        return f"{base}/{path.lstrip('/')}"
+
     # --- CORS ---
     # Lista separada por vírgula das origens autorizadas a chamar a API.
     # Deixe em branco (padrão) para liberar qualquer origem — mais simples

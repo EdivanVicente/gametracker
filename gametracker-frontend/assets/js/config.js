@@ -17,7 +17,7 @@
  * em nada — a detecção abaixo é automática.
  */
 
-const PRODUCTION_API_BASE = 'https://SEU-BACKEND-AQUI.onrender.com';
+const PRODUCTION_API_BASE = 'https://gametracker-lf9z.onrender.com';
 
 const _gtEhAmbienteLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
