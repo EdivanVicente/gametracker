@@ -196,16 +196,15 @@ async def add_game(
         .first()
     )
     if existente:
-        existente.play_count = (existente.play_count or 1) + 1
-        existente.status = models.GameStatus.PLAYING
-        existente.start_date = date.today()
-        existente.end_date = None
         db.add(models.PlaySession(
             user_game_id=existente.id,
             played_at=date.today(),
             started_at=date.today(),
             finished_at=None,
         ))
+        db.flush()
+        db.refresh(existente)
+        existente.refresh_from_sessions()
         db.commit()
         return _get_owned_user_game(db, existente.id, current_user)
 
@@ -233,6 +232,9 @@ async def add_game(
         started_at=date.today(),
         finished_at=None,
     ))
+    db.flush()
+    db.refresh(user_game)
+    user_game.refresh_from_sessions()
     db.commit()
     db.refresh(user_game)
 
@@ -286,13 +288,12 @@ def add_play_session(
     com data de início e SEM data de término, e o card volta para "Em andamento"
     automaticamente. Fica assim até o usuário registrar a finalização dessa
     jogada específica (ver PATCH .../sessions/{session_id}).
+
+    A data de início pode ser retroativa (controle de jogos já jogados no
+    passado), mas nunca no futuro — isso já é validado no schema.
     """
     user_game = _get_owned_user_game(db, user_game_id, current_user)
-    user_game.play_count = (user_game.play_count or 1) + 1
-    user_game.status = models.GameStatus.PLAYING
     inicio = payload.started_at or date.today()
-    user_game.start_date = inicio
-    user_game.end_date = None
     db.add(models.PlaySession(
         user_game_id=user_game.id,
         played_at=inicio,
@@ -300,6 +301,9 @@ def add_play_session(
         finished_at=None,
         note=payload.note,
     ))
+    db.flush()
+    db.refresh(user_game)
+    user_game.refresh_from_sessions()
     db.commit()
     return _get_owned_user_game(db, user_game_id, current_user)
 
@@ -316,7 +320,8 @@ def finish_play_session(
     current_user: models.User = Depends(get_current_user),
 ):
     """
-    Marca a data de término de uma jogada específica. Se for a jogada em
+    Marca a data de término (e, opcionalmente, o tempo gasto — útil pra
+    registros estilo speedrun) de uma jogada específica. Se for a jogada em
     andamento mais recente, o card volta para "Finalizado" — mas o histórico
     de todas as jogadas anteriores (com suas datas) continua preservado.
     """
@@ -325,14 +330,64 @@ def finish_play_session(
     if not sessao:
         raise HTTPException(status_code=404, detail="Jogada não encontrada.")
 
-    sessao.finished_at = payload.finished_at or date.today()
+    finalizacao = payload.finished_at or date.today()
+    if finalizacao < sessao.started_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A data de finalização não pode ser anterior à data de início dessa jogada.",
+        )
+    sessao.finished_at = finalizacao
+    if payload.duration_minutes is not None:
+        sessao.duration_minutes = payload.duration_minutes
 
-    # Se não sobrou nenhuma jogada em aberto, o card fica "Finalizado".
-    ainda_jogando = any(s.finished_at is None for s in user_game.sessions)
-    if not ainda_jogando:
-        user_game.status = models.GameStatus.FINISHED
-        user_game.end_date = sessao.finished_at
+    user_game.refresh_from_sessions()
+    db.commit()
+    return _get_owned_user_game(db, user_game_id, current_user)
 
+
+@router.put(
+    "/{user_game_id}/sessions/{session_id}",
+    response_model=schemas.UserGameOut,
+)
+def edit_play_session(
+    user_game_id: int,
+    session_id: int,
+    payload: schemas.PlaySessionUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Edita uma jogada já registrada — pra corrigir uma data digitada errada,
+    apagar/ajustar o término, ou preencher o tempo (speedrun) depois.
+    Diferente do PATCH acima (que só finaliza), este permite mudar QUALQUER
+    campo da sessão, inclusive "reabrir" uma jogada limpando a data de fim.
+    """
+    user_game = _get_owned_user_game(db, user_game_id, current_user)
+    sessao = next((s for s in user_game.sessions if s.id == session_id), None)
+    if not sessao:
+        raise HTTPException(status_code=404, detail="Jogada não encontrada.")
+
+    data = payload.model_dump(exclude_unset=True)
+    novo_inicio = data.get("started_at", sessao.started_at)
+    novo_fim = data["finished_at"] if "finished_at" in data else sessao.finished_at
+
+    if novo_fim is not None and novo_inicio is not None and novo_fim < novo_inicio:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A data de finalização não pode ser anterior à data de início.",
+        )
+
+    if "started_at" in data:
+        sessao.started_at = data["started_at"]
+        sessao.played_at = data["started_at"]
+    if "finished_at" in data:
+        sessao.finished_at = data["finished_at"]
+    if "note" in data:
+        sessao.note = data["note"]
+    if "duration_minutes" in data:
+        sessao.duration_minutes = data["duration_minutes"]
+
+    user_game.refresh_from_sessions()
     db.commit()
     return _get_owned_user_game(db, user_game_id, current_user)
 
@@ -344,27 +399,25 @@ def update_game(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Atualiza plataforma, datas de progresso, favorito e/ou avaliação por categoria."""
+    """
+    Atualiza plataforma, favorito, horas jogadas e/ou avaliação por categoria.
+
+    Datas de início/fim NÃO são editadas por aqui — elas são sempre derivadas
+    do histórico de jogadas (ver .../sessions/{id}). Duração estimada
+    (HowLongToBeat) também não é editável por aqui — só via fetch-duration.
+    """
     user_game = _get_owned_user_game(db, user_game_id, current_user)
     data = payload.model_dump(exclude_unset=True)
 
     if "platform" in data:
         user_game.platform = data["platform"]
-    if "start_date" in data:
-        user_game.start_date = data["start_date"]
-    if "end_date" in data:
-        user_game.end_date = data["end_date"]
     if "is_favorite" in data:
         user_game.is_favorite = data["is_favorite"]
 
-    # Campos em horas (float) no schema -> convertidos para minutos (int) no banco.
-    for campo in ("hours_played", "time_to_beat_main", "time_to_beat_completionist"):
-        if campo in data:
-            valor = data[campo]
-            setattr(user_game, campo, round(valor * 60) if valor is not None else None)
-
-    # O status (em andamento / finalizado) é sempre derivado das datas.
-    user_game.refresh_status()
+    # Horas jogadas (float, em horas) -> convertido para minutos (int) no banco.
+    if "hours_played" in data:
+        valor = data["hours_played"]
+        user_game.hours_played = round(valor * 60) if valor is not None else None
 
     rating_fields = {"graphics_score", "sound_score", "gameplay_score", "difficulty_score"}
     if rating_fields & data.keys():

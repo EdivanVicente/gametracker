@@ -210,21 +210,28 @@ class UserGameCreate(BaseModel):
 
 
 class UserGameUpdate(BaseModel):
-    """Payload para atualizar tracking/avaliação. Todos os campos são opcionais (PATCH)."""
+    """
+    Payload para atualizar tracking/avaliação. Todos os campos são opcionais (PATCH).
+
+    IMPORTANTE: start_date/end_date NÃO fazem mais parte deste schema — essas
+    datas agora são sempre derivadas automaticamente do histórico de jogadas
+    (PlaySession), pra evitar o card ficar com informação desencontrada da
+    lista de sessões. Pra corrigir uma data, edite a sessão correspondente
+    (PATCH /games/{id}/sessions/{session_id}).
+
+    time_to_beat_main/time_to_beat_completionist também não fazem mais parte
+    daqui — são só referência (HowLongToBeat), preenchidos via
+    POST /games/{id}/fetch-duration, e não editáveis manualmente.
+    """
     platform: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
     is_favorite: bool | None = None
     graphics_score: int | None = Field(default=None, ge=1, le=5)
     sound_score: int | None = Field(default=None, ge=1, le=5)
     gameplay_score: int | None = Field(default=None, ge=1, le=5)
     difficulty_score: int | None = Field(default=None, ge=1, le=5)
 
-    # Horas jogadas e estimativas de duração — todos em MINUTOS no banco,
-    # mas aceitos/expostos em HORAS (float) nesse schema para facilitar o front.
+    # Horas jogadas — em MINUTOS no banco, mas aceito/exposto em HORAS (float) aqui.
     hours_played: float | None = Field(default=None, ge=0)
-    time_to_beat_main: float | None = Field(default=None, ge=0)
-    time_to_beat_completionist: float | None = Field(default=None, ge=0)
 
 
 class PlaySessionOut(BaseModel):
@@ -233,6 +240,7 @@ class PlaySessionOut(BaseModel):
     started_at: date
     finished_at: date | None = None
     note: str | None = None
+    duration_minutes: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -241,15 +249,48 @@ class PlaySessionOut(BaseModel):
         return self.finished_at is None
 
 
+def _validar_nao_e_data_futura(value: date | None) -> date | None:
+    if value is not None and value > date.today():
+        raise ValueError("A data não pode ser no futuro.")
+    return value
+
+
 class PlaySessionCreate(BaseModel):
     """Payload para abrir uma nova jogada ("Jogar novamente") — fica em andamento até ser finalizada."""
     started_at: date | None = None
     note: str | None = Field(default=None, max_length=255)
 
+    @field_validator("started_at")
+    @classmethod
+    def _sem_data_futura(cls, value):
+        return _validar_nao_e_data_futura(value)
+
 
 class PlaySessionFinish(BaseModel):
     """Payload para informar a data de término de uma jogada específica."""
     finished_at: date | None = None
+    duration_minutes: int | None = Field(default=None, ge=0)
+
+    @field_validator("finished_at")
+    @classmethod
+    def _sem_data_futura(cls, value):
+        return _validar_nao_e_data_futura(value)
+
+
+class PlaySessionUpdate(BaseModel):
+    """
+    Payload para EDITAR uma jogada já registrada (corrigir data digitada errada,
+    adicionar/alterar o tempo de speedrun, etc). Todos os campos são opcionais (PATCH).
+    """
+    started_at: date | None = None
+    finished_at: date | None = None
+    note: str | None = Field(default=None, max_length=255)
+    duration_minutes: int | None = Field(default=None, ge=0)
+
+    @field_validator("started_at", "finished_at")
+    @classmethod
+    def _sem_data_futura(cls, value):
+        return _validar_nao_e_data_futura(value)
 
 
 class UserGameOut(BaseModel):

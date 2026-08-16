@@ -153,6 +153,32 @@ class UserGame(Base):
         """Atualiza o status automaticamente com base nas datas preenchidas."""
         self.status = GameStatus.FINISHED if self.end_date else GameStatus.PLAYING
 
+    def refresh_from_sessions(self):
+        """
+        Fonte única de verdade: recalcula status/start_date/end_date sempre a
+        partir do histórico de jogadas (PlaySession), em vez de depender de
+        alguém editar esses campos "soltos" à mão — isso evita o card ficar
+        com dado desencontrado (ex: mostrar "Jogando" mas as datas já
+        preenchidas, ou vice-versa) quando uma sessão é criada/editada/fechada.
+        """
+        sessoes = sorted(self.sessions, key=lambda s: (s.started_at, s.id))
+        if not sessoes:
+            return
+
+        aberta = next((s for s in reversed(sessoes) if s.finished_at is None), None)
+        mais_recente = sessoes[-1]
+
+        if aberta:
+            self.status = GameStatus.PLAYING
+            self.start_date = aberta.started_at
+            self.end_date = None
+        else:
+            self.status = GameStatus.FINISHED
+            self.start_date = mais_recente.started_at
+            self.end_date = mais_recente.finished_at
+
+        self.play_count = len(sessoes)
+
 
 class GameTranslation(Base):
     """
@@ -195,6 +221,10 @@ class PlaySession(Base):
     started_at = Column(Date, default=date.today, nullable=False)
     finished_at = Column(Date, nullable=True)
     note = Column(String(255), nullable=True)
+
+    # Tempo opcional dessa jogada específica (ex: runs de speedrun, ou só pra
+    # registrar quanto tempo essa sessão levou). Em minutos; não é obrigatório.
+    duration_minutes = Column(Integer, nullable=True)
 
     user_game = relationship("UserGame", back_populates="sessions")
 

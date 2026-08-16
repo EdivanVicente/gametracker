@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GameTracker Pro — Meus Jogos</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="alternate icon" href="assets/favicon.ico">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 
   <!-- Fontes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,12 +18,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
   <!-- Design system próprio -->
-  <link rel="stylesheet" href="assets/css/style.css?v=1786831772">
-  <script src="assets/js/config.js?v=1786831772"></script>
-  <script src="assets/js/theme.js?v=1786831772"></script>
-  <script src="assets/js/i18n.js?v=1786831772"></script>
+  <link rel="stylesheet" href="assets/css/style.css?v=1786901020">
+  <script src="assets/js/config.js?v=1786901020"></script>
+  <script src="assets/js/theme.js?v=1786901020"></script>
+  <script src="assets/js/i18n.js?v=1786901020"></script>
 
-  <script src="assets/js/auth-check.js?v=1786831772"></script>
+  <script src="assets/js/auth-check.js?v=1786901020"></script>
 </head>
 <body>
 
@@ -229,7 +232,6 @@
           </div>
         </div>
 
-
         <div class="gt-toolbar-fixed">
           <button class="btn btn-gt-outline w-100" type="button" id="btn-favorites-only" title="Somente favoritos" data-i18n-title="toolbar.favoritesOnly">
             <i class="bi bi-heart"></i>
@@ -419,13 +421,16 @@
           <div class="row g-3 mb-3">
             <div class="col-6">
               <label for="detail-start-date" class="form-label small text-white-50" data-i18n="detail.startDate">Data de início</label>
-              <input type="date" class="form-control" id="detail-start-date">
+              <input type="date" class="form-control" id="detail-start-date" readonly disabled>
             </div>
             <div class="col-6">
               <label for="detail-end-date" class="form-label small text-white-50" data-i18n="detail.endDate">Data de finalização</label>
-              <input type="date" class="form-control" id="detail-end-date">
+              <input type="date" class="form-control" id="detail-end-date" readonly disabled>
             </div>
           </div>
+          <p class="small text-white-50 mb-3" style="margin-top: -0.5rem;" data-i18n="detail.datesFromSessionsHint">
+            Essas datas são calculadas a partir do histórico de jogadas abaixo — use "Jogar novamente" ou o botão de editar de cada jogada pra corrigi-las.
+          </p>
 
           <div class="mb-3 d-none" id="detail-duration-wrapper">
             <div class="gt-duration-badge">
@@ -447,14 +452,27 @@
               <div id="detail-session-actions"></div>
             </div>
 
-            <!-- Formulário inline (aparece ao clicar em "Jogar novamente" / "Finalizar") -->
-            <div class="d-none mt-2 d-flex gap-2 align-items-end" id="detail-session-form">
-              <div class="flex-fill">
-                <label class="form-label small text-white-50 mb-1" id="detail-session-form-label"></label>
-                <input type="date" class="form-control form-control-sm" id="detail-session-date-input">
+            <!-- Formulário inline (aparece ao clicar em "Jogar novamente" / "Finalizar" / editar) -->
+            <div class="d-none mt-2" id="detail-session-form">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-sm" id="detail-session-date-wrapper">
+                  <label class="form-label small text-white-50 mb-1" id="detail-session-form-label"></label>
+                  <input type="date" class="form-control form-control-sm" id="detail-session-date-input">
+                </div>
+                <div class="col-12 col-sm-auto d-none" id="detail-session-finish-wrapper">
+                  <label class="form-label small text-white-50 mb-1" data-i18n="detail.endDate">Data de finalização</label>
+                  <input type="date" class="form-control form-control-sm" id="detail-session-finish-input">
+                </div>
+                <div class="col-12 col-sm-auto">
+                  <label class="form-label small text-white-50 mb-1" data-i18n="detail.sessionDurationOptional">Tempo (opcional)</label>
+                  <input type="text" inputmode="numeric" autocomplete="off" maxlength="7"
+                         class="form-control form-control-sm gt-hhmm-input" id="detail-session-duration-input" placeholder="hh:mm">
+                </div>
               </div>
-              <button type="button" class="btn btn-gt-primary btn-sm" id="btn-confirm-session" data-i18n="common.confirm">Confirmar</button>
-              <button type="button" class="btn btn-gt-outline btn-sm" id="btn-cancel-session" data-i18n="common.cancel">Cancelar</button>
+              <div class="d-flex gap-2 mt-2">
+                <button type="button" class="btn btn-gt-primary btn-sm" id="btn-confirm-session" data-i18n="common.confirm">Confirmar</button>
+                <button type="button" class="btn btn-gt-outline btn-sm" id="btn-cancel-session" data-i18n="common.cancel">Cancelar</button>
+              </div>
             </div>
 
             <ul class="list-unstyled small text-white-50 mb-0 mt-2" id="detail-session-history"></ul>
@@ -463,19 +481,19 @@
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-4">
               <label for="detail-hours-played" class="form-label small text-white-50" data-i18n="detail.hoursPlayed">Horas jogadas</label>
-              <input type="number" min="0" step="0.5" class="form-control" id="detail-hours-played" placeholder="0">
+              <input type="text" inputmode="numeric" autocomplete="off" maxlength="7" class="form-control gt-hhmm-input" id="detail-hours-played" placeholder="hh:mm">
             </div>
             <div class="col-6 col-sm-4">
               <label for="detail-time-to-beat-main" class="form-label small text-white-50" data-i18n="detail.timeToBeatMain">Duração estimada (missão principal)</label>
-              <input type="number" min="0" step="0.5" class="form-control" id="detail-time-to-beat-main" placeholder="h">
+              <input type="text" class="form-control" id="detail-time-to-beat-main" placeholder="—" readonly disabled>
             </div>
             <div class="col-6 col-sm-4">
               <label for="detail-time-to-beat-100" class="form-label small text-white-50" data-i18n="detail.timeToBeat100">Duração estimada (100%)</label>
-              <input type="number" min="0" step="0.5" class="form-control" id="detail-time-to-beat-100" placeholder="h">
+              <input type="text" class="form-control" id="detail-time-to-beat-100" placeholder="—" readonly disabled>
             </div>
           </div>
           <p class="small text-white-50 mb-2" style="margin-top: -0.5rem;" data-i18n="detail.timeToBeatHint">
-            As durações estimadas são informativas — se não vierem preenchidas automaticamente, você pode inserir manualmente com base na sua própria experiência ou em um guia externo (ex: HowLongToBeat).
+            As durações estimadas vêm do HowLongToBeat e servem só como referência — por isso não são editáveis. Só "Horas jogadas" (o quanto você já jogou) pode ser ajustado manualmente.
           </p>
           <button type="button" class="btn btn-gt-outline btn-sm mb-3" id="btn-fetch-duration">
             <i class="bi bi-cloud-download me-1"></i><span data-i18n="detail.fetchDuration">Buscar duração automaticamente (HowLongToBeat)</span>
@@ -550,11 +568,11 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/navbar.js?v=1786831772"></script>
-<script src="assets/js/youtube-player.js?v=1786831772"></script>
-<script src="assets/js/consoles.js?v=1786831772"></script>
-<script src="assets/js/genres.js?v=1786831772"></script>
-<script src="assets/js/dashboard.js?v=1786831772"></script>
+<script src="assets/js/navbar.js?v=1786901020"></script>
+<script src="assets/js/youtube-player.js?v=1786901020"></script>
+<script src="assets/js/consoles.js?v=1786901020"></script>
+<script src="assets/js/genres.js?v=1786901020"></script>
+<script src="assets/js/dashboard.js?v=1786901020"></script>
 
 </body>
 </html>

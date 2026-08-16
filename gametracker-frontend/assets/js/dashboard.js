@@ -140,7 +140,13 @@ function escapeHtml(unsafe) {
 function calcularDiasDeJogo(dataInicioStr, dataFimStr) {
     const inicio = new Date(`${dataInicioStr}T00:00:00`);
     const fimRef = dataFimStr ? new Date(`${dataFimStr}T00:00:00`) : new Date(new Date().toDateString());
-    const diffDias = Math.round((fimRef - inicio) / 86400000);
+    // Diferença em dias de calendário local (não em horas/86400000) — assim,
+    // mudanças de horário de verão na região do usuário nunca derrubam a
+    // contagem por causa de uma hora a mais/a menos naquele dia.
+    const diffDias = Math.round(
+        (Date.UTC(fimRef.getFullYear(), fimRef.getMonth(), fimRef.getDate()) -
+         Date.UTC(inicio.getFullYear(), inicio.getMonth(), inicio.getDate())) / 86400000
+    );
     return Math.max(1, diffDias + 1);
 }
 
@@ -606,6 +612,79 @@ function setupDetailModal() {
     document.getElementById('detail-platform')?.addEventListener('change', (e) => {
         document.getElementById('detail-platform-custom').classList.toggle('d-none', e.target.value !== 'Outro');
     });
+
+    // Campos de tempo (horas jogadas / tempo de sessão) no formato hh:mm.
+    document.querySelectorAll('.gt-hhmm-input').forEach(aplicarMascaraHHMM);
+}
+
+/**
+ * Converte um valor decimal de horas (ex.: 12.5) para o formato "hh:mm"
+ * (ex.: "12:30") exibido no campo.
+ */
+function decimalParaHHMM(decimal) {
+    if (decimal === null || decimal === undefined || decimal === '' || isNaN(Number(decimal))) return '';
+    return minutosParaHHMM(Math.round(Number(decimal) * 60));
+}
+
+/** Converte um total de minutos (int) para o formato "hh:mm". */
+function minutosParaHHMM(totalMinutos) {
+    if (totalMinutos === null || totalMinutos === undefined || isNaN(Number(totalMinutos))) return '';
+    const horas = Math.floor(totalMinutos / 60);
+    const minutos = totalMinutos % 60;
+    return `${horas}:${String(minutos).padStart(2, '0')}`;
+}
+
+/**
+ * Converte o texto digitado no campo (formato "hh:mm") de volta pro total de
+ * minutos. Aceita também só um número solto (ex.: "12" vira 12h = 720min).
+ */
+function hhmmParaMinutos(texto) {
+    if (!texto) return null;
+    const valor = texto.trim();
+    if (!valor) return null;
+
+    const partes = valor.match(/^(\d{1,4}):([0-5]?\d)$/);
+    if (partes) {
+        const horas = parseInt(partes[1], 10);
+        const minutos = parseInt(partes[2], 10);
+        return (horas * 60) + minutos;
+    }
+
+    const numero = parseFloat(valor.replace(',', '.'));
+    return isNaN(numero) ? null : Math.round(numero * 60);
+}
+
+/** Mesma conversão de hhmmParaMinutos, mas devolvendo horas decimais (pra API). */
+function hhmmParaDecimal(texto) {
+    const minutos = hhmmParaMinutos(texto);
+    return minutos === null ? null : minutos / 60;
+}
+
+/**
+ * Liga uma máscara simples de "hh:mm" a um <input type="text">: o usuário
+ * digita só números (ex.: "1230") e o campo formata sozinho como "12:30".
+ * Também aceita digitar os dois pontos manualmente sem quebrar a formatação.
+ */
+function aplicarMascaraHHMM(input) {
+    input.addEventListener('input', () => {
+        let digitos = input.value.replace(/[^\d]/g, '');
+        if (digitos.length === 0) {
+            input.value = '';
+            return;
+        }
+        if (digitos.length <= 2) {
+            input.value = digitos;
+            return;
+        }
+        const minutos = digitos.slice(-2);
+        const horas = digitos.slice(0, -2);
+        input.value = `${horas}:${minutos}`;
+    });
+
+    input.addEventListener('blur', () => {
+        if (!input.value.trim()) return;
+        input.value = minutosParaHHMM(hhmmParaMinutos(input.value));
+    });
 }
 
 function definirEstrelas(container, nota) {
@@ -698,9 +777,9 @@ function abrirDetalhe(userGameId) {
     // --- Replay: contador, histórico de jogadas (início/fim), horas, duração ---
     document.getElementById('detail-play-count').textContent = item.play_count || 1;
     renderizarHistoricoJogadas(item);
-    document.getElementById('detail-hours-played').value = item.hours_played ?? '';
-    document.getElementById('detail-time-to-beat-main').value = item.time_to_beat_main ?? '';
-    document.getElementById('detail-time-to-beat-100').value = item.time_to_beat_completionist ?? '';
+    document.getElementById('detail-hours-played').value = decimalParaHHMM(item.hours_played);
+    document.getElementById('detail-time-to-beat-main').value = decimalParaHHMM(item.time_to_beat_main) || '—';
+    document.getElementById('detail-time-to-beat-100').value = decimalParaHHMM(item.time_to_beat_completionist) || '—';
 
     definirEstrelas(document.getElementById('stars-graphics'), rating.graphics_score || 0);
     definirEstrelas(document.getElementById('stars-sound'), rating.sound_score || 0);
@@ -736,16 +815,12 @@ async function salvarDetalhe() {
 
     const payload = {
         platform: platformFinal,
-        start_date: document.getElementById('detail-start-date').value || null,
-        end_date: document.getElementById('detail-end-date').value || null,
         is_favorite: document.getElementById('detail-favorite').checked,
         graphics_score: Number(document.getElementById('stars-graphics').dataset.score) || null,
         sound_score: Number(document.getElementById('stars-sound').dataset.score) || null,
         gameplay_score: Number(document.getElementById('stars-gameplay').dataset.score) || null,
         difficulty_score: Number(document.getElementById('stars-difficulty').dataset.score) || null,
-        hours_played: parseFloat(document.getElementById('detail-hours-played').value) || null,
-        time_to_beat_main: parseFloat(document.getElementById('detail-time-to-beat-main').value) || null,
-        time_to_beat_completionist: parseFloat(document.getElementById('detail-time-to-beat-100').value) || null,
+        hours_played: hhmmParaDecimal(document.getElementById('detail-hours-played').value),
     };
 
     const sucesso = await atualizarJogo(jogoEmEdicaoId, payload);
@@ -761,17 +836,19 @@ async function salvarDetalhe() {
 // Formata uma sessão de jogo pro histórico (ex: "12/03/2026 — em andamento" ou "12/03/2026 → 15/03/2026")
 function formatarPeriodoSessao(sessao) {
     const fmt = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString();
+    const tempo = sessao.duration_minutes ? ` · ${minutosParaHHMM(sessao.duration_minutes)}` : '';
     if (!sessao.finished_at) {
-        return `${fmt(sessao.started_at)} — ${GT_I18N.t('status.playing')}`;
+        return `${fmt(sessao.started_at)} — ${GT_I18N.t('status.playing')}${tempo}`;
     }
     if (sessao.started_at === sessao.finished_at) {
-        return fmt(sessao.started_at);
+        return `${fmt(sessao.started_at)}${tempo}`;
     }
-    return `${fmt(sessao.started_at)} → ${fmt(sessao.finished_at)}`;
+    return `${fmt(sessao.started_at)} → ${fmt(sessao.finished_at)}${tempo}`;
 }
 
 // Desenha os botões de ação (Jogar novamente / Finalizar esta jogada) e a
-// lista de histórico de jogadas (cada uma com data de início e de término).
+// lista de histórico de jogadas (cada uma com data de início, fim, tempo
+// opcional e um botão de editar pra corrigir depois).
 function renderizarHistoricoJogadas(item) {
     const sessoes = (item.sessions || []).slice().sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
     const sessaoAberta = sessoes.find(s => !s.finished_at);
@@ -783,7 +860,7 @@ function renderizarHistoricoJogadas(item) {
             <button type="button" class="btn btn-gt-primary btn-sm" id="btn-finish-session" data-session-id="${sessaoAberta.id}">
                 <i class="bi bi-check-lg me-1"></i><span data-i18n="detail.finishSession">Finalizar esta jogada</span>
             </button>`;
-        document.getElementById('btn-finish-session').addEventListener('click', () => abrirFormularioSessao('finish', sessaoAberta.id));
+        document.getElementById('btn-finish-session').addEventListener('click', () => abrirFormularioSessao('finish', sessaoAberta));
     } else {
         acoes.innerHTML = `
             <button type="button" class="btn btn-gt-outline btn-sm" id="btn-play-again">
@@ -797,32 +874,87 @@ function renderizarHistoricoJogadas(item) {
         historico.innerHTML = '';
         return;
     }
-    historico.innerHTML = sessoes.map(s => `<li><i class="bi bi-calendar3 me-1"></i>${formatarPeriodoSessao(s)}</li>`).join('');
+    historico.innerHTML = sessoes.map(s => `
+        <li class="d-flex align-items-center justify-content-between gap-2 py-1">
+            <span><i class="bi bi-calendar3 me-1"></i>${formatarPeriodoSessao(s)}</span>
+            <button type="button" class="btn btn-link btn-sm text-white-50 p-0 gt-session-edit-btn" data-session-id="${s.id}" title="${GT_I18N.t('detail.editSession')}">
+                <i class="bi bi-pencil-square"></i>
+            </button>
+        </li>`).join('');
+
+    historico.querySelectorAll('.gt-session-edit-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const sessao = sessoes.find(s => s.id === Number(btn.dataset.sessionId));
+            if (sessao) abrirFormularioSessao('edit', sessao);
+        });
+    });
 }
 
-let _sessaoFormModo = null; // 'start' | 'finish'
-let _sessaoFormId = null;   // id da sessão (só usado no modo 'finish')
+let _sessaoFormModo = null;   // 'start' | 'finish' | 'edit'
+let _sessaoFormId = null;     // id da sessão (usado em 'finish'/'edit')
 
-function abrirFormularioSessao(modo, sessionId = null) {
+function abrirFormularioSessao(modo, sessao = null) {
     _sessaoFormModo = modo;
-    _sessaoFormId = sessionId;
+    _sessaoFormId = sessao ? sessao.id : null;
+
     const form = document.getElementById('detail-session-form');
     const label = document.getElementById('detail-session-form-label');
-    const input = document.getElementById('detail-session-date-input');
-    label.textContent = modo === 'start' ? GT_I18N.t('detail.startDate') : GT_I18N.t('detail.endDate');
-    input.value = new Date().toISOString().slice(0, 10);
+    const inicioInput = document.getElementById('detail-session-date-input');
+    const fimWrapper = document.getElementById('detail-session-finish-wrapper');
+    const fimInput = document.getElementById('detail-session-finish-input');
+    const duracaoInput = document.getElementById('detail-session-duration-input');
+
+    const hoje = new Date().toISOString().slice(0, 10);
+    // Datas retroativas são permitidas (controle de jogos já jogados), mas
+    // NUNCA no futuro — o atributo max do <input type="date"> já bloqueia
+    // isso na própria UI, além da validação que o backend também faz.
+    inicioInput.max = hoje;
+    fimInput.max = hoje;
+
+    if (modo === 'start') {
+        label.textContent = GT_I18N.t('detail.startDate');
+        inicioInput.value = hoje;
+        fimWrapper.classList.add('d-none');
+        duracaoInput.value = '';
+    } else if (modo === 'finish') {
+        label.textContent = GT_I18N.t('detail.startDate');
+        inicioInput.value = sessao.started_at;
+        inicioInput.disabled = true; // ao finalizar, a data de início já é fixa (veio da jogada aberta)
+        fimInput.min = sessao.started_at;
+        fimInput.value = hoje;
+        fimWrapper.classList.remove('d-none');
+        duracaoInput.value = sessao.duration_minutes ? minutosParaHHMM(sessao.duration_minutes) : '';
+    } else { // 'edit': permite corrigir tudo, inclusive reabrir (limpar a data de fim)
+        label.textContent = GT_I18N.t('detail.startDate');
+        inicioInput.disabled = false;
+        inicioInput.value = sessao.started_at;
+        fimInput.min = sessao.started_at;
+        fimInput.value = sessao.finished_at || '';
+        fimWrapper.classList.remove('d-none');
+        duracaoInput.value = sessao.duration_minutes ? minutosParaHHMM(sessao.duration_minutes) : '';
+    }
+
     form.classList.remove('d-none');
 }
 
 function fecharFormularioSessao() {
     document.getElementById('detail-session-form').classList.add('d-none');
+    document.getElementById('detail-session-date-input').disabled = false;
     _sessaoFormModo = null;
     _sessaoFormId = null;
 }
 
 async function confirmarFormularioSessao() {
     if (!jogoEmEdicaoId || !_sessaoFormModo) return;
-    const data = document.getElementById('detail-session-date-input').value || null;
+
+    const inicio = document.getElementById('detail-session-date-input').value || null;
+    const fim = document.getElementById('detail-session-finish-input').value || null;
+    const duracaoMin = hhmmParaMinutos(document.getElementById('detail-session-duration-input').value);
+
+    if (fim && inicio && fim < inicio) {
+        alert(GT_I18N.t('detail.sessionDateOrderError'));
+        return;
+    }
 
     try {
         let response;
@@ -830,21 +962,39 @@ async function confirmarFormularioSessao() {
             response = await authFetch(`/games/${jogoEmEdicaoId}/sessions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ started_at: data }),
+                body: JSON.stringify({ started_at: inicio }),
             });
-        } else {
+        } else if (_sessaoFormModo === 'finish') {
             response = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${_sessaoFormId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ finished_at: data }),
+                body: JSON.stringify({ finished_at: fim, duration_minutes: duracaoMin }),
+            });
+        } else { // 'edit'
+            response = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${_sessaoFormId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ started_at: inicio, finished_at: fim, duration_minutes: duracaoMin }),
             });
         }
         if (!response.ok) {
-            alert(GT_I18N.t('detail.sessionError'));
+            const data = await response.json().catch(() => ({}));
+            alert(data.detail || GT_I18N.t('detail.sessionError'));
             return;
         }
         const atualizado = await response.json();
         document.getElementById('detail-play-count').textContent = atualizado.play_count;
+        document.getElementById('detail-start-date').value = atualizado.start_date || '';
+        document.getElementById('detail-end-date').value = atualizado.end_date || '';
+        const duracaoWrapper = document.getElementById('detail-duration-wrapper');
+        const duracao = obterTextoDuracao(atualizado);
+        if (duracao) {
+            document.getElementById('detail-duration-title').textContent = duracao.titulo;
+            document.getElementById('detail-duration-subtitle').textContent = duracao.subtitulo || '';
+            duracaoWrapper.classList.remove('d-none');
+        } else {
+            duracaoWrapper.classList.add('d-none');
+        }
         renderizarHistoricoJogadas(atualizado);
         const idx = meusJogos.findIndex(g => g.id === jogoEmEdicaoId);
         if (idx !== -1) meusJogos[idx] = atualizado;
@@ -870,8 +1020,8 @@ async function buscarDuracaoAutomatica() {
             return;
         }
         const atualizado = await response.json();
-        document.getElementById('detail-time-to-beat-main').value = atualizado.time_to_beat_main ?? '';
-        document.getElementById('detail-time-to-beat-100').value = atualizado.time_to_beat_completionist ?? '';
+        document.getElementById('detail-time-to-beat-main').value = decimalParaHHMM(atualizado.time_to_beat_main) || '—';
+        document.getElementById('detail-time-to-beat-100').value = decimalParaHHMM(atualizado.time_to_beat_completionist) || '—';
         const idx = meusJogos.findIndex(g => g.id === jogoEmEdicaoId);
         if (idx !== -1) meusJogos[idx] = atualizado;
     } catch (error) {

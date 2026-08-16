@@ -207,7 +207,7 @@ function renderizarListaResultados(resultados, tituloBuscado) {
                     <div style="width:48px;height:48px;border-radius:6px;overflow:hidden;background-color:var(--gt-surface-raised);flex-shrink:0;">
                         ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
                     </div>
-                    <div class="flex-fill min-width-0">
+                    <div class="flex-fill" style="min-width: 0;">
                         <p class="small fw-semibold mb-0 text-truncate">${escapeHtml(jogo.title)}</p>
                         <p class="text-white-50 mb-0" style="font-size: 0.72rem;">${escapeHtml((jogo.platforms || []).join(', ') || GT_I18N.t('stats.notInformed'))}</p>
                     </div>
