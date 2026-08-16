@@ -93,23 +93,35 @@ class GamesApiService:
 
     async def search_games(self, query: str, page_size: int = 8) -> list[dict]:
         """Busca jogos por nome. Tenta RAWG primeiro; se falhar, cai pra IGDB automaticamente."""
+        erro_rawg: HTTPException | None = None
         try:
             return await self._rawg_search_games(query, page_size)
         except HTTPException as exc_rawg:
+            # Guarda numa variável própria: o Python apaga automaticamente a
+            # variável ligada por "except ... as X" assim que o bloco except
+            # termina, então não dá pra usar exc_rawg de novo lá embaixo.
+            erro_rawg = exc_rawg
             logger.warning("RAWG falhou na busca por '%s' (%s) — tentando IGDB...", query, exc_rawg.detail)
-            try:
-                resultados_igdb = await igdb_service.search_games(query, page_size)
-            except Exception as exc_igdb:
-                logger.warning("IGDB também falhou na busca por '%s' (%s).", query, exc_igdb)
-                resultados_igdb = []
+        except Exception:
+            # Qualquer falha inesperada (resposta malformada, timeout não
+            # capturado, etc.) não pode derrubar a rota inteira com um 500 cru
+            # — vira um HTTPException genérico e a gente ainda tenta a IGDB.
+            logger.exception("RAWG: falha inesperada e não tratada na busca por '%s'.", query)
+            erro_rawg = HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Falha inesperada na API de jogos.")
 
-            if resultados_igdb:
-                logger.info("Busca por '%s' respondida pela IGDB (fallback).", query)
-                return resultados_igdb
+        try:
+            resultados_igdb = await igdb_service.search_games(query, page_size)
+        except Exception as exc_igdb:
+            logger.warning("IGDB também falhou na busca por '%s' (%s).", query, exc_igdb)
+            resultados_igdb = []
 
-            # Nenhum dos dois provedores respondeu: propaga o erro original da RAWG,
-            # que é mais informativo pro usuário/log do que um erro genérico da IGDB.
-            raise exc_rawg
+        if resultados_igdb:
+            logger.info("Busca por '%s' respondida pela IGDB (fallback).", query)
+            return resultados_igdb
+
+        # Nenhum dos dois provedores respondeu: propaga o erro original da RAWG,
+        # que é mais informativo pro usuário/log do que um erro genérico da IGDB.
+        raise erro_rawg
 
     async def get_game_details(self, external_id: str) -> dict:
         """Busca os detalhes completos de um jogo, roteando pro provedor certo pelo prefixo do ID."""
@@ -123,11 +135,11 @@ class GamesApiService:
         try:
             return await self._rawg_get_game_details(id_rawg)
         except HTTPException as exc_rawg:
-            # Fallback: se por algum motivo a RAWG não conseguir servir os
-            # detalhes de um jogo que ELA MESMA retornou na busca (ex: caiu
-            # entre a busca e o clique), tenta achar o mesmo jogo na IGDB pelo nome.
             logger.warning("RAWG falhou ao buscar detalhes de '%s' — sem fallback direto por ID nesse caso.", external_id)
             raise exc_rawg
+        except Exception:
+            logger.exception("RAWG: falha inesperada e não tratada ao buscar detalhes de '%s'.", external_id)
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Falha inesperada na API de jogos.")
 
     async def _rawg_search_games(self, query: str, page_size: int) -> list[dict]:
         if not self.api_key:
@@ -142,45 +154,78 @@ class GamesApiService:
             "page_size": page_size,
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            try:
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(f"{self.base_url}/games", params=params)
                 response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Erro ao consultar a API de jogos: {exc.response.status_code}",
-                ) from exc
-            except httpx.RequestError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail="Falha de conexão com a API de jogos.",
-                ) from exc
+                data = response.json()
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Erro ao consultar a API de jogos: {exc.response.status_code}",
+            ) from exc
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Falha de conexão com a API de jogos.",
+            ) from exc
+        except HTTPException:
+            raise
+        except Exception as exc:
+            # Cobre respostas malformadas (JSON inválido, schema inesperado etc.)
+            # que, sem isso, escapariam como um 500 cru em vez de um erro tratado.
+            logger.exception("RAWG: resposta inesperada/malformada na busca por '%s'.", query)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Resposta inesperada da API de jogos.",
+            ) from exc
 
-        data = response.json()
-        results = data.get("results", [])
-        return [self._map_rawg_result_to_dict(item) for item in results]
+        try:
+            results = data.get("results", [])
+            return [self._map_rawg_result_to_dict(item) for item in results]
+        except Exception as exc:
+            logger.exception("RAWG: falha ao interpretar os resultados da busca por '%s'.", query)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Resposta inesperada da API de jogos.",
+            ) from exc
 
     async def _rawg_get_game_details(self, external_id: str) -> dict:
         """Busca os detalhes completos de um jogo específico pelo ID externo (RAWG)."""
         params = {"key": self.api_key}
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            try:
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(f"{self.base_url}/games/{external_id}", params=params)
                 response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Jogo não encontrado na base externa.",
-                ) from exc
-            except httpx.RequestError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail="Falha de conexão com a API de jogos.",
-                ) from exc
+                payload = response.json()
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Jogo não encontrado na base externa.",
+            ) from exc
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Falha de conexão com a API de jogos.",
+            ) from exc
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.exception("RAWG: resposta inesperada/malformada ao buscar detalhes de '%s'.", external_id)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Resposta inesperada da API de jogos.",
+            ) from exc
 
-        return self._map_rawg_result_to_dict(response.json())
+        try:
+            return self._map_rawg_result_to_dict(payload)
+        except Exception as exc:
+            logger.exception("RAWG: falha ao interpretar os detalhes de '%s'.", external_id)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Resposta inesperada da API de jogos.",
+            ) from exc
 
     @staticmethod
     def _map_rawg_result_to_dict(item: dict) -> dict:

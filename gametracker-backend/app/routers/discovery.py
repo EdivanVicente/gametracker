@@ -29,7 +29,17 @@ async def search_games(
     variações encontradas (ex: buscar "Zelda" traz vários títulos e plataformas
     diferentes, em vez de só o primeiro resultado).
     """
-    return await games_api_service.search_games(query=q, page_size=page_size)
+    try:
+        return await games_api_service.search_games(query=q, page_size=page_size)
+    except HTTPException:
+        raise
+    except Exception:
+        # Rede de segurança final: nenhuma falha inesperada aqui deve virar um
+        # 500 cru pro usuário — melhor um erro claro (503) do que a tela travar.
+        raise HTTPException(
+            status_code=503,
+            detail="O serviço de busca de jogos está instável no momento. Tente novamente em instantes.",
+        )
 
 
 @router.get("/games/{external_id}")

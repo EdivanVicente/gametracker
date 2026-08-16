@@ -114,6 +114,9 @@ def _run_light_migrations() -> None:
                 # concluídas no mesmo dia, pra não aparecerem como "em andamento"
                 # indevidamente no histórico — o status real do card não muda.
                 conn.execute(text("UPDATE play_sessions SET finished_at = started_at WHERE finished_at IS NULL"))
+            if "duration_minutes" not in colunas_existentes_ps:
+                logger.info("Migração: adicionando coluna play_sessions.duration_minutes")
+                conn.execute(text("ALTER TABLE play_sessions ADD COLUMN duration_minutes INTEGER"))
 
         if "game_translations" in inspector.get_table_names():
             # Correção de um bug anterior: quando a tradução falhava, o app
