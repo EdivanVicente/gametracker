@@ -800,6 +800,41 @@ body {
   filter: invert(1) grayscale(100%);
 }
 
+/* Campo de senha com botão "olhinho" (mostrar/ocultar).
+   Uso: <div class="gt-password-field"><input type="password" ...><button class="gt-password-toggle" data-target="ID">...</button></div> */
+.gt-password-field {
+  position: relative;
+}
+.gt-password-field .form-control {
+  padding-right: 2.75rem;
+}
+.gt-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.4rem;
+  color: var(--gt-text-muted);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+.gt-password-toggle:hover,
+.gt-password-toggle:focus-visible {
+  color: var(--gt-text);
+  background-color: var(--gt-surface-raised);
+}
+.gt-password-toggle:focus-visible {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: 1px;
+}
+
 /* Estrelas de avaliação (input) */
 .gt-star-input {
   display: inline-flex;

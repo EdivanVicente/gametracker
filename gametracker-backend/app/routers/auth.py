@@ -33,6 +33,7 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 def _pagina_html(title: str, message: str, ok: bool) -> str:
     color = "#3ddc84" if ok else "#ff5c7a"
+    login_url = settings.frontend_url("index.html")
     return f"""
     <html><head><meta charset="utf-8"><title>{title}</title></head>
     <body style="font-family: Arial, sans-serif; background:#0e1116; color:#e8eaed;
@@ -40,7 +41,7 @@ def _pagina_html(title: str, message: str, ok: bool) -> str:
       <div style="text-align:center; max-width:420px; padding:2rem;">
         <h2 style="color:{color};">{title}</h2>
         <p style="color:#8b93a1;">{message}</p>
-        <a href="{settings.FRONTEND_BASE_URL}/index.html"
+        <a href="{login_url}"
            style="display:inline-block; margin-top:1rem; background:#7c5cff; color:#fff;
                   padding:0.7rem 1.4rem; border-radius:6px; text-decoration:none; font-weight:bold;">
            Ir para o login
@@ -197,7 +198,11 @@ def request_email_change(
     current_user: models.User = Depends(get_current_user),
 ):
     if not verify_password(payload.current_password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha atual incorreta.")
+        # 400 (não 401): o token continua válido, o problema é o valor do
+        # campo "senha atual". Usar 401 aqui faria o front tratar como sessão
+        # expirada (authFetch reage a qualquer 401 deslogando o usuário) e a
+        # mensagem de erro nunca chegaria a aparecer na tela.
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Senha atual incorreta.")
 
     email_em_uso = db.query(models.User).filter(models.User.email == payload.new_email).first()
     if email_em_uso:
@@ -243,7 +248,7 @@ def change_password(
     current_user: models.User = Depends(get_current_user),
 ):
     if not verify_password(payload.current_password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha atual incorreta.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Senha atual incorreta.")
 
     current_user.password_hash = hash_password(payload.new_password)
     db.commit()
@@ -259,7 +264,7 @@ def request_account_deletion(
     current_user: models.User = Depends(get_current_user),
 ):
     if not verify_password(payload.current_password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Senha atual incorreta.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Senha atual incorreta.")
 
     token = generate_verification_token()
     current_user.deletion_token = token
