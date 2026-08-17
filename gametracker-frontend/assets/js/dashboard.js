@@ -496,20 +496,34 @@ function setupSearch() {
             }
 
             // Campos retornados pelo backend: external_id, title, cover_url, genre, platforms...
-            resultsDiv.innerHTML = jogos.map(jogo => `
+            const hoje = new Date().toISOString().slice(0, 10);
+            resultsDiv.innerHTML = jogos.map((jogo, idx) => `
                 <div class="col-12 mb-2">
-                    <div class="card p-2 d-flex flex-row align-items-center bg-dark text-white border-secondary">
-                        ${jogo.cover_url
-                            ? `<img src="${jogo.cover_url}" style="width: 50px; height: 50px; object-fit: contain; background-color: var(--gt-void);" class="rounded" alt="Capa">`
-                            : '<div style="width:50px;height:50px;" class="rounded bg-secondary d-flex align-items-center justify-content-center"><i class="bi bi-controller"></i></div>'}
-                        <div class="ms-3">
-                            <h6 class="mb-0 text-white">${escapeHtml(jogo.title)}</h6>
-                            <small class="text-white-50">${escapeHtml(gtTranslateGenre(jogo.genre) || '')}</small>
+                    <div class="card p-2 bg-dark text-white border-secondary" id="game-result-card-${idx}">
+                        <div class="d-flex flex-row align-items-center">
+                            ${jogo.cover_url
+                                ? `<img src="${jogo.cover_url}" style="width: 50px; height: 50px; object-fit: contain; background-color: var(--gt-void);" class="rounded" alt="Capa">`
+                                : '<div style="width:50px;height:50px;" class="rounded bg-secondary d-flex align-items-center justify-content-center"><i class="bi bi-controller"></i></div>'}
+                            <div class="ms-3 flex-fill" style="min-width: 0;">
+                                <h6 class="mb-0 text-white text-truncate">${escapeHtml(jogo.title)}</h6>
+                                <small class="text-white-50">${escapeHtml(gtTranslateGenre(jogo.genre) || '')}</small>
+                            </div>
+                            <button class="btn btn-sm btn-primary ms-auto flex-shrink-0" style="background-color: var(--gt-accent); border-color: var(--gt-accent);"
+                                    onclick="prepararAdicaoJogo('${jogo.external_id}', ${idx})" data-i18n="addGame.addBtn">Adicionar</button>
                         </div>
-                        <button class="btn btn-sm btn-primary ms-auto" onclick="adicionarJogo('${jogo.external_id}', this)" style="background-color: var(--gt-accent); border-color: var(--gt-accent);">Adicionar</button>
+                        <div class="d-none mt-2 pt-2 border-top border-secondary d-flex flex-wrap align-items-end gap-2" id="game-result-dateform-${idx}">
+                            <div class="flex-fill" style="min-width: 140px;">
+                                <label class="form-label small text-white-50 mb-1" data-i18n="addGame.startDateLabel">Quando você começou a jogar?</label>
+                                <input type="date" class="form-control form-control-sm" id="game-result-date-${idx}" max="${hoje}" value="${hoje}">
+                            </div>
+                            <button class="btn btn-gt-primary btn-sm" id="game-result-confirm-${idx}" data-i18n="common.confirm">Confirmar</button>
+                            <button class="btn btn-gt-outline btn-sm" onclick="cancelarAdicaoJogo(${idx})" data-i18n="common.cancel">Cancelar</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
+            GT_I18N.apply(resultsDiv);
+            resultados_busca_atual = jogos;
         } catch (error) {
             resultsDiv.innerHTML = '<p class="text-danger">Erro ao pesquisar.</p>';
         }
@@ -524,16 +538,34 @@ function setupSearch() {
     });
 }
 
+let resultados_busca_atual = [];
+
+// Ao clicar "Adicionar", revela um miniformulário pedindo a data em que o
+// usuário começou a jogar (por padrão hoje, mas editável e nunca no futuro) —
+// em vez de já cadastrar o jogo direto com a data de hoje fixa.
+function prepararAdicaoJogo(externalId, idx) {
+    document.getElementById(`game-result-dateform-${idx}`).classList.remove('d-none');
+    const btnConfirmar = document.getElementById(`game-result-confirm-${idx}`);
+    btnConfirmar.onclick = () => {
+        const dataInicio = document.getElementById(`game-result-date-${idx}`).value || null;
+        adicionarJogo(externalId, dataInicio, btnConfirmar);
+    };
+}
+
+function cancelarAdicaoJogo(idx) {
+    document.getElementById(`game-result-dateform-${idx}`).classList.add('d-none');
+}
+
 // --- Função: Adicionar Jogo à Biblioteca ---
-async function adicionarJogo(externalId, btnElement) {
+async function adicionarJogo(externalId, dataInicio, btnElement) {
     btnElement.disabled = true;
-    btnElement.innerText = 'Adicionando...';
+    btnElement.innerText = GT_I18N.t('addGame.addingBtn') || 'Adicionando...';
 
     try {
         const response = await authFetch('/games/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ external_id: externalId, platform: null })
+            body: JSON.stringify({ external_id: externalId, platform: null, started_at: dataInicio })
         });
 
         if (response.ok) {
@@ -560,17 +592,17 @@ async function adicionarJogo(externalId, btnElement) {
         } else if (response.status === 409) {
             alert('Esse jogo já está na sua biblioteca.');
             btnElement.disabled = false;
-            btnElement.innerText = 'Adicionar';
+            btnElement.innerText = GT_I18N.t('common.confirm') || 'Confirmar';
         } else {
             const data = await response.json().catch(() => ({}));
             alert(data.detail || 'Erro ao adicionar o jogo.');
             btnElement.disabled = false;
-            btnElement.innerText = 'Adicionar';
+            btnElement.innerText = GT_I18N.t('common.confirm') || 'Confirmar';
         }
     } catch (error) {
         console.error('Erro na requisição:', error);
         btnElement.disabled = false;
-        btnElement.innerText = 'Adicionar';
+        btnElement.innerText = GT_I18N.t('common.confirm') || 'Confirmar';
     }
 }
 
@@ -759,8 +791,13 @@ function abrirDetalhe(userGameId) {
         platformCustomInput.value = '';
     }
 
-    document.getElementById('detail-start-date').value = item.start_date || '';
-    document.getElementById('detail-end-date').value = item.end_date || '';
+    const hojeISO = new Date().toISOString().slice(0, 10);
+    const inputInicio = document.getElementById('detail-start-date');
+    const inputFim = document.getElementById('detail-end-date');
+    inputInicio.max = hojeISO;
+    inputFim.max = hojeISO;
+    inputInicio.value = item.start_date || '';
+    inputFim.value = item.end_date || '';
     document.getElementById('detail-favorite').checked = !!item.is_favorite;
 
     // --- Contador de dias jogando/concluído ---
@@ -822,6 +859,46 @@ async function salvarDetalhe() {
         difficulty_score: Number(document.getElementById('stars-difficulty').dataset.score) || null,
         hours_played: hhmmParaDecimal(document.getElementById('detail-hours-played').value),
     };
+
+    // Se a pessoa editou "Data de início" ou "Data de finalização" direto por
+    // aqui (em vez de usar o botão de editar de uma jogada específica no
+    // histórico), aplicamos a mudança na jogada certa: a mais antiga (início)
+    // ou a mais recente/em andamento (fim) — sem isso, essas datas ficariam
+    // "soltas" de novo e o card voltaria a dessincronizar do histórico.
+    const item = meusJogos.find(g => g.id === jogoEmEdicaoId);
+    const novaDataInicio = document.getElementById('detail-start-date').value || null;
+    const novaDataFim = document.getElementById('detail-end-date').value || null;
+    const sessoesOrdenadas = (item?.sessions || []).slice().sort((a, b) => (a.started_at < b.started_at ? -1 : 1));
+
+    if (sessoesOrdenadas.length) {
+        const primeira = sessoesOrdenadas[0];
+        const ultima = sessoesOrdenadas[sessoesOrdenadas.length - 1];
+
+        if (novaDataInicio && novaDataInicio !== primeira.started_at) {
+            const r = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${primeira.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ started_at: novaDataInicio }),
+            });
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                alert(data.detail || GT_I18N.t('detail.sessionError'));
+                return;
+            }
+        }
+        if (novaDataFim !== (ultima.finished_at || null) && (novaDataFim || ultima.finished_at)) {
+            const r = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${ultima.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ finished_at: novaDataFim }),
+            });
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                alert(data.detail || GT_I18N.t('detail.sessionError'));
+                return;
+            }
+        }
+    }
 
     const sucesso = await atualizarJogo(jogoEmEdicaoId, payload);
     if (sucesso) {

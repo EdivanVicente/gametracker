@@ -185,6 +185,7 @@ async def add_game(
     """
     game, plataforma_sugerida = await _get_or_create_game(db, payload.external_id)
     plataforma_final = payload.platform or plataforma_sugerida
+    data_inicio = payload.started_at or date.today()
 
     existente = (
         db.query(models.UserGame)
@@ -198,8 +199,8 @@ async def add_game(
     if existente:
         db.add(models.PlaySession(
             user_game_id=existente.id,
-            played_at=date.today(),
-            started_at=date.today(),
+            played_at=data_inicio,
+            started_at=data_inicio,
             finished_at=None,
         ))
         db.flush()
@@ -212,7 +213,7 @@ async def add_game(
         user_id=current_user.id,
         game_id=game.id,
         platform=plataforma_final,
-        start_date=date.today(),
+        start_date=data_inicio,
     )
     db.add(user_game)
     try:
@@ -228,8 +229,8 @@ async def add_game(
     # A primeira jogada (data de criação do card) também entra no histórico, "em andamento".
     db.add(models.PlaySession(
         user_game_id=user_game.id,
-        played_at=date.today(),
-        started_at=date.today(),
+        played_at=data_inicio,
+        started_at=data_inicio,
         finished_at=None,
     ))
     db.flush()

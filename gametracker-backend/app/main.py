@@ -9,10 +9,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
 from app.core.config import settings
-from app.database import Base, engine
+from app.database import Base, engine, DATABASE_URL_RESOLVIDA
 from app.routers import auth, discovery, games, social, search
 
 logger = logging.getLogger("gametracker.migrations")
+
+# Log bem visível de qual arquivo de banco está sendo usado nesta execução —
+# ajuda a diagnosticar rapidamente se o servidor foi iniciado a partir de uma
+# pasta diferente e por isso está enxergando um banco (e portanto uma conta)
+# diferente do esperado.
+logger.warning("Banco de dados em uso: %s", DATABASE_URL_RESOLVIDA)
 
 # Cria as tabelas no banco caso ainda não existam.
 Base.metadata.create_all(bind=engine)
