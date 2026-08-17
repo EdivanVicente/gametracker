@@ -207,6 +207,15 @@ class UserGameCreate(BaseModel):
     """Payload para adicionar um jogo (já pesquisado via /games/search) à biblioteca."""
     external_id: str
     platform: str | None = None
+    # Data em que o usuário realmente começou a jogar (pode ser retroativa,
+    # útil pra quem está catalogando jogos que já começou há tempos).
+    # Nunca pode ser no futuro. Se omitida, assume hoje.
+    started_at: date | None = None
+
+    @field_validator("started_at")
+    @classmethod
+    def _sem_data_futura(cls, value):
+        return _validar_nao_e_data_futura(value)
 
 
 class UserGameUpdate(BaseModel):

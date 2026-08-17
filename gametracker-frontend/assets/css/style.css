@@ -806,6 +806,12 @@ body {
   filter: invert(1) grayscale(100%);
 }
 
+.gt-hhmm-input::placeholder {
+  color: var(--gt-text-muted);
+  opacity: 0.85;
+  font-style: italic;
+}
+
 /* Campo de senha com botão "olhinho" (mostrar/ocultar).
    Uso: <div class="gt-password-field"><input type="password" ...><button class="gt-password-toggle" data-target="ID">...</button></div> */
 .gt-password-field {
