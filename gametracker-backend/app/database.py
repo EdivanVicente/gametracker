@@ -20,14 +20,16 @@ def _resolver_database_url(url: str) -> str:
     Garante que um SQLite relativo (ex: "sqlite:///./gametracker.db") sempre
     aponte pro MESMO arquivo, não importa de qual pasta o servidor é iniciado.
 
-    Sem isso, rodar `uvicorn` a partir de terminais/atalhos diferentes (VS Code,
-    um .bat, outra IDE) pode criar um "gametracker.db" novo e vazio em cada
-    lugar — o efeito prático é a conta/os dados "sumirem" de vez em quando,
-    quando na real é só um arquivo de banco diferente sendo aberto.
-
     URLs absolutas (ex: Postgres em produção, ou um caminho SQLite absoluto)
     não são alteradas.
     """
+    if not url:
+        return url
+
+    # Converte o prefixo postgres:// (padrão do Render) para postgresql:// (exigido pelo SQLAlchemy 2.0)
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+
     prefixo_relativo = "sqlite:///./"
     if not url.startswith(prefixo_relativo):
         return url
