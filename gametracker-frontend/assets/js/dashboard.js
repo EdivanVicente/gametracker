@@ -132,6 +132,22 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+// --- Helper: data de "hoje" no fuso horário LOCAL do dispositivo ---
+// `new Date().toISOString()` converte o horário atual para UTC antes de
+// formatar — em fusos atrás de UTC (ex.: Brasil, UTC-3), isso faz o valor
+// "virar" para o dia seguinte várias horas antes da meia-noite local (a
+// partir das ~21h no Brasil). Isso fazia campos de data pré-preenchidos com
+// "hoje" mostrarem o dia de amanhã, e podia gerar comparações de data erradas
+// (jogada validada como "fim antes do início" mesmo sendo o mesmo dia local),
+// de forma dependente do fuso horário e do horário exato de cada dispositivo.
+function obterDataLocalHoje() {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
 // --- Contador de dias jogando / concluído (item 1) ---
 
 // Conta os dias entre o início do jogo e uma data de referência (hoje, se não
@@ -496,7 +512,7 @@ function setupSearch() {
             }
 
             // Campos retornados pelo backend: external_id, title, cover_url, genre, platforms...
-            const hoje = new Date().toISOString().slice(0, 10);
+            const hoje = obterDataLocalHoje();
             resultsDiv.innerHTML = jogos.map((jogo, idx) => `
                 <div class="col-12 mb-2">
                     <div class="card p-2 bg-dark text-white border-secondary" id="game-result-card-${idx}">
@@ -791,7 +807,7 @@ function abrirDetalhe(userGameId) {
         platformCustomInput.value = '';
     }
 
-    const hojeISO = new Date().toISOString().slice(0, 10);
+    const hojeISO = obterDataLocalHoje();
     const inputInicio = document.getElementById('detail-start-date');
     const inputFim = document.getElementById('detail-end-date');
     inputInicio.max = hojeISO;
@@ -981,7 +997,10 @@ function abrirFormularioSessao(modo, sessao = null) {
     const fimInput = document.getElementById('detail-session-finish-input');
     const duracaoInput = document.getElementById('detail-session-duration-input');
 
-    const hoje = new Date().toISOString().slice(0, 10);
+    const hoje = obterDataLocalHoje();
+    // Datas retroativas são permitidas (controle de jogos já jogados), mas
+    // NUNCA no futuro — o atributo max do <input type="date"> já bloqueia
+    // isso na própria UI, além da validação que o backend também faz.
     inicioInput.max = hoje;
     fimInput.max = hoje;
 
@@ -990,11 +1009,9 @@ function abrirFormularioSessao(modo, sessao = null) {
         inicioInput.value = hoje;
         inicioInput.disabled = false;
 
-        // Importante: limpar o campo de fim e seu "min" aqui.
-        // Antes, ao esconder o wrapper (d-none), o input continuava
-        // guardando o valor de uma sessão 'finish'/'edit' anterior,
-        // e esse valor "fantasma" era lido na hora de validar,
-        // disparando o erro de data mesmo sem o usuário ter preenchido nada.
+        // Limpa o campo de fim e seu "min": antes, ao só esconder (d-none),
+        // um valor de uma sessão 'finish'/'edit' anterior ficava preso aqui
+        // e era lido na validação, disparando o erro de data por engano.
         fimInput.value = '';
         fimInput.min = '';
         fimWrapper.classList.add('d-none');
@@ -1003,12 +1020,12 @@ function abrirFormularioSessao(modo, sessao = null) {
     } else if (modo === 'finish') {
         label.textContent = GT_I18N.t('detail.startDate');
         inicioInput.value = sessao.started_at;
-        inicioInput.disabled = true;
+        inicioInput.disabled = true; // ao finalizar, a data de início já é fixa (veio da jogada aberta)
         fimInput.min = sessao.started_at;
         fimInput.value = hoje;
         fimWrapper.classList.remove('d-none');
         duracaoInput.value = sessao.duration_minutes ? minutosParaHHMM(sessao.duration_minutes) : '';
-    } else { // 'edit'
+    } else { // 'edit': permite corrigir tudo, inclusive reabrir (limpar a data de fim)
         label.textContent = GT_I18N.t('detail.startDate');
         inicioInput.disabled = false;
         inicioInput.value = sessao.started_at;
