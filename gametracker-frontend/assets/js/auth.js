@@ -1,7 +1,7 @@
 
 // Se já houver um token salvo, pula a tela de login e vai direto pro dashboard.
 if (localStorage.getItem('token')) {
-    window.location.href = 'dashboard.html';
+    window.location.href = 'dashboard';
 }
 
 // --- Funções de Apoio ---
@@ -110,7 +110,7 @@ document.getElementById('panel-login')?.addEventListener('submit', async (e) => 
 
         if (response.ok) {
             localStorage.setItem('token', data.access_token);
-            window.location.href = 'dashboard.html';
+            window.location.href = 'dashboard';
         } else if (response.status === 403) {
             // E-mail ainda não confirmado: mostra opção de reenviar o link.
             showError('login-error', extrairMensagemErro(data, 'Confirme seu e-mail antes de entrar.'));

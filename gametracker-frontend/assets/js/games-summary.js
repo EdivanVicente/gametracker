@@ -8,7 +8,7 @@ async function authFetch(path, options = {}) {
 
     if (response.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = 'index.html';
+        window.location.href = '/';
         throw new Error('Sessão expirada.');
     }
     return response;

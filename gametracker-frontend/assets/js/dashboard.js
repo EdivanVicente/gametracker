@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Proteção de rota
     if (!token) {
-        window.location.href = 'index.html';
+        window.location.href = '/';
         return;
     }
 
@@ -205,7 +205,7 @@ async function authFetch(path, options = {}) {
 
     if (response.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = 'index.html';
+        window.location.href = '/';
         throw new Error('Sessão expirada.');
     }
 
@@ -982,33 +982,26 @@ function abrirFormularioSessao(modo, sessao = null) {
     const duracaoInput = document.getElementById('detail-session-duration-input');
 
     const hoje = new Date().toISOString().slice(0, 10);
+    // Datas retroativas são permitidas (controle de jogos já jogados), mas
+    // NUNCA no futuro — o atributo max do <input type="date"> já bloqueia
+    // isso na própria UI, além da validação que o backend também faz.
     inicioInput.max = hoje;
     fimInput.max = hoje;
 
     if (modo === 'start') {
         label.textContent = GT_I18N.t('detail.startDate');
         inicioInput.value = hoje;
-        inicioInput.disabled = false;
-
-        // Importante: limpar o campo de fim e seu "min" aqui.
-        // Antes, ao esconder o wrapper (d-none), o input continuava
-        // guardando o valor de uma sessão 'finish'/'edit' anterior,
-        // e esse valor "fantasma" era lido na hora de validar,
-        // disparando o erro de data mesmo sem o usuário ter preenchido nada.
-        fimInput.value = '';
-        fimInput.min = '';
         fimWrapper.classList.add('d-none');
-
         duracaoInput.value = '';
     } else if (modo === 'finish') {
         label.textContent = GT_I18N.t('detail.startDate');
         inicioInput.value = sessao.started_at;
-        inicioInput.disabled = true;
+        inicioInput.disabled = true; // ao finalizar, a data de início já é fixa (veio da jogada aberta)
         fimInput.min = sessao.started_at;
         fimInput.value = hoje;
         fimWrapper.classList.remove('d-none');
         duracaoInput.value = sessao.duration_minutes ? minutosParaHHMM(sessao.duration_minutes) : '';
-    } else { // 'edit'
+    } else { // 'edit': permite corrigir tudo, inclusive reabrir (limpar a data de fim)
         label.textContent = GT_I18N.t('detail.startDate');
         inicioInput.disabled = false;
         inicioInput.value = sessao.started_at;
@@ -1022,19 +1015,8 @@ function abrirFormularioSessao(modo, sessao = null) {
 }
 
 function fecharFormularioSessao() {
-    const form = document.getElementById('detail-session-form');
-    const inicioInput = document.getElementById('detail-session-date-input');
-    const fimInput = document.getElementById('detail-session-finish-input');
-    const duracaoInput = document.getElementById('detail-session-duration-input');
-
-    form.classList.add('d-none');
-    inicioInput.disabled = false;
-    inicioInput.value = '';
-    fimInput.value = '';
-    fimInput.min = '';
-    fimInput.max = '';
-    duracaoInput.value = '';
-
+    document.getElementById('detail-session-form').classList.add('d-none');
+    document.getElementById('detail-session-date-input').disabled = false;
     _sessaoFormModo = null;
     _sessaoFormId = null;
 }
@@ -1253,5 +1235,5 @@ function aplicarFiltros() {
 // --- Função: Logoff ---
 function logout() {
     localStorage.removeItem('token');
-    window.location.href = 'index.html';
+    window.location.href = '/';
 }

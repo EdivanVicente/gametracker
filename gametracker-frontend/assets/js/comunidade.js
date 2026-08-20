@@ -5,7 +5,7 @@ async function authFetch(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, Object.assign({}, options, { headers }));
     if (response.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = 'index.html';
+        window.location.href = '/';
         throw new Error('Sessão expirada.');
     }
     return response;

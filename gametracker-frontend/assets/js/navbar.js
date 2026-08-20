@@ -70,10 +70,10 @@ async function carregarEstatisticasNavbar(userId, token) {
         if (followingEl) followingEl.textContent = p.following_count ?? 0;
 
         document.getElementById('dropdown-followers-trigger')?.addEventListener('click', () => {
-            window.location.href = `comunidade.html?profile=${userId}`;
+            window.location.href = `comunidade?profile=${userId}`;
         });
         document.getElementById('dropdown-following-trigger')?.addEventListener('click', () => {
-            window.location.href = `comunidade.html?profile=${userId}`;
+            window.location.href = `comunidade?profile=${userId}`;
         });
     } catch (error) {
         // Mesmo se der erro de rede, mostra 0 em vez de deixar "—" pra sempre.
