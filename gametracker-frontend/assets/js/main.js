@@ -1,6 +1,6 @@
 function logout() {
     localStorage.removeItem('token');
-    window.location.href = 'index.html';
+    window.location.href = '/';
 }
 
 // Volta para a página anterior no histórico; se não houver histórico
@@ -9,6 +9,6 @@ function voltarPagina() {
     if (window.history.length > 1) {
         window.history.back();
     } else {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'dashboard';
     }
 }

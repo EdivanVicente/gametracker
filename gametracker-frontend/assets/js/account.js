@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-save-profile').addEventListener('click', salvarPerfil);
     document.getElementById('btn-cancel-profile').addEventListener('click', () => {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'dashboard';
     });
 
     document.getElementById('stat-followers-trigger').addEventListener('click', () => abrirListaSeguidores('followers'));
@@ -47,7 +47,7 @@ async function abrirListaSeguidores(tipo) {
         }
 
         body.innerHTML = lista.map(u => `
-            <a href="comunidade.html?profile=${u.id}" class="d-flex align-items-center gap-2 text-decoration-none py-2">
+            <a href="comunidade?profile=${u.id}" class="d-flex align-items-center gap-2 text-decoration-none py-2">
                 <div class="rounded-circle overflow-hidden d-flex align-items-center justify-content-center"
                      style="width:36px;height:36px;background-color:var(--gt-surface-raised);flex-shrink:0;">
                     ${u.avatar_data ? `<img src="${u.avatar_data}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="bi bi-person text-white-50"></i>'}
@@ -66,7 +66,7 @@ async function authFetch(path, options = {}) {
 
     if (response.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = 'index.html';
+        window.location.href = '/';
         throw new Error('Sessão expirada.');
     }
     return response;

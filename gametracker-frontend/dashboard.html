@@ -32,7 +32,7 @@
        ============================================================ -->
   <nav class="navbar navbar-expand-lg gt-navbar sticky-top py-3">
     <div class="container-fluid gt-container-fluid px-3 px-md-4">
-      <a class="navbar-brand gt-brand" href="dashboard.html">
+      <a class="navbar-brand gt-brand" href="dashboard">
         <i class="bi bi-joystick" style="color: var(--gt-accent);"></i>
         GameTracker <span class="gt-brand-mark">Pro</span>
       </a>
@@ -54,16 +54,16 @@
       <div class="collapse navbar-collapse" id="gtNavContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
           <li class="nav-item">
-            <a class="nav-link active" href="dashboard.html" data-i18n="nav.myGames">Meus Jogos</a>
+            <a class="nav-link active" href="dashboard" data-i18n="nav.myGames">Meus Jogos</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="explore.html" data-i18n="nav.explore">Explorar</a>
+            <a class="nav-link" href="explore" data-i18n="nav.explore">Explorar</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="estatisticas.html" data-i18n="nav.stats">Estatísticas</a>
+            <a class="nav-link" href="estatisticas" data-i18n="nav.stats">Estatísticas</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="comunidade.html" data-i18n="nav.community">Comunidade</a>
+            <a class="nav-link" href="comunidade" data-i18n="nav.community">Comunidade</a>
           </li>
         </ul>
 
@@ -99,9 +99,9 @@
                 </div>
               </li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person-circle me-2"></i><span data-i18n="nav.account">Minha conta</span></a></li>
-              <li><a class="dropdown-item" href="games.html"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
-              <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Configurações</span></a></li>
+              <li><a class="dropdown-item" href="account"><i class="bi bi-person-circle me-2"></i><span data-i18n="nav.account">Minha conta</span></a></li>
+              <li><a class="dropdown-item" href="games"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
+              <li><a class="dropdown-item" href="settings"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Configurações</span></a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="nav.logout">Sair</span></a></li>
             </ul>
@@ -117,19 +117,19 @@
          HUD STATUS STRIP — resumo rápido do catálogo
          ============================================================ -->
     <section class="gt-hud-strip d-flex flex-wrap mb-4" aria-label="Resumo do catálogo">
-      <a href="dashboard.html?filtro=todos" class="gt-hud-item flex-fill text-decoration-none">
+      <a href="dashboard?filtro=todos" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono" id="hud-total">0</div>
         <div class="gt-hud-label" data-i18n="hud.myGames">Meus Jogos</div>
       </a>
-      <a href="dashboard.html?filtro=playing" class="gt-hud-item flex-fill text-decoration-none">
+      <a href="dashboard?filtro=playing" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono is-playing" id="hud-playing">0</div>
         <div class="gt-hud-label" data-i18n="hud.playing">Em andamento</div>
       </a>
-      <a href="dashboard.html?filtro=finished" class="gt-hud-item flex-fill text-decoration-none">
+      <a href="dashboard?filtro=finished" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono is-finished" id="hud-finished">0</div>
         <div class="gt-hud-label" data-i18n="hud.finished">Finalizados</div>
       </a>
-      <a href="dashboard.html?filtro=favoritos" class="gt-hud-item flex-fill text-decoration-none">
+      <a href="dashboard?filtro=favoritos" class="gt-hud-item flex-fill text-decoration-none">
         <div class="gt-hud-value gt-mono is-favorite" id="hud-favorites">0</div>
         <div class="gt-hud-label" data-i18n="hud.favorites">Favoritos</div>
       </a>
