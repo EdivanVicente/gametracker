@@ -163,9 +163,18 @@ def get_my_games(
         .order_by(models.UserGame.created_at.desc())
         .all()
     )
+    # Um mesmo Game pode ser compartilhado por vários UserGame (ex: o mesmo
+    # jogo adicionado em plataformas diferentes) — o SQLAlchemy devolve a
+    # MESMA instância Python nesses casos (identity map). Sem controlar isso,
+    # a 2ª vez que tentamos expunge() nesse Game já repetido, ele já não está
+    # mais na sessão e a chamada explode com InvalidRequestError, derrubando
+    # a tela inteira de "Meus Jogos" pra quem tem o mesmo jogo 2x.
+    games_ja_processados: set[int] = set()
     for user_game in jogos:
-        db.expunge(user_game.game)  # evita que a tradução "vaze" de volta pro banco por engano
-        user_game.game.description = _descricao_no_idioma(db, user_game.game, lang)
+        if user_game.game.id not in games_ja_processados:
+            db.expunge(user_game.game)  # evita que a tradução "vaze" de volta pro banco por engano
+            user_game.game.description = _descricao_no_idioma(db, user_game.game, lang)
+            games_ja_processados.add(user_game.game.id)
     return jogos
 
 

@@ -847,12 +847,138 @@ body {
   outline-offset: 1px;
 }
 
+/* Ícone do calendário nos <input type="date">: o navegador desenha esse
+   ícone em preto por padrão, o que fica praticamente invisível no fundo
+   escuro do tema padrão. `invert(1)` deixa ele branco/claro no dark mode;
+   no light mode, mantemos o ícone preto original do navegador (bom contraste
+   contra o fundo claro). Cobre também estado hover/focus do próprio ícone. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.1);
+  opacity: 0.85;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="date"]:focus::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+:root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 0.75;
+}
+:root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator:hover,
+:root[data-theme="light"] input[type="date"]:focus::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+/* Firefox: usa a própria cor do texto do campo pro ícone, então basta garantir
+   que o color-scheme do input siga o tema pra o navegador desenhar certo. */
+input[type="date"] {
+  color-scheme: dark;
+}
+:root[data-theme="light"] input[type="date"] {
+  color-scheme: light;
+}
+
+/* Espaço entre a área de pesquisa (Explorar) e as sugestões abaixo dela —
+   ~100px em telas largas, encolhendo proporcionalmente em telas pequenas
+   pra não criar um vão exagerado no celular. */
+.gt-explore-suggestions {
+  margin-top: clamp(24px, 8vw, 100px);
+}
+
+.gt-description-wrapper {
+  max-height: 4.6em;
+  overflow: hidden;
+  position: relative;
+  transition: max-height 0.25s ease;
+  line-height: 1.15rem;
+}
+.gt-description-wrapper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.4em;
+  background: linear-gradient(to bottom, transparent, var(--gt-surface) 85%);
+  pointer-events: none;
+}
+.gt-description-wrapper.gt-expanded {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.gt-description-wrapper.gt-expanded::after {
+  display: none;
+}
+
+/* Histórico de jogadas: cada linha em grid, pra hora/duração ficarem
+   sempre na mesma coluna, não importa o tamanho do intervalo de datas. */
+.gt-session-list li.gt-session-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  column-gap: 0.6rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--gt-border);
+}
+.gt-session-list li.gt-session-row:last-child {
+  border-bottom: none;
+}
+.gt-session-row__dates {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gt-session-row__time {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--gt-font-mono, monospace);
+  text-align: right;
+  white-space: nowrap;
+  min-width: 3.6rem;
+}
+@media (max-width: 420px) {
+  .gt-session-list li.gt-session-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "dates edit" "time edit";
+    row-gap: 0.15rem;
+  }
+  .gt-session-row__dates { grid-area: dates; white-space: normal; }
+  .gt-session-row__time { grid-area: time; text-align: left; }
+  .gt-session-row__edit { grid-area: edit; }
+}
+
+/* Paginação do histórico, no mesmo padrão visual do resto do app */
+.gt-pagination .page-link {
+  background-color: var(--gt-surface-raised);
+  border-color: var(--gt-border);
+  color: var(--gt-text);
+}
+.gt-pagination .page-link:hover {
+  background-color: var(--gt-surface);
+  color: var(--gt-accent);
+}
+.gt-pagination .page-item.active .page-link {
+  background-color: var(--gt-accent);
+  border-color: var(--gt-accent);
+  color: #fff;
+}
+.gt-pagination .page-item.disabled .page-link {
+  background-color: transparent;
+  border-color: var(--gt-border);
+  color: var(--gt-text-muted);
+}
+
 /* Estrelas de avaliação (input) */
 .gt-star-input {
   display: inline-flex;
   gap: 0.15rem;
   font-size: 1.1rem;
   color: var(--gt-border);
+  flex-shrink: 0;
 }
 .gt-star-input .gt-star {
   cursor: pointer;
@@ -861,6 +987,13 @@ body {
 .gt-star-input .gt-star.is-filled,
 .gt-star-input:hover .gt-star {
   color: var(--gt-amber);
+}
+
+/* Grade de avaliação por categoria (Gráficos/Som/Jogabilidade/Dificuldade):
+   empilhada (1 por linha) em telas bem estreitas pra rótulo + 5 estrelas
+   nunca disputarem espaço; some pra 2 colunas a partir de ~576px (Bootstrap sm). */
+.gt-rating-grid > [class*="col-"] {
+  gap: 0.5rem;
 }
 
 /* ==========================================================================

@@ -747,12 +747,35 @@ function definirEstrelas(container, nota) {
 }
 
 // Reduz uma descrição longa para no máximo ~50 palavras, terminando com reticências.
-function truncarDescricao(texto, maxPalavras = 50) {
+function truncarDescricao(texto) {
     if (!texto) return 'Sem descrição disponível para este jogo.';
-    const palavras = texto.trim().split(/\s+/);
-    if (palavras.length <= maxPalavras) return texto;
-    return palavras.slice(0, maxPalavras).join(' ') + '…';
+    return texto;
 }
+
+// Depois de preencher a descrição, verifica se o texto realmente ultrapassa
+// o espaço reservado (o "resumo" mantém sempre o mesmo tamanho) — só então
+// mostra o botão "Saiba mais". Precisa rodar depois do layout do modal estar
+// pronto (por isso o duplo requestAnimationFrame), senão scrollHeight/clientHeight
+// podem vir zerados enquanto o modal ainda está sendo exibido.
+function atualizarBotaoSaibaMais() {
+    const wrapper = document.getElementById('detail-description-wrapper');
+    const btn = document.getElementById('btn-toggle-description');
+    wrapper.classList.remove('gt-expanded');
+    btn.textContent = GT_I18N.t('detail.readMore');
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            const transbordando = wrapper.scrollHeight > wrapper.clientHeight + 2;
+            btn.classList.toggle('d-none', !transbordando);
+        });
+    });
+}
+
+document.getElementById('btn-toggle-description')?.addEventListener('click', () => {
+    const wrapper = document.getElementById('detail-description-wrapper');
+    const btn = document.getElementById('btn-toggle-description');
+    const expandido = wrapper.classList.toggle('gt-expanded');
+    btn.textContent = expandido ? GT_I18N.t('detail.readLess') : GT_I18N.t('detail.readMore');
+});
 
 function abrirDetalhe(userGameId) {
     const item = meusJogos.find(g => g.id === userGameId);
@@ -772,6 +795,7 @@ function abrirDetalhe(userGameId) {
 
     document.getElementById('detail-genre').textContent = gtTranslateGenre(jogo.genre) || GT_I18N.t('detail.noGenre');
     document.getElementById('detail-description').textContent = truncarDescricao(jogo.description);
+    atualizarBotaoSaibaMais();
 
     const badgesWrapper = document.getElementById('detail-platforms-badges');
     const plataformas = (jogo.platforms || '').split(',').map(p => p.trim()).filter(Boolean);
@@ -876,8 +900,8 @@ async function salvarDetalhe() {
         hours_played: hhmmParaDecimal(document.getElementById('detail-hours-played').value),
     };
 
-    // Se a pessoa editou "Data de início" ou "Data de finalização" direto por
-    // aqui (em vez de usar o botão de editar de uma jogada específica no
+    // Se a pessoa editou "Data de início" e/ou "Data de finalização" direto
+    // por aqui (em vez de usar o botão de editar de uma jogada específica no
     // histórico), aplicamos a mudança na jogada certa: a mais antiga (início)
     // ou a mais recente/em andamento (fim) — sem isso, essas datas ficariam
     // "soltas" de novo e o card voltaria a dessincronizar do histórico.
@@ -890,28 +914,50 @@ async function salvarDetalhe() {
         const primeira = sessoesOrdenadas[0];
         const ultima = sessoesOrdenadas[sessoesOrdenadas.length - 1];
 
-        if (novaDataInicio && novaDataInicio !== primeira.started_at) {
+        const inicioMudou = novaDataInicio && novaDataInicio !== primeira.started_at;
+        const fimMudou = novaDataFim !== (ultima.finished_at || null) && (novaDataFim || ultima.finished_at);
+
+        // IMPORTANTE: quando início e fim mudam ao mesmo tempo NA MESMA sessão
+        // (caso comum quando só existe 1 sessão), as duas mudanças precisam ir
+        // juntas numa ÚNICA requisição. Mandar em duas chamadas separadas pode
+        // fazer a primeira (ex: só o novo início) ser rejeitada por comparar
+        // contra a data de fim ANTIGA — mesmo que o resultado final, com as
+        // duas datas novas, seja perfeitamente válido.
+        if (inicioMudou && fimMudou && primeira.id === ultima.id) {
             const r = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${primeira.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ started_at: novaDataInicio }),
+                body: JSON.stringify({ started_at: novaDataInicio, finished_at: novaDataFim }),
             });
             if (!r.ok) {
                 const data = await r.json().catch(() => ({}));
                 alert(data.detail || GT_I18N.t('detail.sessionError'));
                 return;
             }
-        }
-        if (novaDataFim !== (ultima.finished_at || null) && (novaDataFim || ultima.finished_at)) {
-            const r = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${ultima.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ finished_at: novaDataFim }),
-            });
-            if (!r.ok) {
-                const data = await r.json().catch(() => ({}));
-                alert(data.detail || GT_I18N.t('detail.sessionError'));
-                return;
+        } else {
+            if (inicioMudou) {
+                const r = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${primeira.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ started_at: novaDataInicio }),
+                });
+                if (!r.ok) {
+                    const data = await r.json().catch(() => ({}));
+                    alert(data.detail || GT_I18N.t('detail.sessionError'));
+                    return;
+                }
+            }
+            if (fimMudou) {
+                const r = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${ultima.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ finished_at: novaDataFim }),
+                });
+                if (!r.ok) {
+                    const data = await r.json().catch(() => ({}));
+                    alert(data.detail || GT_I18N.t('detail.sessionError'));
+                    return;
+                }
             }
         }
     }
@@ -926,27 +972,41 @@ async function salvarDetalhe() {
     }
 }
 
-// Formata uma sessão de jogo pro histórico (ex: "12/03/2026 — em andamento" ou "12/03/2026 → 15/03/2026")
+// Formata uma sessão de jogo pro histórico, já separada em colunas (datas /
+// tempo) — o HTML monta essas partes num grid pra tudo ficar alinhado.
 function formatarPeriodoSessao(sessao) {
     const fmt = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString();
-    const tempo = sessao.duration_minutes ? ` · ${minutosParaHHMM(sessao.duration_minutes)}` : '';
+    const tempo = sessao.duration_minutes ? minutosParaHHMM(sessao.duration_minutes) : '';
+    let datas;
     if (!sessao.finished_at) {
-        return `${fmt(sessao.started_at)} — ${GT_I18N.t('status.playing')}${tempo}`;
+        datas = `${fmt(sessao.started_at)} — ${GT_I18N.t('status.playing')}`;
+    } else if (sessao.started_at === sessao.finished_at) {
+        datas = fmt(sessao.started_at);
+    } else {
+        datas = `${fmt(sessao.started_at)} → ${fmt(sessao.finished_at)}`;
     }
-    if (sessao.started_at === sessao.finished_at) {
-        return `${fmt(sessao.started_at)}${tempo}`;
-    }
-    return `${fmt(sessao.started_at)} → ${fmt(sessao.finished_at)}${tempo}`;
+    return { datas, tempo };
 }
 
-// Desenha os botões de ação (Jogar novamente / Finalizar esta jogada) e a
-// lista de histórico de jogadas (cada uma com data de início, fim, tempo
-// opcional e um botão de editar pra corrigir depois).
-function renderizarHistoricoJogadas(item) {
-    const sessoes = (item.sessions || []).slice().sort((a, b) => (a.started_at < b.started_at ? 1 : -1));
-    const sessaoAberta = sessoes.find(s => !s.finished_at);
+const SESSOES_POR_PAGINA = 10;
+let _historicoOrdenacao = 'recentes';
+let _historicoPaginaAtual = 1;
+
+// Desenha os botões de ação (Jogar novamente / Finalizar esta jogada), o
+// filtro de ordenação e a lista de histórico de jogadas — paginada de 10 em
+// 10, cada uma com data de início, fim, tempo opcional e um botão de editar.
+function renderizarHistoricoJogadas(item, manterPagina = false) {
+    if (!manterPagina) _historicoPaginaAtual = 1;
+
+    const todasSessoes = (item.sessions || []).slice().sort((a, b) => {
+        const diff = a.started_at < b.started_at ? -1 : (a.started_at > b.started_at ? 1 : 0);
+        return _historicoOrdenacao === 'recentes' ? -diff : diff;
+    });
+    const sessaoAberta = todasSessoes.find(s => !s.finished_at);
     const acoes = document.getElementById('detail-session-actions');
     const historico = document.getElementById('detail-session-history');
+    const sortSelect = document.getElementById('detail-session-sort');
+    if (sortSelect) sortSelect.value = _historicoOrdenacao;
 
     if (sessaoAberta) {
         acoes.innerHTML = `
@@ -963,25 +1023,80 @@ function renderizarHistoricoJogadas(item) {
     }
     GT_I18N.apply(acoes);
 
-    if (sessoes.length === 0) {
+    if (todasSessoes.length === 0) {
         historico.innerHTML = '';
+        document.getElementById('detail-session-pagination').classList.add('d-none');
         return;
     }
-    historico.innerHTML = sessoes.map(s => `
-        <li class="d-flex align-items-center justify-content-between gap-2 py-1">
-            <span><i class="bi bi-calendar3 me-1"></i>${formatarPeriodoSessao(s)}</span>
-            <button type="button" class="btn btn-link btn-sm text-white-50 p-0 gt-session-edit-btn" data-session-id="${s.id}" title="${GT_I18N.t('detail.editSession')}">
+
+    const totalPaginas = Math.max(1, Math.ceil(todasSessoes.length / SESSOES_POR_PAGINA));
+    _historicoPaginaAtual = Math.min(Math.max(1, _historicoPaginaAtual), totalPaginas);
+    const inicio = (_historicoPaginaAtual - 1) * SESSOES_POR_PAGINA;
+    const sessoesDaPagina = todasSessoes.slice(inicio, inicio + SESSOES_POR_PAGINA);
+
+    historico.innerHTML = sessoesDaPagina.map(s => {
+        const { datas, tempo } = formatarPeriodoSessao(s);
+        return `
+        <li class="gt-session-row">
+            <span class="gt-session-row__dates"><i class="bi bi-calendar3 me-1"></i>${datas}</span>
+            <span class="gt-session-row__time">${tempo}</span>
+            <button type="button" class="btn btn-link btn-sm text-white-50 p-0 gt-session-row__edit gt-session-edit-btn" data-session-id="${s.id}" title="${GT_I18N.t('detail.editSession')}">
                 <i class="bi bi-pencil-square"></i>
             </button>
-        </li>`).join('');
+        </li>`;
+    }).join('');
 
     historico.querySelectorAll('.gt-session-edit-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-            const sessao = sessoes.find(s => s.id === Number(btn.dataset.sessionId));
+            const sessao = todasSessoes.find(s => s.id === Number(btn.dataset.sessionId));
             if (sessao) abrirFormularioSessao('edit', sessao);
         });
     });
+
+    renderizarPaginacaoHistorico(totalPaginas, item);
 }
+
+function renderizarPaginacaoHistorico(totalPaginas, item) {
+    const nav = document.getElementById('detail-session-pagination');
+    const lista = nav.querySelector('ul');
+
+    if (totalPaginas <= 1) {
+        nav.classList.add('d-none');
+        lista.innerHTML = '';
+        return;
+    }
+    nav.classList.remove('d-none');
+
+    const pagina = _historicoPaginaAtual;
+    const item_ = (rotulo, alvo, desabilitado, ativo = false) => `
+        <li class="page-item ${desabilitado ? 'disabled' : ''} ${ativo ? 'active' : ''}">
+            <button type="button" class="page-link" data-pagina="${alvo}" ${desabilitado ? 'tabindex="-1"' : ''}>${rotulo}</button>
+        </li>`;
+
+    let html = '';
+    html += item_('«', 1, pagina === 1);
+    html += item_('‹', pagina - 1, pagina === 1);
+    for (let p = 1; p <= totalPaginas; p++) {
+        html += item_(String(p), p, false, p === pagina);
+    }
+    html += item_('›', pagina + 1, pagina === totalPaginas);
+    html += item_('»', totalPaginas, pagina === totalPaginas);
+
+    lista.innerHTML = html;
+    lista.querySelectorAll('.page-link:not([tabindex])').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            _historicoPaginaAtual = Number(btn.dataset.pagina);
+            renderizarHistoricoJogadas(item, true);
+        });
+    });
+}
+
+document.getElementById('detail-session-sort')?.addEventListener('change', (e) => {
+    _historicoOrdenacao = e.target.value;
+    _historicoPaginaAtual = 1;
+    const item = meusJogos.find(g => g.id === jogoEmEdicaoId);
+    if (item) renderizarHistoricoJogadas(item, true);
+});
 
 let _sessaoFormModo = null;   // 'start' | 'finish' | 'edit'
 let _sessaoFormId = null;     // id da sessão (usado em 'finish'/'edit')

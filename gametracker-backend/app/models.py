@@ -160,6 +160,12 @@ class UserGame(Base):
         alguém editar esses campos "soltos" à mão — isso evita o card ficar
         com dado desencontrado (ex: mostrar "Jogando" mas as datas já
         preenchidas, ou vice-versa) quando uma sessão é criada/editada/fechada.
+
+        Também recalcula "horas jogadas" como a SOMA do tempo de todas as
+        sessões (quando ao menos uma tiver tempo preenchido) — ex: sessão 1
+        com 2h30 + sessão 2 com 5h45 + sessão 3 com 10h20 = 18h35 no total.
+        Se nenhuma sessão tiver tempo registrado, o valor digitado manualmente
+        (se houver) é preservado, em vez de ser zerado.
         """
         sessoes = sorted(self.sessions, key=lambda s: (s.started_at, s.id))
         if not sessoes:
@@ -178,6 +184,10 @@ class UserGame(Base):
             self.end_date = mais_recente.finished_at
 
         self.play_count = len(sessoes)
+
+        total_minutos_sessoes = sum(s.duration_minutes or 0 for s in sessoes)
+        if total_minutos_sessoes > 0:
+            self.hours_played = total_minutos_sessoes
 
 
 class GameTranslation(Base):
