@@ -34,11 +34,17 @@ _HEADERS = {
 
 # Padrões conhecidos usados pelo HLTB pra ofuscar a URL do endpoint de busca
 # dentro do bundle JS (eles concatenam "/api/seek/" com uma chave em runtime,
-# em vez de deixar a URL completa visível no código-fonte).
+# em vez de deixar a URL completa visível no código-fonte). O HLTB muda esse
+# esquema de tempos em tempos, então mantemos vários padrões conhecidos —
+# se algum dia TODOS pararem de bater, é sinal de que o site mudou de novo
+# e essa lista precisa de um padrão novo (fica registrado no log).
 _PADROES_API_KEY = [
     r'/api/seek/"\.concat\("([a-fA-F0-9]+)"\)',
     r'"/api/seek/"\s*\+\s*"([a-fA-F0-9]+)"',
     r'api/seek/([a-fA-F0-9]{32,64})',
+    r'fetch\("/api/seek/"\.concat\("([a-fA-F0-9]+)"\)',
+    r'seek/"\)\.concat\("([a-fA-F0-9]+)"\)',
+    r'"([a-fA-F0-9]{40,64})"\s*\)\s*\}\s*\}\s*,\s*"/api/seek/"',
 ]
 
 
@@ -46,8 +52,8 @@ class HLTBService:
     def __init__(self):
         self._api_key_cache: str | None = None
 
-    async def _descobrir_api_key(self, client: httpx.AsyncClient) -> str | None:
-        if self._api_key_cache:
+    async def _descobrir_api_key(self, client: httpx.AsyncClient, forcar_nova: bool = False) -> str | None:
+        if self._api_key_cache and not forcar_nova:
             return self._api_key_cache
 
         try:
@@ -60,7 +66,12 @@ class HLTBService:
         if not scripts:
             scripts = re.findall(r'"(/_next/static/chunks/[^"]*_app[^"]+\.js)"', home.text)
         if not scripts:
-            logger.warning("HLTB: não achei o bundle JS principal na página inicial (site pode ter mudado).")
+            # Fallback mais amplo: se o esquema de nomes dos chunks do Next.js
+            # mudou (não tem mais "_app" no nome), tenta TODOS os chunks JS
+            # referenciados na página inicial — mais lento, mas mais resiliente.
+            scripts = re.findall(r'"(/_next/static/chunks/[^"]+\.js)"', home.text)
+        if not scripts:
+            logger.warning("HLTB: não achei nenhum bundle JS na página inicial (site pode ter mudado a estrutura).")
             return None
 
         for script_path in scripts:
@@ -112,6 +123,19 @@ class HLTBService:
                     return None
 
                 resp = await client.post(f"{_HLTB_BASE}/api/seek/{api_key}", json=payload, timeout=10)
+
+                if resp.status_code in (403, 404):
+                    # A chave que tínhamos em cache pode ter ficado velha (o HLTB
+                    # roda essa chave de tempos em tempos) — sem isso, uma vez
+                    # que a chave cacheada expira, TODA busca seguinte falharia
+                    # pra sempre nesse processo, mesmo com o site funcionando
+                    # normalmente. Descobre uma chave nova e tenta mais uma vez.
+                    logger.info("HLTB: chave da API pode estar desatualizada (status %s) — buscando uma nova.", resp.status_code)
+                    api_key = await self._descobrir_api_key(client, forcar_nova=True)
+                    if not api_key:
+                        return None
+                    resp = await client.post(f"{_HLTB_BASE}/api/seek/{api_key}", json=payload, timeout=10)
+
                 if resp.status_code != 200:
                     logger.warning("HLTB: busca por '%s' devolveu status %s.", titulo, resp.status_code)
                     return None
@@ -122,7 +146,16 @@ class HLTBService:
                     logger.info("HLTB: nenhum resultado encontrado para '%s'.", titulo)
                     return None
 
-                melhor = min(jogos, key=lambda g: abs(len(g.get("game_name", "")) - len(titulo)))
+                # Prioriza correspondência exata (ignorando maiúsculas/acentos triviais)
+                # antes de cair pra heurística de "nome de tamanho parecido" — evita
+                # pegar um jogo errado por coincidência de tamanho do nome
+                # (ex: buscar "Zelda" e acabar pegando outro título qualquer).
+                titulo_normalizado = titulo.strip().lower()
+                exato = next(
+                    (g for g in jogos if (g.get("game_name") or "").strip().lower() == titulo_normalizado),
+                    None,
+                )
+                melhor = exato or min(jogos, key=lambda g: abs(len(g.get("game_name", "")) - len(titulo)))
 
                 main_seg = melhor.get("comp_main") or 0
                 comp_seg = melhor.get("comp_100") or melhor.get("comp_plus") or 0

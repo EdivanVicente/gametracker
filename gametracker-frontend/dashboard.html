@@ -18,12 +18,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
   <!-- Design system próprio -->
-  <link rel="stylesheet" href="assets/css/style.css?v=1786920989">
-  <script src="assets/js/config.js?v=1786920989"></script>
-  <script src="assets/js/theme.js?v=1786920989"></script>
-  <script src="assets/js/i18n.js?v=1786920989"></script>
+  <link rel="stylesheet" href="assets/css/style.css?v=1787303808">
+  <script src="assets/js/config.js?v=1787303808"></script>
+  <script src="assets/js/theme.js?v=1787303808"></script>
+  <script src="assets/js/i18n.js?v=1787303808"></script>
 
-  <script src="assets/js/auth-check.js?v=1787266920"></script>
+  <script src="assets/js/auth-check.js?v=1787303808"></script>
 </head>
 <body>
 
@@ -147,7 +147,7 @@
               <i class="bi bi-search text-white-50"></i>
             </span>
             <input type="search" class="form-control border-0 border-start-0" id="filter-search"
-                   placeholder="Buscar nos meus jogos" data-i18n-placeholder="toolbar.searchPlaceholder" style="border-left: none !important;">
+                   placeholder="Pesquise seus jogos" data-i18n-placeholder="toolbar.searchPlaceholder" style="border-left: none !important;">
           </div>
         </div>
 
@@ -399,7 +399,10 @@
             </div>
             <div class="col-12">
               <p class="gt-detail-genre mb-2" id="detail-genre">—</p>
-              <p class="small mb-2" id="detail-description">Sem descrição disponível.</p>
+              <div class="gt-description-wrapper" id="detail-description-wrapper">
+                <p class="small mb-1" id="detail-description">Sem descrição disponível.</p>
+              </div>
+              <button type="button" class="btn btn-link btn-sm p-0 mb-2 d-none" id="btn-toggle-description" data-i18n="detail.readMore">Saiba mais</button>
               <div class="d-flex flex-wrap gap-1 mb-2" id="detail-platforms-badges"></div>
               <p class="small text-white-50 mb-0" id="detail-multiplayer-info"></p>
             </div>
@@ -475,7 +478,19 @@
               </div>
             </div>
 
-            <ul class="list-unstyled small text-white-50 mb-0 mt-2" id="detail-session-history"></ul>
+            <div class="d-flex align-items-center justify-content-between gap-2 mt-3 mb-1">
+              <label class="small text-white-50 mb-0" for="detail-session-sort" data-i18n="detail.sortLabel">Ordenar por</label>
+              <select class="form-select form-select-sm" id="detail-session-sort" style="width: auto;">
+                <option value="recentes" data-i18n="detail.sortRecent">Mais recentes</option>
+                <option value="antigas" data-i18n="detail.sortOldest">Mais antigas</option>
+              </select>
+            </div>
+
+            <ul class="list-unstyled small text-white-50 mb-0 mt-1 gt-session-list" id="detail-session-history"></ul>
+
+            <nav class="d-none mt-2" id="detail-session-pagination" aria-label="Paginação do histórico">
+              <ul class="pagination pagination-sm gt-pagination justify-content-center mb-0"></ul>
+            </nav>
           </div>
 
           <div class="row g-3 mb-3">
@@ -503,8 +518,8 @@
           <hr class="border-secondary">
 
           <p class="small text-white-50 mb-2" data-i18n="detail.ratingByCategory">Avaliação por categoria</p>
-          <div class="row g-2 mb-3">
-            <div class="col-6 d-flex justify-content-between align-items-center">
+          <div class="row g-2 mb-3 gt-rating-grid">
+            <div class="col-12 col-sm-6 d-flex justify-content-between align-items-center">
               <span class="small" data-i18n="detail.graphics">Gráficos</span>
               <div class="gt-star-input" id="stars-graphics" data-score="0" role="radiogroup" aria-label="Nota de gráficos">
                 <i class="bi bi-star gt-star" data-value="1"></i>
@@ -514,7 +529,7 @@
                 <i class="bi bi-star gt-star" data-value="5"></i>
               </div>
             </div>
-            <div class="col-6 d-flex justify-content-between align-items-center">
+            <div class="col-12 col-sm-6 d-flex justify-content-between align-items-center">
               <span class="small" data-i18n="detail.sound">Som</span>
               <div class="gt-star-input" id="stars-sound" data-score="0" role="radiogroup" aria-label="Nota de som">
                 <i class="bi bi-star gt-star" data-value="1"></i>
@@ -524,7 +539,7 @@
                 <i class="bi bi-star gt-star" data-value="5"></i>
               </div>
             </div>
-            <div class="col-6 d-flex justify-content-between align-items-center">
+            <div class="col-12 col-sm-6 d-flex justify-content-between align-items-center">
               <span class="small" data-i18n="detail.gameplay">Jogabilidade</span>
               <div class="gt-star-input" id="stars-gameplay" data-score="0" role="radiogroup" aria-label="Nota de jogabilidade">
                 <i class="bi bi-star gt-star" data-value="1"></i>
@@ -534,7 +549,7 @@
                 <i class="bi bi-star gt-star" data-value="5"></i>
               </div>
             </div>
-            <div class="col-6 d-flex justify-content-between align-items-center">
+            <div class="col-12 col-sm-6 d-flex justify-content-between align-items-center">
               <span class="small" data-i18n="detail.difficulty">Dificuldade</span>
               <div class="gt-star-input" id="stars-difficulty" data-score="0" role="radiogroup" aria-label="Nota de dificuldade">
                 <i class="bi bi-star gt-star" data-value="1"></i>
@@ -569,11 +584,11 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/navbar.js?v=1787266920"></script>
-<script src="assets/js/youtube-player.js?v=1786920989"></script>
-<script src="assets/js/consoles.js?v=1786920989"></script>
-<script src="assets/js/genres.js?v=1786920989"></script>
-<script src="assets/js/dashboard.js?v=1787267240"></script>
+<script src="assets/js/navbar.js?v=1787303808"></script>
+<script src="assets/js/youtube-player.js?v=1787303808"></script>
+<script src="assets/js/consoles.js?v=1787303808"></script>
+<script src="assets/js/genres.js?v=1787303808"></script>
+<script src="assets/js/dashboard.js?v=1787303808"></script>
 
 </body>
 </html>
