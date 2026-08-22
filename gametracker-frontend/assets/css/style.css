@@ -752,28 +752,36 @@ body {
   }
 }
 
-/* Segunda linha do Explorar: "Visualização" fixo à esquerda, "Explorar"
-   sempre centralizado de verdade (grid de 3 colunas simétricas, o 3º espaço
-   vazio contrabalança o botão da esquerda) — funciona em qualquer largura. */
-.gt-explore-toolbar-row2 {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 0.5rem;
+/* Card de destaque da tela Explorar: precisa de position:relative pra
+   "Visualização" conseguir se ancorar no canto superior direito dele. */
+.gt-explore-hero {
+  position: relative;
 }
-.gt-explore-toolbar-row2 > .dropdown {
-  justify-self: start;
-}
-.gt-explore-toolbar-row2 > .btn-gt-primary {
-  justify-self: center;
+.gt-explore-viewmode-corner {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 2;
 }
 @media (max-width: 480px) {
-  /* Em telas bem estreitas, o texto "Visualização" some (fica só o ícone) pra
-     não espremer o botão "Explorar" no meio — a ação continua igual, só o
-     rótulo encolhe. */
-  .gt-explore-toolbar-row2 .dropdown .btn span {
+  /* Em telas bem estreitas, o texto "Visualização" some (fica só o ícone)
+     pra não brigar por espaço com o título centralizado logo abaixo. */
+  .gt-explore-viewmode-corner .btn span {
     display: none;
   }
+  .gt-explore-viewmode-corner {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+}
+
+/* Botão "Explorar": 20px de respiro em relação à linha de cima e ~30% maior
+   que o padrão (fonte, padding e altura mínima escalados na mesma proporção). */
+.gt-explore-btn {
+  margin-top: 20px;
+  font-size: 1.3rem;
+  padding: 0.65rem 2.3rem;
+  min-height: 3.25rem;
 }
 
 .gt-filtros-panel {
