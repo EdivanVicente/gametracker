@@ -163,6 +163,21 @@ def get_my_games(
         .order_by(models.UserGame.created_at.desc())
         .all()
     )
+    # Auto-cura de dados antigos: jogos que já tinham sessões com tempo
+    # registrado ANTES da soma automática existir nunca tiveram "horas
+    # jogadas" recalculado (só quem criava/editava uma sessão NOVA disparava
+    # o recálculo). Recalculando aqui também, toda vez que a lista é
+    # carregada, esses jogos antigos se autocorrigem sem precisar de nenhuma
+    # migração manual nem de mexer em mais nada — só abrir a tela já resolve.
+    precisa_commit = False
+    for user_game in jogos:
+        antes = user_game.hours_played
+        user_game.refresh_from_sessions()
+        if user_game.hours_played != antes:
+            precisa_commit = True
+    if precisa_commit:
+        db.commit()
+
     # Um mesmo Game pode ser compartilhado por vários UserGame (ex: o mesmo
     # jogo adicionado em plataformas diferentes) — o SQLAlchemy devolve a
     # MESMA instância Python nesses casos (identity map). Sem controlar isso,
@@ -397,6 +412,38 @@ def edit_play_session(
     if "duration_minutes" in data:
         sessao.duration_minutes = data["duration_minutes"]
 
+    user_game.refresh_from_sessions()
+    db.commit()
+    return _get_owned_user_game(db, user_game_id, current_user)
+
+
+@router.delete("/{user_game_id}/sessions/{session_id}", response_model=schemas.UserGameOut)
+def delete_play_session(
+    user_game_id: int,
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Apaga uma jogada registrada por engano (ex: cliques duplicados em "Jogar
+    novamente"). Mantém sempre pelo menos 1 jogada no histórico — se for a
+    única, pede pra editá-la em vez de apagar (apagar o jogo inteiro da
+    biblioteca é uma ação separada, no botão "Excluir" do card).
+    """
+    user_game = _get_owned_user_game(db, user_game_id, current_user)
+    sessao = next((s for s in user_game.sessions if s.id == session_id), None)
+    if not sessao:
+        raise HTTPException(status_code=404, detail="Jogada não encontrada.")
+
+    if len(user_game.sessions) <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Não é possível excluir a única jogada registrada. Edite-a ou remova o jogo da biblioteca.",
+        )
+
+    db.delete(sessao)
+    db.flush()
+    db.refresh(user_game)
     user_game.refresh_from_sessions()
     db.commit()
     return _get_owned_user_game(db, user_game_id, current_user)

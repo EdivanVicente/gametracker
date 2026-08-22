@@ -18,12 +18,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
   <!-- Design system próprio -->
-  <link rel="stylesheet" href="assets/css/style.css?v=1787345168">
-  <script src="assets/js/config.js?v=1787345168"></script>
-  <script src="assets/js/theme.js?v=1787345168"></script>
-  <script src="assets/js/i18n.js?v=1787345168"></script>
+  <link rel="stylesheet" href="assets/css/style.css?v=1787391387">
+  <script src="assets/js/config.js?v=1787391387"></script>
+  <script src="assets/js/theme.js?v=1787391387"></script>
+  <script src="assets/js/i18n.js?v=1787391387"></script>
 
-  <script src="assets/js/auth-check.js?v=1787345168"></script>
+  <script src="assets/js/auth-check.js?v=1787391387"></script>
 </head>
 <body>
 
@@ -147,7 +147,7 @@
               <i class="bi bi-search text-white-50"></i>
             </span>
             <input type="search" class="form-control border-0 border-start-0" id="filter-search"
-                   placeholder="Pesquise seus jogos" data-i18n-placeholder="toolbar.searchPlaceholder" style="border-left: none !important;">
+                   placeholder="Pesquise em seus jogos" data-i18n-placeholder="toolbar.searchPlaceholder" style="border-left: none !important;">
           </div>
         </div>
 
@@ -399,10 +399,8 @@
             </div>
             <div class="col-12">
               <p class="gt-detail-genre mb-2" id="detail-genre">—</p>
-              <div class="gt-description-wrapper" id="detail-description-wrapper">
-                <p class="small mb-1" id="detail-description">Sem descrição disponível.</p>
-              </div>
-              <button type="button" class="btn btn-link btn-sm p-0 mb-2 d-none" id="btn-toggle-description" data-i18n="detail.readMore">Saiba mais</button>
+              <p class="small mb-1" id="detail-description">Sem descrição disponível.</p>
+              <button type="button" class="btn btn-link btn-sm p-0 mb-2 d-none" id="btn-toggle-description" data-i18n="detail.readMore">Ler mais</button>
               <div class="d-flex flex-wrap gap-1 mb-2" id="detail-platforms-badges"></div>
               <p class="small text-white-50 mb-0" id="detail-multiplayer-info"></p>
             </div>
@@ -421,7 +419,7 @@
             </select>
             <input type="text" class="form-control mt-2 d-none" id="detail-platform-custom" placeholder="Digite o nome da plataforma" maxlength="100">
           </div>
-          <div class="row g-3 mb-3">
+          <div class="row g-3 mb-3" id="detail-first-session-dates-wrapper">
             <div class="col-6">
               <label for="detail-start-date" class="form-label small text-white-50" data-i18n="detail.startDate">Data de início</label>
               <input type="date" class="form-control" id="detail-start-date">
@@ -430,10 +428,10 @@
               <label for="detail-end-date" class="form-label small text-white-50" data-i18n="detail.endDate">Data de finalização</label>
               <input type="date" class="form-control" id="detail-end-date">
             </div>
+            <p class="small text-white-50 mb-0" data-i18n="detail.datesFromSessionsHint">
+              Editar aqui corrige a jogada mais antiga (início) ou a jogada atual (fim). Pra corrigir uma jogada específica do histórico, use o botão de editar dela mais abaixo.
+            </p>
           </div>
-          <p class="small text-white-50 mb-3" style="margin-top: -0.5rem;" data-i18n="detail.datesFromSessionsHint">
-            Editar aqui corrige a jogada mais antiga (início) ou a jogada atual (fim). Pra corrigir uma jogada específica do histórico, use o botão de editar dela mais abaixo.
-          </p>
 
           <div class="mb-3 d-none" id="detail-duration-wrapper">
             <div class="gt-duration-badge">
@@ -475,6 +473,9 @@
               <div class="d-flex gap-2 mt-2">
                 <button type="button" class="btn btn-gt-primary btn-sm" id="btn-confirm-session" data-i18n="common.confirm">Confirmar</button>
                 <button type="button" class="btn btn-gt-outline btn-sm" id="btn-cancel-session" data-i18n="common.cancel">Cancelar</button>
+                <button type="button" class="btn btn-outline-danger btn-sm ms-auto d-none" id="btn-delete-session" data-i18n="detail.deleteSession">
+                  <i class="bi bi-trash3 me-1"></i>Excluir jogada
+                </button>
               </div>
             </div>
 
@@ -584,11 +585,11 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="assets/js/navbar.js?v=1787345168"></script>
-<script src="assets/js/youtube-player.js?v=1787345168"></script>
-<script src="assets/js/consoles.js?v=1787345168"></script>
-<script src="assets/js/genres.js?v=1787345168"></script>
-<script src="assets/js/dashboard.js?v=1787345168"></script>
+<script src="assets/js/navbar.js?v=1787391387"></script>
+<script src="assets/js/youtube-player.js?v=1787391387"></script>
+<script src="assets/js/consoles.js?v=1787391387"></script>
+<script src="assets/js/genres.js?v=1787391387"></script>
+<script src="assets/js/dashboard.js?v=1787391387"></script>
 
 </body>
 </html>

@@ -668,6 +668,12 @@ body {
   background-color: var(--gt-surface-raised);
   color: var(--gt-text);
 }
+/* Sem isso, o placeholder herdava um cinza-claro padrão do navegador, feito
+   pra fundo branco — quase invisível em cima do fundo escuro deste campo. */
+.gt-toolbar .form-control::placeholder {
+  color: var(--gt-text-muted);
+  opacity: 1;
+}
 .gt-toolbar .form-select option {
   background-color: var(--gt-surface-raised);
 }
@@ -743,6 +749,30 @@ body {
     padding-bottom: 0.2rem;
     font-size: 0.85rem;
     line-height: 1.2;
+  }
+}
+
+/* Segunda linha do Explorar: "Visualização" fixo à esquerda, "Explorar"
+   sempre centralizado de verdade (grid de 3 colunas simétricas, o 3º espaço
+   vazio contrabalança o botão da esquerda) — funciona em qualquer largura. */
+.gt-explore-toolbar-row2 {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+.gt-explore-toolbar-row2 > .dropdown {
+  justify-self: start;
+}
+.gt-explore-toolbar-row2 > .btn-gt-primary {
+  justify-self: center;
+}
+@media (max-width: 480px) {
+  /* Em telas bem estreitas, o texto "Visualização" some (fica só o ícone) pra
+     não espremer o botão "Explorar" no meio — a ação continua igual, só o
+     rótulo encolhe. */
+  .gt-explore-toolbar-row2 .dropdown .btn span {
+    display: none;
   }
 }
 
@@ -869,24 +899,24 @@ body {
    no light mode, mantemos o ícone preto original do navegador (bom contraste
    contra o fundo claro). Cobre também estado hover/focus do próprio ícone. */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.1);
-  opacity: 0.85;
+  filter: invert(1) brightness(1.7) !important;
+  opacity: 0.9 !important;
   cursor: pointer;
   border-radius: 4px;
   transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 input[type="date"]::-webkit-calendar-picker-indicator:hover,
 input[type="date"]:focus::-webkit-calendar-picker-indicator {
-  opacity: 1;
+  opacity: 1 !important;
   background-color: rgba(255, 255, 255, 0.12);
 }
 :root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: none;
-  opacity: 0.75;
+  filter: none !important;
+  opacity: 0.75 !important;
 }
 :root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator:hover,
 :root[data-theme="light"] input[type="date"]:focus::-webkit-calendar-picker-indicator {
-  opacity: 1;
+  opacity: 1 !important;
   background-color: rgba(0, 0, 0, 0.06);
 }
 /* Firefox: usa a própria cor do texto do campo pro ícone, então basta garantir
@@ -898,36 +928,21 @@ input[type="date"] {
   color-scheme: light;
 }
 
+/* Rede de segurança geral: qualquer campo de texto do site (mesmo fora do
+   .gt-toolbar) usa uma cor de placeholder legível nos dois temas, em vez do
+   cinza padrão do navegador — evita esse mesmo problema aparecer de novo em
+   outro lugar. */
+.form-control::placeholder,
+textarea::placeholder {
+  color: var(--gt-text-muted);
+  opacity: 1;
+}
+
 /* Espaço entre a área de pesquisa (Explorar) e as sugestões abaixo dela —
    ~100px em telas largas, encolhendo proporcionalmente em telas pequenas
    pra não criar um vão exagerado no celular. */
 .gt-explore-suggestions {
   margin-top: clamp(24px, 8vw, 100px);
-}
-
-.gt-description-wrapper {
-  max-height: 4.6em;
-  overflow: hidden;
-  position: relative;
-  transition: max-height 0.25s ease;
-  line-height: 1.15rem;
-}
-.gt-description-wrapper::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1.4em;
-  background: linear-gradient(to bottom, transparent, var(--gt-surface) 85%);
-  pointer-events: none;
-}
-.gt-description-wrapper.gt-expanded {
-  max-height: 60vh;
-  overflow-y: auto;
-}
-.gt-description-wrapper.gt-expanded::after {
-  display: none;
 }
 
 /* Histórico de jogadas: cada linha em grid, pra hora/duração ficarem
