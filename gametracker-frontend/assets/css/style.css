@@ -730,6 +730,22 @@ body {
   }
 }
 
+@media (max-width: 767.98px) {
+  /* No mobile essa barra quebra em 2 linhas (busca em cima, botões de filtro
+     embaixo). Deixa a segunda linha mais compacta (~metade da altura) e com
+     uma respiração de 15px em relação à busca, em vez de ficar colada. */
+  .gt-toolbar-row > .gt-toolbar-fixed,
+  .gt-toolbar-row > .dropdown.gt-toolbar-fixed {
+    margin-top: 15px;
+  }
+  .gt-toolbar-fixed .btn {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+}
+
 .gt-filtros-panel {
   background-color: var(--gt-surface);
 }

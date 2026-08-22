@@ -863,9 +863,51 @@ function abrirDetalhe(userGameId) {
     definirEstrelas(document.getElementById('stars-gameplay'), rating.gameplay_score || 0);
     definirEstrelas(document.getElementById('stars-difficulty'), rating.difficulty_score || 0);
 
+    // Guarda uma "foto" do estado logo após preencher todos os campos, pra
+    // depois o botão Salvar conseguir saber se o usuário realmente mudou algo
+    // (ver salvarDetalhe / lerEstadoAtualDoFormulario).
+    _detalheEstadoInicial = lerEstadoAtualDoFormulario();
+
     const modalElement = document.getElementById('modalGameDetail');
     const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
     modal.show();
+}
+
+let _detalheEstadoInicial = null;
+
+// Lê o estado atual de todos os campos editáveis do formulário de detalhe, no
+// mesmo "formato" usado tanto pra guardar o snapshot inicial (abrirDetalhe)
+// quanto pra comparar na hora de salvar (salvarDetalhe) — assim os dois lados
+// da comparação vêm sempre do mesmo código, sem risco de formatar diferente
+// (ex: "" vs null) e gerar um falso positivo de "mudou algo".
+function lerEstadoAtualDoFormulario() {
+    const platformSelectValue = document.getElementById('detail-platform').value;
+    const platformFinal = platformSelectValue === 'Outro'
+        ? (document.getElementById('detail-platform-custom').value.trim() || 'Outro')
+        : platformSelectValue;
+
+    return {
+        platform: platformFinal || null,
+        is_favorite: document.getElementById('detail-favorite').checked,
+        graphics_score: Number(document.getElementById('stars-graphics').dataset.score) || 0,
+        sound_score: Number(document.getElementById('stars-sound').dataset.score) || 0,
+        gameplay_score: Number(document.getElementById('stars-gameplay').dataset.score) || 0,
+        difficulty_score: Number(document.getElementById('stars-difficulty').dataset.score) || 0,
+        // Horas jogadas: compara pelo valor em MINUTOS (inteiro), não pelo texto
+        // "hh:mm" — assim "1:19" digitado de novo não conta como mudança, e
+        // pequenas diferenças de formatação (ex: "1:9" vs "1:09") também não.
+        hours_played_minutos: hhmmParaMinutos(document.getElementById('detail-hours-played').value),
+        start_date: document.getElementById('detail-start-date').value || null,
+        end_date: document.getElementById('detail-end-date').value || null,
+    };
+}
+
+// Compara dois "estados" campo a campo. Retorna true se houver QUALQUER
+// diferença real (ignorando diferenças cosméticas de tipo/formatação, já que
+// lerEstadoAtualDoFormulario normaliza tudo pro mesmo formato dos dois lados).
+function estadoDoFormularioMudou(a, b) {
+    if (!a || !b) return true; // sem snapshot pra comparar -> assume que mudou, por segurança
+    return Object.keys(a).some((chave) => a[chave] !== b[chave]);
 }
 
 async function carregarVideoDoJogo(titulo, videoWrapper) {
@@ -884,6 +926,15 @@ async function carregarVideoDoJogo(titulo, videoWrapper) {
 
 async function salvarDetalhe() {
     if (!jogoEmEdicaoId) return;
+
+    // Verificação real de "mudou algo": se absolutamente nada foi alterado
+    // desde que o modal abriu, não faz sentido chamar a API nem mostrar
+    // qualquer mensagem como se uma alteração tivesse sido salva — só fecha.
+    const estadoAtual = lerEstadoAtualDoFormulario();
+    if (!estadoDoFormularioMudou(_detalheEstadoInicial, estadoAtual)) {
+        bootstrap.Modal.getInstance(document.getElementById('modalGameDetail'))?.hide();
+        return;
+    }
 
     const platformSelectValue = document.getElementById('detail-platform').value;
     const platformFinal = platformSelectValue === 'Outro'
@@ -910,12 +961,22 @@ async function salvarDetalhe() {
     const novaDataFim = document.getElementById('detail-end-date').value || null;
     const sessoesOrdenadas = (item?.sessions || []).slice().sort((a, b) => (a.started_at < b.started_at ? -1 : 1));
 
-    if (sessoesOrdenadas.length) {
+    // IMPORTANTE: a comparação "mudou ou não" é feita contra item.start_date /
+    // item.end_date — os MESMOS valores que preencheram esses campos quando o
+    // modal abriu (abrirDetalhe). Comparar contra uma sessão "recalculada" aqui
+    // (primeira/ultima) é arriscado: se a ordenação der empate (duas jogadas na
+    // mesma data, por exemplo) o valor recalculado pode não bater exatamente
+    // com o que está no campo, mesmo sem o usuário ter tocado em nada — e isso
+    // disparava um PUT desnecessário que às vezes falhava com "data de
+    // finalização anterior ao início" do nada. Comparando contra os valores que
+    // já sabemos que estão certos (os mesmos que vieram da API), isso não pode
+    // mais acontecer.
+    const inicioMudou = novaDataInicio !== (item?.start_date || null);
+    const fimMudou = novaDataFim !== (item?.end_date || null);
+
+    if (sessoesOrdenadas.length && (inicioMudou || fimMudou)) {
         const primeira = sessoesOrdenadas[0];
         const ultima = sessoesOrdenadas[sessoesOrdenadas.length - 1];
-
-        const inicioMudou = novaDataInicio && novaDataInicio !== primeira.started_at;
-        const fimMudou = novaDataFim !== (ultima.finished_at || null) && (novaDataFim || ultima.finished_at);
 
         // IMPORTANTE: quando início e fim mudam ao mesmo tempo NA MESMA sessão
         // (caso comum quando só existe 1 sessão), as duas mudanças precisam ir
@@ -1213,6 +1274,11 @@ async function confirmarFormularioSessao() {
         document.getElementById('detail-play-count').textContent = atualizado.play_count;
         document.getElementById('detail-start-date').value = atualizado.start_date || '';
         document.getElementById('detail-end-date').value = atualizado.end_date || '';
+        // Reflete o total de horas recém-recalculado (soma de todas as jogadas
+        // com tempo registrado) — sem isso, o campo ficava com o valor antigo
+        // até o modal ser reaberto, e um "Salvar" nesse meio-tempo sobrescrevia
+        // a soma correta com esse valor desatualizado.
+        document.getElementById('detail-hours-played').value = decimalParaHHMM(atualizado.hours_played);
         const duracaoWrapper = document.getElementById('detail-duration-wrapper');
         const duracao = obterTextoDuracao(atualizado);
         if (duracao) {

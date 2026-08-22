@@ -438,6 +438,16 @@ def update_game(
             if field in data:
                 setattr(user_game.rating, field, data[field])
 
+    # IMPORTANTE: se existir alguma jogada no histórico com tempo (duration_minutes)
+    # preenchido, a SOMA dessas jogadas é sempre a fonte da verdade pra "horas
+    # jogadas" — sobrepõe um valor manual enviado aqui. Isso existe porque a tela
+    # de detalhe só atualiza esse campo quando o modal é reaberto; sem essa
+    # reafirmação, um valor antigo (de antes de editar uma sessão) poderia ser
+    # salvo por cima da soma correta ao clicar em "Salvar" logo após editar uma
+    # jogada. Quando NENHUMA sessão tem tempo registrado, o valor manual acima
+    # é respeitado normalmente (refresh_from_sessions não mexe nele nesse caso).
+    user_game.refresh_from_sessions()
+
     db.commit()
     return _get_owned_user_game(db, user_game_id, current_user)
 
