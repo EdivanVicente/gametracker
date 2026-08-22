@@ -655,6 +655,7 @@ function setupDetailModal() {
     document.getElementById('btn-delete-detail')?.addEventListener('click', excluirJogoAtual);
     document.getElementById('btn-confirm-session')?.addEventListener('click', confirmarFormularioSessao);
     document.getElementById('btn-cancel-session')?.addEventListener('click', fecharFormularioSessao);
+    document.getElementById('btn-delete-session')?.addEventListener('click', excluirSessaoAtual);
     document.getElementById('btn-fetch-duration')?.addEventListener('click', buscarDuracaoAutomatica);
 
     document.getElementById('detail-platform')?.addEventListener('change', (e) => {
@@ -746,36 +747,39 @@ function definirEstrelas(container, nota) {
     });
 }
 
-// Reduz uma descrição longa para no máximo ~50 palavras, terminando com reticências.
+const LIMITE_PALAVRAS_DESCRICAO = 70;
+
+// Corta a descrição em ~70 palavras — se o texto original tiver mais que
+// isso, guarda o texto completo pra o botão "Ler mais" poder exibir depois.
 function truncarDescricao(texto) {
-    if (!texto) return 'Sem descrição disponível para este jogo.';
-    return texto;
+    if (!texto) return { resumo: 'Sem descrição disponível para este jogo.', completo: null };
+    const palavras = texto.trim().split(/\s+/);
+    if (palavras.length <= LIMITE_PALAVRAS_DESCRICAO) {
+        return { resumo: texto, completo: null };
+    }
+    return {
+        resumo: palavras.slice(0, LIMITE_PALAVRAS_DESCRICAO).join(' ') + '…',
+        completo: texto,
+    };
 }
 
-// Depois de preencher a descrição, verifica se o texto realmente ultrapassa
-// o espaço reservado (o "resumo" mantém sempre o mesmo tamanho) — só então
-// mostra o botão "Saiba mais". Precisa rodar depois do layout do modal estar
-// pronto (por isso o duplo requestAnimationFrame), senão scrollHeight/clientHeight
-// podem vir zerados enquanto o modal ainda está sendo exibido.
-function atualizarBotaoSaibaMais() {
-    const wrapper = document.getElementById('detail-description-wrapper');
+// Mostra o botão "Ler mais" só quando o texto realmente foi cortado (mais de
+// 70 palavras). Ao clicar, troca pro texto completo e o botão some — não tem
+// necessidade de "recolher" de novo, só de ler o restante uma vez.
+function configurarBotaoLerMais(descricaoCompleta) {
+    const descEl = document.getElementById('detail-description');
     const btn = document.getElementById('btn-toggle-description');
-    wrapper.classList.remove('gt-expanded');
-    btn.textContent = GT_I18N.t('detail.readMore');
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            const transbordando = wrapper.scrollHeight > wrapper.clientHeight + 2;
-            btn.classList.toggle('d-none', !transbordando);
-        });
-    });
-}
 
-document.getElementById('btn-toggle-description')?.addEventListener('click', () => {
-    const wrapper = document.getElementById('detail-description-wrapper');
-    const btn = document.getElementById('btn-toggle-description');
-    const expandido = wrapper.classList.toggle('gt-expanded');
-    btn.textContent = expandido ? GT_I18N.t('detail.readLess') : GT_I18N.t('detail.readMore');
-});
+    if (!descricaoCompleta) {
+        btn.classList.add('d-none');
+        return;
+    }
+    btn.classList.remove('d-none');
+    btn.onclick = () => {
+        descEl.textContent = descricaoCompleta;
+        btn.classList.add('d-none');
+    };
+}
 
 function abrirDetalhe(userGameId) {
     const item = meusJogos.find(g => g.id === userGameId);
@@ -794,8 +798,9 @@ function abrirDetalhe(userGameId) {
         : '<i class="bi bi-controller"></i>';
 
     document.getElementById('detail-genre').textContent = gtTranslateGenre(jogo.genre) || GT_I18N.t('detail.noGenre');
-    document.getElementById('detail-description').textContent = truncarDescricao(jogo.description);
-    atualizarBotaoSaibaMais();
+    const { resumo, completo } = truncarDescricao(jogo.description);
+    document.getElementById('detail-description').textContent = resumo;
+    configurarBotaoLerMais(completo);
 
     const badgesWrapper = document.getElementById('detail-platforms-badges');
     const plataformas = (jogo.platforms || '').split(',').map(p => p.trim()).filter(Boolean);
@@ -839,6 +844,11 @@ function abrirDetalhe(userGameId) {
     inputInicio.value = item.start_date || '';
     inputFim.value = item.end_date || '';
     document.getElementById('detail-favorite').checked = !!item.is_favorite;
+    // Os campos de data só aparecem enquanto for a primeira (e única) jogada
+    // registrada — depois disso, o histórico abaixo (com o botão de editar
+    // por jogada) já cobre isso, e o bloco só volta a aparecer temporariamente
+    // durante o fluxo de "Jogar novamente" (ver abrirFormularioSessao).
+    atualizarVisibilidadeDatasPrimeiraJogada(item);
 
     // --- Contador de dias jogando/concluído ---
     const duracaoWrapper = document.getElementById('detail-duration-wrapper');
@@ -1162,9 +1172,25 @@ document.getElementById('detail-session-sort')?.addEventListener('change', (e) =
 let _sessaoFormModo = null;   // 'start' | 'finish' | 'edit'
 let _sessaoFormId = null;     // id da sessão (usado em 'finish'/'edit')
 
+// Mostra o bloco de "Data de início/fim" só quando for a primeira (e única)
+// jogada registrada — some depois disso, e só volta durante o fluxo de
+// "Jogar novamente" (chamado manualmente em abrirFormularioSessao/fechar).
+function atualizarVisibilidadeDatasPrimeiraJogada(item) {
+    const wrapper = document.getElementById('detail-first-session-dates-wrapper');
+    const ehPrimeiraJogada = (item?.play_count || 1) <= 1;
+    wrapper.classList.toggle('d-none', !ehPrimeiraJogada);
+}
+
 function abrirFormularioSessao(modo, sessao = null) {
     _sessaoFormModo = modo;
     _sessaoFormId = sessao ? sessao.id : null;
+
+    // "Jogar novamente" reexibe o bloco de datas temporariamente, mesmo que
+    // já não seja mais a primeira jogada — assim dá pra conferir/ajustar a
+    // data da nova jogada que está sendo criada.
+    if (modo === 'start') {
+        document.getElementById('detail-first-session-dates-wrapper').classList.remove('d-none');
+    }
 
     const form = document.getElementById('detail-session-form');
     const label = document.getElementById('detail-session-form-label');
@@ -1211,7 +1237,49 @@ function abrirFormularioSessao(modo, sessao = null) {
         duracaoInput.value = sessao.duration_minutes ? minutosParaHHMM(sessao.duration_minutes) : '';
     }
 
+    // O botão de excluir só faz sentido no modo "editar" (corrigir uma jogada
+    // já existente no histórico) — não aparece ao criar ("start") ou finalizar
+    // ("finish") uma jogada nova, já que ainda não há o que excluir.
+    document.getElementById('btn-delete-session').classList.toggle('d-none', modo !== 'edit');
+
     form.classList.remove('d-none');
+}
+
+async function excluirSessaoAtual() {
+    if (!jogoEmEdicaoId || !_sessaoFormId) return;
+    if (!confirm(GT_I18N.t('detail.confirmDeleteSession'))) return;
+
+    try {
+        const response = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${_sessaoFormId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert(data.detail || GT_I18N.t('detail.sessionError'));
+            return;
+        }
+        const atualizado = await response.json();
+        document.getElementById('detail-play-count').textContent = atualizado.play_count;
+        document.getElementById('detail-start-date').value = atualizado.start_date || '';
+        document.getElementById('detail-end-date').value = atualizado.end_date || '';
+        document.getElementById('detail-hours-played').value = decimalParaHHMM(atualizado.hours_played);
+        const duracaoWrapper = document.getElementById('detail-duration-wrapper');
+        const duracao = obterTextoDuracao(atualizado);
+        if (duracao) {
+            document.getElementById('detail-duration-title').textContent = duracao.titulo;
+            document.getElementById('detail-duration-subtitle').textContent = duracao.subtitulo || '';
+            duracaoWrapper.classList.remove('d-none');
+        } else {
+            duracaoWrapper.classList.add('d-none');
+        }
+        renderizarHistoricoJogadas(atualizado);
+        const idx = meusJogos.findIndex(g => g.id === jogoEmEdicaoId);
+        if (idx !== -1) meusJogos[idx] = atualizado;
+        fecharFormularioSessao();
+        aplicarFiltros();
+    } catch (error) {
+        console.error('Erro ao excluir jogada:', error);
+    }
 }
 
 function fecharFormularioSessao() {
@@ -1227,6 +1295,12 @@ function fecharFormularioSessao() {
     fimInput.min = '';
     fimInput.max = '';
     duracaoInput.value = '';
+
+    // Se o "Jogar novamente" foi cancelado (ou o formulário fechado por
+    // qualquer outro motivo) e já existe mais de uma jogada no histórico, o
+    // bloco de datas volta a ficar escondido.
+    const item = meusJogos.find(g => g.id === jogoEmEdicaoId);
+    if (item) atualizarVisibilidadeDatasPrimeiraJogada(item);
 
     _sessaoFormModo = null;
     _sessaoFormId = null;
