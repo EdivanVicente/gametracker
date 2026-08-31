@@ -29,6 +29,7 @@ from app.database import Base
 
 
 class GameStatus(str, enum.Enum):
+    WISH_TO_PLAY = "wish_to_play"
     PLAYING = "playing"
     FINISHED = "finished"
 

@@ -4,7 +4,7 @@ Schemas Pydantic — contratos de entrada e saída da API.
 
 import re
 from datetime import datetime, date
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator, ConfigDict
 
 # Regex exigida pela especificação:
 # mínimo 8 caracteres, 1 minúscula, 1 maiúscula, 1 número, 1 caractere especial (@$!%*?&)
@@ -203,19 +203,54 @@ class RatingOut(BaseModel):
 
 # --- Minha Biblioteca (UserGame) ---
 
+INITIAL_STATUS_OPTIONS = {"wish_to_play", "playing", "finished"}
+
+
 class UserGameCreate(BaseModel):
     """Payload para adicionar um jogo (já pesquisado via /games/search) à biblioteca."""
     external_id: str
     platform: str | None = None
+
+    # Status escolhido no momento de adicionar — define o que mais é exigido:
+    #   "wish_to_play" -> nenhuma data, o jogo só entra na lista de desejos.
+    #   "playing"      -> exige (ou assume hoje) só a data de início.
+    #   "finished"     -> exige data de início E de finalização.
+    status: str = Field(default="playing")
+
     # Data em que o usuário realmente começou a jogar (pode ser retroativa,
     # útil pra quem está catalogando jogos que já começou há tempos).
-    # Nunca pode ser no futuro. Se omitida, assume hoje.
+    # Nunca pode ser no futuro. Ignorado quando status = "wish_to_play".
     started_at: date | None = None
 
-    @field_validator("started_at")
+    # Só usado quando status = "finished".
+    finished_at: date | None = None
+
+    # Horas jogadas — em HORAS (float) aqui; só faz sentido junto com "finished"
+    # (pra quem já terminou o jogo antes de começar a usar o app e já sabe o
+    # total). Opcional mesmo nesse caso.
+    hours_played: float | None = Field(default=None, ge=0)
+
+    @field_validator("status")
+    @classmethod
+    def _status_valido(cls, value: str) -> str:
+        if value not in INITIAL_STATUS_OPTIONS:
+            raise ValueError(f"Status inicial inválido. Use um de: {', '.join(sorted(INITIAL_STATUS_OPTIONS))}.")
+        return value
+
+    @field_validator("started_at", "finished_at")
     @classmethod
     def _sem_data_futura(cls, value):
         return _validar_nao_e_data_futura(value)
+
+    @model_validator(mode="after")
+    def _validar_combinacao_status_datas(self):
+        if self.status == "finished":
+            if not self.finished_at:
+                raise ValueError('Status "finished" exige a data de finalização.')
+            inicio = self.started_at or date.today()
+            if self.finished_at < inicio:
+                raise ValueError("A data de finalização não pode ser anterior à data de início.")
+        return self
 
 
 class UserGameUpdate(BaseModel):

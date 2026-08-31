@@ -15,6 +15,7 @@
   --gt-amber: #ffb13c;
   --gt-success: #3ddc84;
   --gt-danger: #ff5c7a;
+  --gt-info: #6ea8fe;
   --gt-text: #e8eaed;
   --gt-text-muted: #8b93a1;
 
@@ -38,6 +39,7 @@
   --gt-amber: #b8790a;
   --gt-success: #17984f;
   --gt-danger: #d6335a;
+  --gt-info: #2f6fed;
   --gt-text: #1a1d24;
   --gt-text-muted: #5b6472;
 }
@@ -358,6 +360,7 @@ body {
 .gt-hud-value.is-playing { color: var(--gt-amber); }
 .gt-hud-value.is-finished { color: var(--gt-success); }
 .gt-hud-value.is-favorite { color: var(--gt-accent); }
+.gt-hud-value.is-wishlist { color: var(--gt-info); }
 
 /* Seção de informações do jogo no modal de detalhe */
 .gt-detail-cover {
@@ -591,6 +594,11 @@ body {
   background-color: rgba(61, 220, 132, 0.15);
   color: var(--gt-success);
   border: 1px solid rgba(61, 220, 132, 0.4);
+}
+.gt-card-status.is-wishlist {
+  background-color: rgba(110, 168, 254, 0.15);
+  color: var(--gt-info);
+  border: 1px solid rgba(110, 168, 254, 0.4);
 }
 
 .gt-card-favorite {

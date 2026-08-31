@@ -202,10 +202,16 @@ async def add_game(
     """
     Adiciona um jogo (encontrado via /games/search) à biblioteca do usuário logado.
 
-    Replay: se o usuário já tem esse mesmo jogo cadastrado na mesma plataforma,
-    NÃO criamos um card duplicado — em vez disso abrimos uma nova jogada (sessão
-    "em andamento", sem data de término) e incrementamos `play_count`. O status
-    do card volta para "Em andamento" até essa jogada ser finalizada.
+    O comportamento depende do `status` escolhido no momento de adicionar:
+      - "wish_to_play": entra só na lista de desejos, sem nenhuma sessão/data.
+      - "playing": cria a 1ª jogada em andamento (com a data de início).
+      - "finished": cria a 1ª jogada já com início E fim registrados.
+
+    Replay: se o usuário já tem esse mesmo jogo cadastrado na mesma plataforma
+    (e ele já tinha pelo menos uma jogada, ou seja, não estava só na wishlist),
+    NÃO criamos um card duplicado — abrimos uma nova jogada e incrementamos
+    `play_count`. Se o jogo já existente ainda estava na wishlist (0 jogadas),
+    isso é tratado como "começar a jogar" — não um replay.
     """
     game, plataforma_sugerida = await _get_or_create_game(db, payload.external_id)
     plataforma_final = payload.platform or plataforma_sugerida
@@ -221,17 +227,45 @@ async def add_game(
         .first()
     )
     if existente:
+        if payload.status == "wish_to_play":
+            # Já está na biblioteca (nem que seja só na wishlist) — não faz
+            # sentido "adicionar de novo" como desejo; devolve como está.
+            return _get_owned_user_game(db, existente.id, current_user)
+
         db.add(models.PlaySession(
             user_game_id=existente.id,
             played_at=data_inicio,
             started_at=data_inicio,
-            finished_at=None,
+            finished_at=payload.finished_at,
+            duration_minutes=round(payload.hours_played * 60) if payload.hours_played is not None else None,
         ))
         db.flush()
         db.refresh(existente)
         existente.refresh_from_sessions()
         db.commit()
         return _get_owned_user_game(db, existente.id, current_user)
+
+    if payload.status == "wish_to_play":
+        user_game = models.UserGame(
+            user_id=current_user.id,
+            game_id=game.id,
+            platform=plataforma_final,
+            status=models.GameStatus.WISH_TO_PLAY,
+            play_count=0,  # ainda não foi jogado nenhuma vez
+        )
+        db.add(user_game)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este jogo já está na sua biblioteca nessa plataforma.",
+            )
+        db.refresh(user_game)
+        # Duração estimada (HowLongToBeat) é útil até pra quem ainda não começou.
+        await _preencher_duracao_automatica(db, user_game)
+        return _get_owned_user_game(db, user_game.id, current_user)
 
     user_game = models.UserGame(
         user_id=current_user.id,
@@ -250,12 +284,14 @@ async def add_game(
         )
 
     db.refresh(user_game)
-    # A primeira jogada (data de criação do card) também entra no histórico, "em andamento".
+    # A primeira jogada (data de criação do card) também entra no histórico —
+    # já finalizada se o status escolhido foi "finished", em andamento se foi "playing".
     db.add(models.PlaySession(
         user_game_id=user_game.id,
         played_at=data_inicio,
         started_at=data_inicio,
-        finished_at=None,
+        finished_at=payload.finished_at,  # None quando status == "playing"
+        duration_minutes=round(payload.hours_played * 60) if payload.hours_played is not None else None,
     ))
     db.flush()
     db.refresh(user_game)

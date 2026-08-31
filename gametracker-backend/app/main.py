@@ -10,6 +10,7 @@ from sqlalchemy import inspect, text
 
 from app.core.config import settings
 from app.database import Base, engine, DATABASE_URL_RESOLVIDA
+from app import models
 from app.routers import auth, discovery, games, social, search
 
 logger = logging.getLogger("gametracker.migrations")
@@ -26,12 +27,33 @@ Base.metadata.create_all(bind=engine)
 
 def _run_light_migrations() -> None:
     """
-    Migração leve para bancos SQLite já existentes de versões anteriores do projeto:
-    adiciona colunas novas nas tabelas `users` e `games` caso ainda não existam.
-    `Base.metadata.create_all` só cria tabelas novas, não adiciona colunas em
-    tabelas já existentes — por isso esse passo extra é necessário.
+    Migração leve para bancos já existentes de versões anteriores do projeto:
+    adiciona colunas/valores novos caso ainda não existam. `Base.metadata.create_all`
+    só cria tabelas novas, não adiciona colunas em tabelas já existentes — por
+    isso esse passo extra é necessário.
+
+    IMPORTANTE: todo passo aqui é estritamente ADITIVO (nunca remove/renomeia
+    coluna, nunca apaga dado) — sempre checa antes se já existe, então rodar
+    isso de novo (ou contra um banco que já tem tudo) nunca faz nada.
     """
     inspector = inspect(engine)
+
+    # No Postgres, o SQLAlchemy Enum(GameStatus) vira um TYPE nativo — adicionar
+    # um valor novo ("wish_to_play") ao enum exige um ALTER TYPE explícito, algo
+    # que o SQLite nem precisa (lá é só texto). Roda só se estiver no Postgres,
+    # e só se o valor ainda não existir — sem isso, quem já tem o banco em
+    # produção continuaria preso no enum antigo (2 valores) pra sempre.
+    if engine.dialect.name == "postgresql":
+        try:
+            with engine.begin() as conn:
+                nome_tipo = models.UserGame.__table__.c.status.type.name
+                conn.execute(text(f"ALTER TYPE {nome_tipo} ADD VALUE IF NOT EXISTS 'wish_to_play'"))
+        except Exception:
+            logger.exception(
+                "Migração: não consegui adicionar 'wish_to_play' ao enum de status no Postgres "
+                "(pode já existir, ou o nome do tipo pode ser outro — confira manualmente se "
+                "a categoria \"Próximos Jogos\" não aparecer)."
+            )
 
     with engine.begin() as conn:
         if "users" in inspector.get_table_names():

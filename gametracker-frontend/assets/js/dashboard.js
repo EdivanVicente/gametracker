@@ -237,7 +237,7 @@ function aplicarFiltroDaUrl() {
     const filtroStatus = document.getElementById('filter-status');
     const btnFavoritos = document.getElementById('btn-favorites-only');
 
-    if (filtro === 'playing' || filtro === 'finished') {
+    if (filtro === 'playing' || filtro === 'finished' || filtro === 'wish_to_play') {
         filtroStatus.value = filtro;
     } else if (filtro === 'favoritos') {
         btnFavoritos.classList.add('is-active');
@@ -268,11 +268,13 @@ async function carregarMeusJogos() {
 // --- Função: Atualiza os contadores do HUD com números reais ---
 function atualizarHud(jogos) {
     const total = jogos.length;
+    const querJogar = jogos.filter(g => g.status === 'wish_to_play').length;
     const emAndamento = jogos.filter(g => g.status === 'playing').length;
     const finalizados = jogos.filter(g => g.status === 'finished').length;
     const favoritos = jogos.filter(g => g.is_favorite).length;
 
     document.getElementById('hud-total').textContent = total;
+    document.getElementById('hud-wishlist').textContent = querJogar;
     document.getElementById('hud-playing').textContent = emAndamento;
     document.getElementById('hud-finished').textContent = finalizados;
     document.getElementById('hud-favorites').textContent = favoritos;
@@ -304,20 +306,32 @@ function renderGrid(jogos) {
     }
 }
 
+// Traduz o status de um item pra {classe CSS, texto} do badge — usado nos
+// dois modos de visualização (cards e lista) pra não duplicar essa lógica.
+function obterBadgeStatus(item) {
+    if (item.status === 'wish_to_play') {
+        return { classe: 'is-wishlist', texto: GT_I18N.t('status.wishToPlay') };
+    }
+    if (item.status === 'playing') {
+        return { classe: 'is-playing', texto: GT_I18N.t('status.playing') };
+    }
+    return { classe: 'is-finished', texto: GT_I18N.t('status.finished') };
+}
+
 function renderGridCards(jogos, grid) {
     const colClass = CLASSES_POR_MODO[modoVisualizacao] || CLASSES_POR_MODO.medium;
 
     grid.innerHTML = jogos.map(item => {
         const jogo = item.game;
         const rating = item.rating || {};
-        const isPlaying = item.status === 'playing';
+        const badge = obterBadgeStatus(item);
         const duracao = obterTextoDuracao(item);
 
         return `
         <div class="${colClass}">
           <article class="gt-card" data-id="${item.id}" style="cursor: pointer;">
-            <div class="gt-card-status ${isPlaying ? 'is-playing' : 'is-finished'}">
-                ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
+            <div class="gt-card-status ${badge.classe}">
+                ${badge.texto}
             </div>
             <button class="gt-card-favorite ${item.is_favorite ? 'is-active' : ''}" data-id="${item.id}" data-favorite="${item.is_favorite}" aria-label="Favoritar">
                 <i class="bi bi-heart${item.is_favorite ? '-fill' : ''}"></i>
@@ -350,7 +364,7 @@ function renderGridLista(jogos, grid) {
     grid.innerHTML = jogos.map(item => {
         const jogo = item.game;
         const rating = item.rating || {};
-        const isPlaying = item.status === 'playing';
+        const badge = obterBadgeStatus(item);
         const duracao = obterTextoDuracao(item);
 
         return `
@@ -365,8 +379,8 @@ function renderGridLista(jogos, grid) {
               <div class="gt-card-list-title">${escapeHtml(jogo.title)}</div>
               <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(gtTranslateGenre(jogo.genre) || '—')}${duracao ? ` · ${duracao.titulo}` : ''}</div>
             </div>
-            <span class="gt-card-status position-relative ${isPlaying ? 'is-playing' : 'is-finished'}" style="top:auto; left:auto;">
-                ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
+            <span class="gt-card-status position-relative ${badge.classe}" style="top:auto; left:auto;">
+                ${badge.texto}
             </span>
             <div class="gt-card-list-scores d-none d-md-block">
                 Grf <span class="gt-score-value">${rating.graphics_score ?? '-'}</span> ·
@@ -527,19 +541,52 @@ function setupSearch() {
                             <button class="btn btn-sm btn-primary ms-auto flex-shrink-0" style="background-color: var(--gt-accent); border-color: var(--gt-accent);"
                                     onclick="prepararAdicaoJogo('${jogo.external_id}', ${idx})" data-i18n="addGame.addBtn">Adicionar</button>
                         </div>
-                        <div class="d-none mt-2 pt-2 border-top border-secondary d-flex flex-wrap align-items-end gap-2" id="game-result-dateform-${idx}">
-                            <div class="flex-fill" style="min-width: 140px;">
-                                <label class="form-label small text-white-50 mb-1" data-i18n="addGame.startDateLabel">Quando você começou a jogar?</label>
-                                <input type="date" class="form-control form-control-sm" id="game-result-date-${idx}" max="${hoje}" value="${hoje}">
+
+                        <div class="d-none mt-2 pt-2 border-top border-secondary" id="game-result-form-${idx}">
+                            <!-- Passo 1: escolher o status inicial — decide o que mais é pedido depois. -->
+                            <p class="small text-white-50 mb-2" data-i18n="addGame.statusPrompt">O que você quer registrar sobre este jogo?</p>
+                            <div class="d-flex flex-wrap gap-2 mb-2" id="game-result-status-${idx}">
+                                <button type="button" class="btn btn-gt-outline btn-sm gt-status-choice" data-status="wish_to_play">
+                                    <i class="bi bi-bookmark-star me-1"></i><span data-i18n="addGame.statusWishToPlay">Quero jogar</span>
+                                </button>
+                                <button type="button" class="btn btn-gt-outline btn-sm gt-status-choice" data-status="playing">
+                                    <i class="bi bi-play-fill me-1"></i><span data-i18n="addGame.statusPlaying">Jogando</span>
+                                </button>
+                                <button type="button" class="btn btn-gt-outline btn-sm gt-status-choice" data-status="finished">
+                                    <i class="bi bi-check-lg me-1"></i><span data-i18n="addGame.statusFinished">Finalizado</span>
+                                </button>
                             </div>
-                            <button class="btn btn-gt-primary btn-sm" id="game-result-confirm-${idx}" data-i18n="common.confirm">Confirmar</button>
-                            <button class="btn btn-gt-outline btn-sm" onclick="cancelarAdicaoJogo(${idx})" data-i18n="common.cancel">Cancelar</button>
+
+                            <!-- Passo 2: campos condicionais, mostrados de acordo com o status escolhido acima. -->
+                            <div class="d-none flex-wrap align-items-end gap-2 mb-2" id="game-result-fields-${idx}">
+                                <div class="flex-fill" style="min-width: 140px;">
+                                    <label class="form-label small text-white-50 mb-1" data-i18n="addGame.startDateLabel">Quando você começou a jogar?</label>
+                                    <input type="date" class="form-control form-control-sm" id="game-result-date-${idx}" max="${hoje}" value="${hoje}">
+                                </div>
+                                <div class="d-none flex-fill" style="min-width: 140px;" id="game-result-finish-wrapper-${idx}">
+                                    <label class="form-label small text-white-50 mb-1" data-i18n="detail.endDate">Data de finalização</label>
+                                    <input type="date" class="form-control form-control-sm" id="game-result-finish-${idx}" max="${hoje}" value="${hoje}">
+                                </div>
+                                <div class="d-none" style="min-width: 110px;" id="game-result-hours-wrapper-${idx}">
+                                    <label class="form-label small text-white-50 mb-1" data-i18n="addGame.hoursPlayedOptional">Horas (opcional)</label>
+                                    <input type="text" inputmode="numeric" autocomplete="off" maxlength="7"
+                                           class="form-control form-control-sm gt-hhmm-input" id="game-result-hours-${idx}" placeholder="Ex: 12:30">
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-gt-primary btn-sm d-none" id="game-result-confirm-${idx}" data-i18n="common.confirm">Confirmar</button>
+                                <button class="btn btn-gt-outline btn-sm" onclick="cancelarAdicaoJogo(${idx})" data-i18n="common.cancel">Cancelar</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             `).join('');
             GT_I18N.apply(resultsDiv);
             resultados_busca_atual = jogos;
+
+            // Máscara hh:mm nos campos de horas que acabaram de entrar no DOM.
+            resultsDiv.querySelectorAll('.gt-hhmm-input').forEach(aplicarMascaraHHMM);
         } catch (error) {
             resultsDiv.innerHTML = '<p class="text-danger">Erro ao pesquisar.</p>';
         }
@@ -556,24 +603,59 @@ function setupSearch() {
 
 let resultados_busca_atual = [];
 
-// Ao clicar "Adicionar", revela um miniformulário pedindo a data em que o
-// usuário começou a jogar (por padrão hoje, mas editável e nunca no futuro) —
-// em vez de já cadastrar o jogo direto com a data de hoje fixa.
+// Ao clicar "Adicionar", revela o miniformulário de 2 passos: primeiro o
+// status inicial (Quero jogar / Jogando / Finalizado), depois só os campos
+// que fazem sentido pra esse status.
 function prepararAdicaoJogo(externalId, idx) {
-    document.getElementById(`game-result-dateform-${idx}`).classList.remove('d-none');
+    document.getElementById(`game-result-form-${idx}`).classList.remove('d-none');
+
+    const fieldsWrapper = document.getElementById(`game-result-fields-${idx}`);
+    const finishWrapper = document.getElementById(`game-result-finish-wrapper-${idx}`);
+    const hoursWrapper = document.getElementById(`game-result-hours-wrapper-${idx}`);
     const btnConfirmar = document.getElementById(`game-result-confirm-${idx}`);
-    btnConfirmar.onclick = () => {
-        const dataInicio = document.getElementById(`game-result-date-${idx}`).value || null;
-        adicionarJogo(externalId, dataInicio, btnConfirmar);
-    };
+
+    document.querySelectorAll(`#game-result-status-${idx} .gt-status-choice`).forEach((btn) => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll(`#game-result-status-${idx} .gt-status-choice`).forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
+            const statusEscolhido = btn.dataset.status;
+            btnConfirmar.classList.remove('d-none');
+
+            if (statusEscolhido === 'wish_to_play') {
+                // Sem data nenhuma — vai direto pra lista de desejos.
+                fieldsWrapper.classList.add('d-none');
+            } else {
+                fieldsWrapper.classList.remove('d-none');
+                fieldsWrapper.classList.add('d-flex');
+                finishWrapper.classList.toggle('d-none', statusEscolhido !== 'finished');
+                finishWrapper.classList.toggle('d-flex', statusEscolhido === 'finished');
+                hoursWrapper.classList.toggle('d-none', statusEscolhido !== 'finished');
+                hoursWrapper.classList.toggle('d-block', statusEscolhido === 'finished');
+            }
+
+            btnConfirmar.onclick = () => {
+                const payload = { external_id: externalId, platform: null, status: statusEscolhido };
+                if (statusEscolhido !== 'wish_to_play') {
+                    payload.started_at = document.getElementById(`game-result-date-${idx}`).value || null;
+                }
+                if (statusEscolhido === 'finished') {
+                    payload.finished_at = document.getElementById(`game-result-finish-${idx}`).value || null;
+                    const horasTexto = document.getElementById(`game-result-hours-${idx}`).value;
+                    payload.hours_played = horasTexto ? hhmmParaDecimal(horasTexto) : null;
+                }
+                adicionarJogo(payload, btnConfirmar);
+            };
+        });
+    });
 }
 
 function cancelarAdicaoJogo(idx) {
-    document.getElementById(`game-result-dateform-${idx}`).classList.add('d-none');
+    document.getElementById(`game-result-form-${idx}`).classList.add('d-none');
 }
 
 // --- Função: Adicionar Jogo à Biblioteca ---
-async function adicionarJogo(externalId, dataInicio, btnElement) {
+async function adicionarJogo(payload, btnElement) {
     btnElement.disabled = true;
     btnElement.innerText = GT_I18N.t('addGame.addingBtn') || 'Adicionando...';
 
@@ -581,7 +663,7 @@ async function adicionarJogo(externalId, dataInicio, btnElement) {
         const response = await authFetch('/games/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ external_id: externalId, platform: null, started_at: dataInicio })
+            body: JSON.stringify(payload)
         });
 
         if (response.ok) {
@@ -1086,9 +1168,13 @@ function renderizarHistoricoJogadas(item, manterPagina = false) {
             </button>`;
         document.getElementById('btn-finish-session').addEventListener('click', () => abrirFormularioSessao('finish', sessaoAberta));
     } else {
+        // Item da wishlist (nunca jogado ainda) usa um rótulo diferente —
+        // "Jogar novamente" não faz sentido pra quem ainda não começou.
+        const chaveTexto = todasSessoes.length === 0 ? 'detail.startPlaying' : 'detail.logSession';
+        const textoFallback = todasSessoes.length === 0 ? 'Começar a jogar' : 'Jogar novamente';
         acoes.innerHTML = `
             <button type="button" class="btn btn-gt-outline btn-sm" id="btn-play-again">
-                <i class="bi bi-plus-lg me-1"></i><span data-i18n="detail.logSession">Jogar novamente</span>
+                <i class="bi bi-plus-lg me-1"></i><span data-i18n="${chaveTexto}">${textoFallback}</span>
             </button>`;
         document.getElementById('btn-play-again').addEventListener('click', () => abrirFormularioSessao('start'));
     }
@@ -1177,7 +1263,12 @@ let _sessaoFormId = null;     // id da sessão (usado em 'finish'/'edit')
 // "Jogar novamente" (chamado manualmente em abrirFormularioSessao/fechar).
 function atualizarVisibilidadeDatasPrimeiraJogada(item) {
     const wrapper = document.getElementById('detail-first-session-dates-wrapper');
-    const ehPrimeiraJogada = (item?.play_count || 1) <= 1;
+    // Usa "??" (não "||") porque play_count pode ser 0 de verdade (item ainda
+    // na wishlist, nenhuma jogada registrada) — com "||", 0 vira 1 por engano
+    // e o bloco de datas apareceria pra um jogo que não tem data nenhuma.
+    const playCount = item?.play_count ?? 1;
+    const ehItemDaWishlist = item?.status === 'wish_to_play';
+    const ehPrimeiraJogada = !ehItemDaWishlist && playCount <= 1;
     wrapper.classList.toggle('d-none', !ehPrimeiraJogada);
 }
 
