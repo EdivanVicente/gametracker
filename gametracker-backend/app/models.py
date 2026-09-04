@@ -244,8 +244,14 @@ class PlaySession(Base):
         return self.finished_at is None
 
 
+class FollowStatus(str, enum.Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+
 class Follow(Base):
-    """Relação de 'seguir' entre dois usuários, usada no feed social e nos contadores de perfil."""
+    """Relação de 'seguir' entre dois usuários, com aprovação prévia do seguido."""
 
     __tablename__ = "follows"
     __table_args__ = (
@@ -255,10 +261,43 @@ class Follow(Base):
     id = Column(Integer, primary_key=True, index=True)
     follower_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     followee_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(Enum(FollowStatus), default=FollowStatus.PENDING, nullable=False)
+    # Marcado pelo FOLLOWER (quem segue) sobre o followee — "esse amigo é
+    # favorito" pra fixar as atividades dele no topo do feed (item 4.1).
+    is_favorite_friend = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    responded_at = Column(DateTime, nullable=True)
 
     follower = relationship("User", foreign_keys=[follower_id])
     followee = relationship("User", foreign_keys=[followee_id])
+
+
+class NotificationType(str, enum.Enum):
+    FOLLOW_REQUEST = "follow_request"
+    FOLLOW_ACCEPTED = "follow_accepted"
+
+
+class Notification(Base):
+    """
+    Notificação simples pro sino do header. Por enquanto cobre só o fluxo de
+    solicitação de seguidor (pedido recebido / pedido aceito) — a atividade
+    de jogos dos seguidores (iniciou/finalizou um jogo) já é coberta pelo
+    feed (/social/feed), que lista isso sob demanda em vez de gerar uma
+    notificação por evento pra cada seguidor (evitaria uma enxurrada de
+    linhas na tabela conforme a base de usuários cresce).
+    """
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # quem recebe
+    type = Column(Enum(NotificationType), nullable=False)
+    actor_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # quem originou (ex: quem pediu p/ seguir)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+    actor = relationship("User", foreign_keys=[actor_id])
 
 
 class Rating(Base):

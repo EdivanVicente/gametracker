@@ -20,7 +20,12 @@ from app.database import get_db
 from app.core.deps import get_current_user
 from app import models, schemas
 from app.services.games_api import games_api_service
+from app.services.igdb_service import igdb_service
 from app.services.hltb_service import hltb_service
+
+import logging
+
+logger = logging.getLogger("gametracker.games")
 
 router = APIRouter(prefix="/games", tags=["Minha Biblioteca"])
 
@@ -41,6 +46,14 @@ async def _get_or_create_game(db: Session, external_id: str) -> tuple[models.Gam
     except Exception:
         raise HTTPException(status_code=404, detail="Jogo não encontrado na API externa.")
 
+    # A RAWG não tem um campo de "capa" de verdade — o "background_image" dela
+    # costuma ser um screenshot ou arte promocional, não a capa/boxart oficial.
+    # A IGDB tem capas de verdade (cover.url), então, quando o resultado veio
+    # da RAWG, tentamos trocar só a capa por uma da IGDB (mantendo o resto dos
+    # dados da RAWG) — melhor esforço, nunca bloqueia o cadastro se falhar.
+    if external_id.startswith("rawg-"):
+        await _tentar_melhorar_capa(details)
+
     game = models.Game(
         external_id=details["external_id"],
         title=details["title"],
@@ -57,6 +70,25 @@ async def _get_or_create_game(db: Session, external_id: str) -> tuple[models.Gam
     plataformas = details.get("platforms") or []
     plataforma_sugerida = plataformas[0] if plataformas else None
     return game, plataforma_sugerida
+
+
+async def _tentar_melhorar_capa(details: dict) -> None:
+    """Busca a mesma capa na IGDB (que tem capas de verdade) e troca, se achar uma correspondência exata."""
+    if not details.get("title") or not igdb_service.configurado:
+        return
+    try:
+        candidatos = await igdb_service.search_games(details["title"], page_size=5)
+    except Exception:
+        logger.warning("Não foi possível consultar a IGDB pra melhorar a capa de '%s'.", details.get("title"))
+        return
+
+    titulo_normalizado = details["title"].strip().lower()
+    correspondencia = next(
+        (c for c in candidatos if (c.get("title") or "").strip().lower() == titulo_normalizado and c.get("cover_url")),
+        None,
+    )
+    if correspondencia:
+        details["cover_url"] = correspondencia["cover_url"]
 
 
 def _get_owned_user_game(db: Session, user_game_id: int, current_user: models.User) -> models.UserGame:

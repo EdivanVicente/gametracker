@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameTracker Pro — Recomendação</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="alternate icon" href="assets/favicon.ico">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+  <link rel="stylesheet" href="assets/css/style.css?v=1788485572">
+  <script src="assets/js/config.js?v=1788485572"></script>
+  <script src="assets/js/theme.js?v=1788485572"></script>
+  <script src="assets/js/i18n.js?v=1788485572"></script>
+
+  <script src="assets/js/auth-check.js?v=1788485572"></script>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg gt-navbar sticky-top py-3">
+    <div class="container-fluid gt-container-fluid px-3 px-md-4">
+      <a class="navbar-brand gt-brand" href="dashboard">
+        <i class="bi bi-joystick" style="color: var(--gt-accent);"></i>
+        GameTracker <span class="gt-brand-mark">Pro</span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#gtNavContent"
+              aria-controls="gtNavContent" aria-expanded="false" aria-label="Abrir menu">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="collapse navbar-collapse" id="gtNavContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+          <li class="nav-item"><a class="nav-link" href="dashboard" data-i18n="nav.myGames">Meus Jogos</a></li>
+          <li class="nav-item"><a class="nav-link" href="explore" data-i18n="nav.explore">Explorar</a></li>
+          <li class="nav-item"><a class="nav-link" href="estatisticas" data-i18n="nav.stats">Estatísticas</a></li>
+          <li class="nav-item"><a class="nav-link" href="comunidade" data-i18n="nav.community">Comunidade</a></li>
+          <li class="nav-item"><a class="nav-link active" href="recomendacao" data-i18n="nav.recommendations">Recomendação</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          <div data-gt-lang-switcher></div>
+          <div class="dropdown gt-notif-dropdown">
+            <button class="gt-theme-toggle position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notificações" title="Notificações" id="notif-bell-btn">
+              <i class="bi bi-bell"></i>
+              <span class="gt-notif-badge d-none" id="notif-badge">0</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end gt-notif-menu" id="notif-menu">
+              <li class="px-3 py-2 d-flex align-items-center justify-content-between">
+                <span class="fw-semibold small" data-i18n="notif.title">Notificações</span>
+                <button type="button" class="btn btn-link btn-sm p-0 d-none" id="notif-mark-all-read" data-i18n="notif.markAllRead">Marcar todas como lidas</button>
+              </li>
+              <li><hr class="dropdown-divider m-0"></li>
+              <li id="notif-list-wrapper">
+                <p class="text-white-50 small text-center py-3 mb-0" id="notif-empty" data-i18n="notif.empty">Nenhuma notificação por enquanto.</p>
+                <ul class="list-unstyled mb-0" id="notif-list"></ul>
+              </li>
+            </ul>
+          </div>
+          <button class="gt-theme-toggle" type="button" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+            <i class="bi bi-sun"></i>
+          </button>
+          <div class="dropdown">
+            <button class="btn btn-gt-outline d-flex align-items-center gap-2 px-2 py-1"
+                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <span id="navbar-avatar-btn"
+                    class="rounded-circle d-flex align-items-center justify-content-center overflow-hidden"
+                    style="width: 32px; height: 32px; background-color: var(--gt-surface-raised); flex-shrink: 0;">
+                <i class="bi bi-person"></i>
+              </span>
+              <span id="navbar-user-name" class="d-none d-md-inline small" data-i18n="nav.profile">Perfil</span>
+              <i class="bi bi-chevron-down small"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" style="min-width: 220px;">
+              <li class="px-3 py-3 text-center">
+                <div id="dropdown-avatar"
+                     class="rounded-circle mx-auto mb-2 overflow-hidden d-flex align-items-center justify-content-center"
+                     style="width: 64px; height: 64px; background-color: var(--gt-surface-raised); border: 2px solid var(--gt-border);">
+                  <i class="bi bi-person fs-3 text-white-50"></i>
+                </div>
+                <div id="dropdown-user-name" class="fw-semibold small text-truncate">Carregando...</div>
+                <div id="dropdown-user-email" class="text-white-50 text-truncate" style="font-size: 0.7rem;">—</div>
+                <div id="dropdown-stats" class="d-flex justify-content-center gap-3 mt-2 pt-2" style="border-top: 1px solid var(--gt-border);">
+                  <div class="text-center"><div class="fw-semibold small" id="dropdown-games-count">—</div><div class="text-white-50" style="font-size: 0.65rem;" data-i18n="community.games">Jogos</div></div>
+                  <div class="text-center" id="dropdown-followers-trigger" role="button"><div class="fw-semibold small" id="dropdown-followers-count">—</div><div class="text-white-50" style="font-size: 0.65rem;" data-i18n="community.followers">Seguidores</div></div>
+                  <div class="text-center" id="dropdown-following-trigger" role="button"><div class="fw-semibold small" id="dropdown-following-count">—</div><div class="text-white-50" style="font-size: 0.65rem;" data-i18n="community.following">Seguindo</div></div>
+                </div>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="account"><i class="bi bi-person-circle me-2"></i><span data-i18n="nav.account">Minha conta</span></a></li>
+              <li><a class="dropdown-item" href="games"><i class="bi bi-controller me-2"></i><span data-i18n="nav.games">Jogos</span></a></li>
+              <li><a class="dropdown-item" href="settings"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Configurações</span></a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right me-2"></i><span data-i18n="nav.logout">Sair</span></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid gt-container-fluid px-3 px-md-4 py-4">
+
+    <section class="gt-panel p-4 p-md-5 mb-4 text-center">
+      <i class="bi bi-stars fs-1 mb-2 d-block" style="color: var(--gt-accent);"></i>
+      <h2 class="gt-display mb-2" data-i18n="reco.heroTitle">Encontre seu próximo jogo</h2>
+      <p class="text-white-50 mb-4" style="max-width: 620px; margin-inline: auto;" data-i18n="reco.heroSubtitle">
+        Digite um estilo (ex: "luta", "RPG", "terror") e nós trazemos jogos parecidos e correlatos —
+        ou deixe em branco e sugerimos com base no que você mais joga.
+      </p>
+
+      <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center" style="max-width: 640px; margin-inline: auto;">
+        <div class="gt-search-input-group flex-fill" style="min-width: 0;">
+          <i class="bi bi-search text-white-50"></i>
+          <input type="text" id="reco-input" placeholder="Ex: luta, RPG, terror, mundo aberto..." data-i18n-placeholder="reco.searchPlaceholder">
+        </div>
+        <button class="btn btn-gt-primary px-4" type="button" id="reco-btn" data-i18n="reco.searchBtn">Recomendar</button>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-center gap-2 mt-3" id="reco-suggestions">
+        <span class="small text-white-50 me-1 align-self-center" data-i18n="explore.suggestions">Sugestões:</span>
+        <button type="button" class="btn btn-gt-outline btn-sm gt-suggestion-chip" data-termo="luta">Luta</button>
+        <button type="button" class="btn btn-gt-outline btn-sm gt-suggestion-chip" data-termo="RPG">RPG</button>
+        <button type="button" class="btn btn-gt-outline btn-sm gt-suggestion-chip" data-termo="terror">Terror</button>
+        <button type="button" class="btn btn-gt-outline btn-sm gt-suggestion-chip" data-termo="metroidvania">Metroidvania</button>
+        <button type="button" class="btn btn-gt-outline btn-sm gt-suggestion-chip" data-termo="mundo aberto">Mundo aberto</button>
+      </div>
+    </section>
+
+    <p class="small text-white-50 mb-3 d-none" id="reco-baseado-em"></p>
+
+    <div id="reco-result"></div>
+
+  </main>
+
+  <footer class="gt-footer py-4 text-center">
+    <p class="small text-white-50 mb-0">
+      <span data-i18n="footer.credit">GameTracker Pro © 2026 — desenvolvido por <strong>Edivan Vicente</strong></span>
+    </p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/main.js?v=1788485572"></script>
+  <script src="assets/js/navbar.js?v=1788485572"></script>
+  <script src="assets/js/recomendacao.js?v=1788485572"></script>
+</body>
+</html>

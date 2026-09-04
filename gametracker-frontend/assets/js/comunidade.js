@@ -257,10 +257,17 @@ function renderizarPerfilPublico(p) {
             </div>
 
             ${p.is_self ? '' : `
-                <button type="button" class="btn ${p.is_following ? 'btn-gt-outline' : 'btn-gt-primary'} btn-sm" id="btn-toggle-follow" data-user-id="${p.id}" data-following="${p.is_following}">
-                    <i class="bi ${p.is_following ? 'bi-person-dash' : 'bi-person-plus'} me-1"></i>
-                    <span>${p.is_following ? GT_I18N.t('community.unfollow') : GT_I18N.t('community.follow')}</span>
-                </button>`}
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    <button type="button" class="btn ${_classeBotaoSeguir(p.follow_status)} btn-sm" id="btn-toggle-follow" data-user-id="${p.id}" data-follow-status="${p.follow_status}">
+                        <i class="bi ${_iconeBotaoSeguir(p.follow_status)} me-1"></i>
+                        <span>${_textoBotaoSeguir(p.follow_status)}</span>
+                    </button>
+                    ${p.follow_status === 'accepted' ? `
+                        <button type="button" class="btn btn-gt-outline btn-sm ${p.is_favorite_friend ? 'is-active' : ''}" id="btn-toggle-favorite-friend"
+                                data-user-id="${p.id}" data-favorite="${p.is_favorite_friend}" title="${GT_I18N.t('community.favoriteFriend')}">
+                            <i class="bi ${p.is_favorite_friend ? 'bi-star-fill' : 'bi-star'}"></i>
+                        </button>` : ''}
+                </div>`}
 
             ${idsPreenchidos.length > 0 ? `
                 <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
@@ -278,6 +285,7 @@ function renderizarPerfilPublico(p) {
                    placeholder="${GT_I18N.t('community.searchInLibrary', { name: p.display_name || GT_I18N.t('community.anonymous') })}">
             <select class="form-select form-select-sm flex-shrink-0" style="width: auto;" id="public-profile-status-filter">
                 <option value="">${GT_I18N.t('toolbar.status')}</option>
+                <option value="wish_to_play">${GT_I18N.t('status.wishToPlay')}</option>
                 <option value="playing">${GT_I18N.t('status.playing')}</option>
                 <option value="finished">${GT_I18N.t('status.finished')}</option>
             </select>
@@ -311,6 +319,10 @@ function renderizarPerfilPublico(p) {
     if (btnFollow) {
         btnFollow.addEventListener('click', () => alternarSeguir(btnFollow));
     }
+    const btnFavorite = document.getElementById('btn-toggle-favorite-friend');
+    if (btnFavorite) {
+        btnFavorite.addEventListener('click', () => alternarFavoritoAmigo(btnFavorite));
+    }
     document.getElementById('public-followers-trigger')?.addEventListener('click', () => abrirListaSeguidores('followers', p.id));
     document.getElementById('public-following-trigger')?.addEventListener('click', () => abrirListaSeguidores('following', p.id));
 }
@@ -318,8 +330,7 @@ function renderizarPerfilPublico(p) {
 const CLASSES_POR_MODO_PUBLICO = {
     medium: 'col-6 col-sm-4 col-lg-3',
     large: 'col-12 col-sm-6 col-lg-4',
-};
-let modoVisualizacaoPublico = localStorage.getItem('gt-view-mode') || 'medium';
+};let modoVisualizacaoPublico = localStorage.getItem('gt-view-mode') || 'medium';
 if (modoVisualizacaoPublico === 'small') modoVisualizacaoPublico = 'medium';
 
 const ICONE_POR_MODO_PUBLICO = { list: 'bi-list-ul', medium: 'bi-grid-3x2-gap-fill', large: 'bi-grid-1x2-gap-fill' };
@@ -330,6 +341,14 @@ function definirModoVisualizacaoPublico(modo) {
     const icone = document.getElementById('public-view-mode-icon');
     if (icone) icone.className = `bi ${ICONE_POR_MODO_PUBLICO[modo] || ICONE_POR_MODO_PUBLICO.medium}`;
     filtrarJogosPublico();
+}
+
+// Traduz o status de um jogo do amigo pra {classe, texto} do badge — mesma
+// ideia de 3 estados usada em Meus Jogos (dashboard.js), pra manter consistência.
+function _badgeStatusPublico(statusValor) {
+    if (statusValor === 'wish_to_play') return { classe: 'text-bg-info', texto: GT_I18N.t('status.wishToPlay') };
+    if (statusValor === 'playing') return { classe: 'text-bg-primary', texto: GT_I18N.t('status.playing') };
+    return { classe: 'text-bg-success', texto: GT_I18N.t('status.finished') };
 }
 
 // Grade de jogos SOMENTE LEITURA no perfil público — usa o mesmo seletor de
@@ -350,7 +369,7 @@ function renderizarGradeJogosPublico(jogos) {
 
     if (modoVisualizacaoPublico === 'list') {
         grid.innerHTML = jogos.map((j, idx) => {
-            const isPlaying = j.status === 'playing';
+            const badge = _badgeStatusPublico(j.status);
             return `
                 <div class="col-12">
                     <div class="gt-panel d-flex align-items-center gap-3 p-2" data-game-idx="${idx}" role="button">
@@ -361,24 +380,20 @@ function renderizarGradeJogosPublico(jogos) {
                             <p class="small fw-semibold mb-0 text-truncate">${escapeHtml(j.title)}</p>
                             <p class="text-white-50 mb-0" style="font-size: 0.72rem;">${escapeHtml(j.platform || '—')}</p>
                         </div>
-                        <span class="badge ${isPlaying ? 'text-bg-primary' : 'text-bg-success'}" style="font-size: 0.65rem;">
-                            ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
-                        </span>
+                        <span class="badge ${badge.classe}" style="font-size: 0.65rem;">${badge.texto}</span>
                     </div>
                 </div>`;
         }).join('');
     } else {
         const colClass = CLASSES_POR_MODO_PUBLICO[modoVisualizacaoPublico] || CLASSES_POR_MODO_PUBLICO.medium;
         grid.innerHTML = jogos.map((j, idx) => {
-            const isPlaying = j.status === 'playing';
+            const badge = _badgeStatusPublico(j.status);
             return `
                 <div class="${colClass}">
                     <div class="gt-panel h-100 overflow-hidden" style="padding: 0; cursor: pointer;" data-game-idx="${idx}" role="button">
                         <div class="position-relative" style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
                             ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
-                            <span class="badge ${isPlaying ? 'text-bg-primary' : 'text-bg-success'} position-absolute top-0 start-0 m-2" style="font-size: 0.65rem;">
-                                ${isPlaying ? GT_I18N.t('status.playing') : GT_I18N.t('status.finished')}
-                            </span>
+                            <span class="badge ${badge.classe} position-absolute top-0 start-0 m-2" style="font-size: 0.65rem;">${badge.texto}</span>
                         </div>
                         <div class="p-2">
                             <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</p>
@@ -446,19 +461,67 @@ async function abrirListaSeguidores(tipo, userId) {
     }
 }
 
+// O botão de seguir tem 3 estados visuais: "Seguir" (nunca pediu ou foi
+// recusado/cancelado), "Solicitação enviada" (pendente, aguardando resposta
+// do outro lado) e "Seguindo" (aceito). Centralizado aqui pra não duplicar
+// essa lógica nos dois lugares que desenham o botão (perfil + resposta do clique).
+function _textoBotaoSeguir(followStatus) {
+    if (followStatus === 'accepted') return GT_I18N.t('community.unfollow');
+    if (followStatus === 'pending') return GT_I18N.t('community.requestSent');
+    return GT_I18N.t('community.follow');
+}
+function _iconeBotaoSeguir(followStatus) {
+    if (followStatus === 'accepted') return 'bi-person-dash';
+    if (followStatus === 'pending') return 'bi-hourglass-split';
+    return 'bi-person-plus';
+}
+function _classeBotaoSeguir(followStatus) {
+    return followStatus === 'accepted' || followStatus === 'pending' ? 'btn-gt-outline' : 'btn-gt-primary';
+}
+
 async function alternarSeguir(btn) {
     const userId = btn.getAttribute('data-user-id');
-    const seguindo = btn.getAttribute('data-following') === 'true';
+    const statusAtual = btn.getAttribute('data-follow-status');
+    // "Seguir" ou "Solicitação enviada" (pendente) -> clicar de novo CANCELA o
+    // pedido. Só "Seguindo" (aceito) -> clicar DEIXA de seguir. Os dois casos
+    // usam o mesmo endpoint DELETE (cancelar um pedido e deixar de seguir são,
+    // na prática, a mesma ação: apagar o vínculo).
+    const vaiRemover = statusAtual === 'accepted' || statusAtual === 'pending';
     btn.disabled = true;
     try {
-        const response = await authFetch(`/social/follow/${userId}`, { method: seguindo ? 'DELETE' : 'POST' });
+        const response = await authFetch(`/social/follow/${userId}`, { method: vaiRemover ? 'DELETE' : 'POST' });
         if (!response.ok) throw new Error('erro');
         const data = await response.json();
-        btn.setAttribute('data-following', data.following);
-        btn.className = `btn ${data.following ? 'btn-gt-outline' : 'btn-gt-primary'} btn-sm`;
-        btn.innerHTML = `<i class="bi ${data.following ? 'bi-person-dash' : 'bi-person-plus'} me-1"></i>
-                          <span>${data.following ? GT_I18N.t('community.unfollow') : GT_I18N.t('community.follow')}</span>`;
+        btn.setAttribute('data-follow-status', data.follow_status);
+        btn.className = `btn ${_classeBotaoSeguir(data.follow_status)} btn-sm`;
+        btn.innerHTML = `<i class="bi ${_iconeBotaoSeguir(data.follow_status)} me-1"></i>
+                          <span>${_textoBotaoSeguir(data.follow_status)}</span>`;
         carregarFeed(); // o feed pode mudar dependendo de quem você segue agora
+
+        // Se deixou de seguir, o botão de favoritar não faz mais sentido — some.
+        const btnFavorite = document.getElementById('btn-toggle-favorite-friend');
+        if (btnFavorite && data.follow_status !== 'accepted') {
+            btnFavorite.remove();
+        }
+    } catch (error) {
+        alert(GT_I18N.t('community.loadError'));
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function alternarFavoritoAmigo(btn) {
+    const userId = btn.getAttribute('data-user-id');
+    const jaFavorito = btn.getAttribute('data-favorite') === 'true';
+    btn.disabled = true;
+    try {
+        const response = await authFetch(`/social/follow/${userId}/favorite`, { method: jaFavorito ? 'DELETE' : 'POST' });
+        if (!response.ok) throw new Error('erro');
+        const novoValor = !jaFavorito;
+        btn.setAttribute('data-favorite', novoValor);
+        btn.classList.toggle('is-active', novoValor);
+        btn.querySelector('i').className = novoValor ? 'bi bi-star-fill' : 'bi bi-star';
+        carregarFeed(); // amigos favoritos vêm primeiro no feed
     } catch (error) {
         alert(GT_I18N.t('community.loadError'));
     } finally {
@@ -491,6 +554,11 @@ async function abrirQuickViewJogo(jogo) {
                 ${jogo.genre ? `<p class="small text-white-50 mb-1">${GT_I18N.t('toolbar.genre')}</p><p class="mb-0">${escapeHtml(gtTranslateGenre(jogo.genre))}</p>` : ''}
             </div>
         </div>
+
+        <div id="quickview-friend-stats" class="mb-3"></div>
+
+        <div id="quickview-add-wrapper" class="mb-3"></div>
+
         <p class="small text-white-50 mb-2">${GT_I18N.t('detail.gameplayLabel')}</p>
         <div id="quickview-video-wrapper" class="mb-3">
             <p class="text-white-50 small mb-0">${GT_I18N.t('common.loading')}</p>
@@ -500,6 +568,8 @@ async function abrirQuickViewJogo(jogo) {
             <p class="small mb-0" id="quickview-summary"></p>
         </div>
     `;
+
+    carregarStatsAmigoNoJogo(jogo);
 
     try {
         const response = await authFetch(`/explore/gameplay?title=${encodeURIComponent(jogo.title)}&lang=${gtBackendLang()}`);
@@ -516,6 +586,131 @@ async function abrirQuickViewJogo(jogo) {
         document.getElementById('quickview-video-wrapper').innerHTML =
             `<p class="text-danger small mb-0">${GT_I18N.t('community.loadError')}</p>`;
     }
+}
+
+// Notas + sessões + tempo total que o AMIGO registrou nesse jogo (item 4.2),
+// mais o botão de copiar pra própria biblioteca usando o mesmo fluxo
+// inteligente de status do cadastro normal (item 2).
+function _minutosParaHHMMQuickview(min) {
+    if (min === null || min === undefined) return '';
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `${h}:${String(m).padStart(2, '0')}`;
+}
+
+async function carregarStatsAmigoNoJogo(jogo) {
+    const statsWrapper = document.getElementById('quickview-friend-stats');
+    const addWrapper = document.getElementById('quickview-add-wrapper');
+    if (!_perfilPublicoAtual || !jogo.id) return;
+
+    try {
+        const response = await authFetch(`/social/profile/${_perfilPublicoAtual.id}/games/${jogo.id}`);
+        if (!response.ok) return;
+        const d = await response.json();
+
+        const notas = [
+            ['Grf', d.graphics_score], ['Som', d.sound_score], ['Jog', d.gameplay_score], ['Dif', d.difficulty_score],
+        ].filter(([, v]) => v !== null && v !== undefined);
+
+        statsWrapper.innerHTML = `
+            <div class="gt-panel p-2 px-3">
+              ${notas.length ? `<div class="d-flex flex-wrap gap-3 mb-2">
+                  ${notas.map(([label, v]) => `<span class="small">${label} <span class="fw-semibold">${v}</span>/5</span>`).join('')}
+                </div>` : ''}
+              <div class="d-flex flex-wrap gap-3 small text-white-50">
+                <span><i class="bi bi-arrow-repeat me-1"></i>${d.play_count} ${GT_I18N.t('detail.playCountLabel')}</span>
+                ${d.hours_played !== null ? `<span><i class="bi bi-hourglass-split me-1"></i>${_minutosParaHHMMQuickview(Math.round(d.hours_played * 60))} ${GT_I18N.t('detail.hoursPlayed').toLowerCase()}</span>` : ''}
+              </div>
+              ${d.sessions.length ? `
+                <ul class="list-unstyled small text-white-50 mb-0 mt-2 pt-2" style="border-top: 1px solid var(--gt-border);">
+                  ${d.sessions.slice(0, 5).map(s => {
+                      const fmt = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString();
+                      const periodo = s.finished_at && s.finished_at !== s.started_at ? `${fmt(s.started_at)} → ${fmt(s.finished_at)}` : fmt(s.started_at);
+                      const tempo = s.duration_minutes ? ` · ${_minutosParaHHMMQuickview(s.duration_minutes)}` : '';
+                      return `<li>${periodo}${tempo}</li>`;
+                  }).join('')}
+                </ul>` : ''}
+            </div>`;
+
+        addWrapper.innerHTML = `
+            <button type="button" class="btn btn-gt-outline btn-sm w-100" id="quickview-add-btn" data-i18n="community.addToMyLibrary">Adicionar à minha biblioteca</button>
+            <div class="d-none mt-2" id="quickview-add-form"></div>`;
+        if (window.GT_I18N) GT_I18N.apply(addWrapper);
+        document.getElementById('quickview-add-btn').addEventListener('click', () => prepararAdicaoDeAmigo(jogo.external_id));
+    } catch (error) {
+        // Silencioso — se não der pra carregar as estatísticas, o resto do quick view continua funcionando.
+    }
+}
+
+// Mesmo fluxo condicional de 3 status (item 2), reaproveitado aqui pra copiar
+// um jogo do amigo pra própria biblioteca.
+function prepararAdicaoDeAmigo(externalId) {
+    const wrapper = document.getElementById('quickview-add-form');
+    const hoje = new Date().toISOString().slice(0, 10);
+    wrapper.classList.remove('d-none');
+    wrapper.innerHTML = `
+        <p class="small text-white-50 mb-2" data-i18n="addGame.statusPrompt">O que você quer registrar sobre este jogo?</p>
+        <div class="d-flex flex-wrap gap-1 mb-2" id="quickview-status-choices">
+            <button type="button" class="btn btn-gt-outline btn-sm gt-status-choice" data-status="wish_to_play" data-i18n="addGame.statusWishToPlay">Quero jogar</button>
+            <button type="button" class="btn btn-gt-outline btn-sm gt-status-choice" data-status="playing" data-i18n="addGame.statusPlaying">Jogando</button>
+            <button type="button" class="btn btn-gt-outline btn-sm gt-status-choice" data-status="finished" data-i18n="addGame.statusFinished">Finalizado</button>
+        </div>
+        <div class="d-none flex-column gap-2 mb-2" id="quickview-status-fields">
+            <input type="date" class="form-control form-control-sm" id="quickview-date-start" max="${hoje}" value="${hoje}">
+            <input type="date" class="form-control form-control-sm d-none" id="quickview-date-finish" max="${hoje}" value="${hoje}">
+        </div>
+        <button class="btn btn-gt-primary btn-sm d-none" id="quickview-confirm-add" data-i18n="common.confirm">Confirmar</button>
+    `;
+    if (window.GT_I18N) GT_I18N.apply(wrapper);
+
+    const fieldsWrapper = document.getElementById('quickview-status-fields');
+    const finishInput = document.getElementById('quickview-date-finish');
+    const btnConfirmar = document.getElementById('quickview-confirm-add');
+
+    document.querySelectorAll('#quickview-status-choices .gt-status-choice').forEach((choiceBtn) => {
+        choiceBtn.addEventListener('click', () => {
+            document.querySelectorAll('#quickview-status-choices .gt-status-choice').forEach(b => b.classList.remove('is-active'));
+            choiceBtn.classList.add('is-active');
+            const statusEscolhido = choiceBtn.dataset.status;
+            btnConfirmar.classList.remove('d-none');
+
+            if (statusEscolhido === 'wish_to_play') {
+                fieldsWrapper.classList.add('d-none');
+                fieldsWrapper.classList.remove('d-flex');
+            } else {
+                fieldsWrapper.classList.remove('d-none');
+                fieldsWrapper.classList.add('d-flex');
+                finishInput.classList.toggle('d-none', statusEscolhido !== 'finished');
+            }
+
+            btnConfirmar.onclick = async () => {
+                const payload = { external_id: externalId, platform: null, status: statusEscolhido };
+                if (statusEscolhido !== 'wish_to_play') {
+                    payload.started_at = document.getElementById('quickview-date-start').value || null;
+                }
+                if (statusEscolhido === 'finished') {
+                    payload.finished_at = finishInput.value || null;
+                }
+                btnConfirmar.disabled = true;
+                try {
+                    const response = await authFetch('/games/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    if (response.ok) {
+                        wrapper.innerHTML = `<p class="small text-success mb-0"><i class="bi bi-check-circle me-1"></i>${GT_I18N.t('reco.added')}</p>`;
+                    } else {
+                        const data = await response.json().catch(() => ({}));
+                        alert(data.detail || 'Erro ao adicionar o jogo.');
+                        btnConfirmar.disabled = false;
+                    }
+                } catch (error) {
+                    btnConfirmar.disabled = false;
+                }
+            };
+        });
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

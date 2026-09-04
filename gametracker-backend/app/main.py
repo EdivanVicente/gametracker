@@ -47,7 +47,7 @@ def _run_light_migrations() -> None:
         try:
             with engine.begin() as conn:
                 nome_tipo = models.UserGame.__table__.c.status.type.name
-                conn.execute(text(f"ALTER TYPE {nome_tipo} ADD VALUE IF NOT EXISTS 'wish_to_play'"))
+                conn.execute(text(f"ALTER TYPE {nome_tipo} ADD VALUE IF NOT EXISTS 'WISH_TO_PLAY'"))
         except Exception:
             logger.exception(
                 "Migração: não consegui adicionar 'wish_to_play' ao enum de status no Postgres "
@@ -55,7 +55,43 @@ def _run_light_migrations() -> None:
                 "a categoria \"Próximos Jogos\" não aparecer)."
             )
 
+        # A tabela `follows` já existe em produção (era só "seguir instantâneo",
+        # sem aprovação) — precisamos criar o TYPE do enum novo antes de poder
+        # usar a coluna `status`. O Postgres não tem "CREATE TYPE IF NOT EXISTS",
+        # então só tenta criar e ignora se já existir (idempotente por captura
+        # de exceção, igual ao resto das migrações deste arquivo).
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("CREATE TYPE followstatus AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED')"))
+        except Exception:
+            pass  # já existe — normal a partir da 2ª execução
+
     with engine.begin() as conn:
+        if "follows" in inspector.get_table_names():
+            colunas_existentes_follows = {col["name"] for col in inspector.get_columns("follows")}
+            if "status" not in colunas_existentes_follows:
+                logger.info("Migração: adicionando coluna follows.status")
+                tipo_sql = "followstatus" if engine.dialect.name == "postgresql" else "VARCHAR(20)"
+                # DEFAULT 'ACCEPTED' pras relações que já existiam: elas foram
+                # criadas quando "seguir" ainda era instantâneo (sem aprovação),
+                # então já eram, de fato, seguidas de verdade — não faz sentido
+                # essas virarem "pendente" retroativamente e sumirem da lista
+                # de seguidores de ninguém. Só pedidos NOVOS (a partir de agora)
+                # nascem como 'pending' (via código Python, não pelo DEFAULT
+                # da coluna). IMPORTANTE: o valor tem que ser MAIÚSCULO
+                # ('ACCEPTED', não 'accepted') — o SQLAlchemy grava o NOME do
+                # enum Python na coluna (ex: "ACCEPTED"), não o .value ("accepted").
+                # Um DEFAULT em minúsculo pareceria funcionar no SQLite (que não
+                # valida nada) mas quebraria a leitura desses registros assim que
+                # o SQLAlchemy tentasse converter de volta pro enum Python.
+                conn.execute(text(f"ALTER TABLE follows ADD COLUMN status {tipo_sql} NOT NULL DEFAULT 'ACCEPTED'"))
+            if "responded_at" not in colunas_existentes_follows:
+                logger.info("Migração: adicionando coluna follows.responded_at")
+                conn.execute(text("ALTER TABLE follows ADD COLUMN responded_at DATETIME"))
+            if "is_favorite_friend" not in colunas_existentes_follows:
+                logger.info("Migração: adicionando coluna follows.is_favorite_friend")
+                conn.execute(text("ALTER TABLE follows ADD COLUMN is_favorite_friend BOOLEAN NOT NULL DEFAULT FALSE"))
+
         if "users" in inspector.get_table_names():
             colunas_existentes = {col["name"] for col in inspector.get_columns("users")}
             colunas_novas = {

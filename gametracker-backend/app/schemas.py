@@ -369,6 +369,8 @@ class UserGameOut(BaseModel):
 
 class PublicGameEntryOut(BaseModel):
     """Versão enxuta de um jogo da biblioteca, para exibir no perfil público de outra pessoa."""
+    id: int  # id do UserGame — usado pra abrir o detalhe (/social/profile/{user}/games/{id})
+    external_id: str  # id externo (RAWG/IGDB) do jogo — usado pro botão "Adicionar à minha biblioteca"
     title: str
     cover_url: str | None = None
     genre: str | None = None
@@ -376,6 +378,31 @@ class PublicGameEntryOut(BaseModel):
     status: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PublicSessionOut(BaseModel):
+    started_at: date
+    finished_at: date | None = None
+    duration_minutes: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PublicGameDetailOut(BaseModel):
+    """Visão detalhada de UM jogo específico da biblioteca de outra pessoa (item 4.2 da especificação)."""
+    external_id: str
+    title: str
+    cover_url: str | None = None
+    genre: str | None = None
+    platform: str | None = None
+    status: str
+    hours_played: float | None = None
+    play_count: int = 0
+    graphics_score: int | None = None
+    sound_score: int | None = None
+    gameplay_score: int | None = None
+    difficulty_score: int | None = None
+    sessions: list[PublicSessionOut] = []
 
 
 class PublicProfileOut(BaseModel):
@@ -403,6 +430,8 @@ class PublicProfileOut(BaseModel):
     following_count: int = 0
     games_count: int = 0
     is_following: bool = False
+    follow_status: str = "none"  # "none" | "pending" | "accepted" — pra saber se mostra "Seguir" / "Solicitação enviada" / "Seguindo"
+    is_favorite_friend: bool = False
     is_self: bool = False
 
     # Biblioteca completa (jogando + finalizados) — a busca/filtro é feita no
@@ -414,6 +443,33 @@ class PublicProfileOut(BaseModel):
 class FollowActionOut(BaseModel):
     following: bool
     followers_count: int
+    follow_status: str = "none"  # "none" | "pending" | "accepted"
+
+
+class FollowRequestOut(BaseModel):
+    """Um pedido pendente pra seguir o usuário logado, aguardando aceitar/recusar."""
+    follower_id: int
+    display_name: str | None = None
+    avatar_data: str | None = None
+    requested_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NotificationOut(BaseModel):
+    id: int
+    type: str  # "follow_request" | "follow_accepted"
+    actor_id: int | None = None
+    actor_display_name: str | None = None
+    actor_avatar_data: str | None = None
+    is_read: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UnreadCountOut(BaseModel):
+    unread_count: int
 
 
 class RankingEntryOut(BaseModel):
