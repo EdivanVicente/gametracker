@@ -34,14 +34,32 @@ _TAMANHO_MAX_TRADUCAO = 4500
 _lock_traducao = threading.Lock()
 
 
+def _parece_erro_de_traducao(texto: str | None) -> bool:
+    """
+    O `deep_translator` usa uma rota não-oficial do Google Tradutor por trás
+    dos panos. Quando o Google devolve uma página de erro (rate limit,
+    instabilidade), a biblioteca às vezes NÃO lança exceção — ela extrai
+    algum texto da própria página de erro e devolve como se fosse a tradução
+    de verdade. Sem essa checagem, esse texto de erro (sempre com esses
+    mesmos trechos característicos) acaba sendo cacheado e mostrado pro
+    usuário como se fosse o resumo do jogo.
+    """
+    if not texto:
+        return False
+    marcadores = ("that's an error", "that's all we know", "server error", "error 500")
+    texto_lower = texto.lower()
+    return any(m in texto_lower for m in marcadores)
+
+
 def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str | None:
     """
     Traduz um texto (descrição de jogo, vinda da RAWG normalmente em inglês) para
     o idioma pedido. Se a tradução falhar por qualquer motivo (sem internet,
-    serviço fora do ar, texto vazio etc.), devolve None — IMPORTANTE: não
-    devolve o texto original aqui, pra quem chama conseguir diferenciar
-    "traduziu com sucesso" de "falhou" e decidir se vale a pena cachear o
-    resultado ou tentar de novo na próxima vez (ver `_descricao_no_idioma`
+    serviço fora do ar, texto vazio, ou a página de erro do Google vindo
+    disfarçada de tradução válida), devolve None — IMPORTANTE: não devolve o
+    texto original aqui, pra quem chama conseguir diferenciar "traduziu com
+    sucesso" de "falhou" e decidir se vale a pena cachear o resultado ou
+    tentar de novo na próxima vez (ver `_descricao_no_idioma`
     em app/routers/games.py — cachear uma falha faria o app ficar "preso"
     mostrando o texto errado pra sempre, mesmo depois do serviço voltar).
     """
@@ -51,7 +69,11 @@ def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str | None:
     try:
         with _lock_traducao:
             if len(texto) <= _TAMANHO_MAX_TRADUCAO:
-                return GoogleTranslator(source="auto", target=idioma_destino).translate(texto)
+                resultado = GoogleTranslator(source="auto", target=idioma_destino).translate(texto)
+                if _parece_erro_de_traducao(resultado):
+                    logger.warning("Tradução devolveu uma página de erro do Google disfarçada — descartando.")
+                    return None
+                return resultado
 
             # Textos longos: traduz em pedaços e junta de novo, quebrando em frases
             # para não cortar uma tradução no meio de uma palavra.
@@ -66,7 +88,13 @@ def _traduzir_texto(texto: str, idioma_destino: str = "pt") -> str | None:
             if pedaco_atual:
                 partes.append(pedaco_atual)
 
-            traduzido = [GoogleTranslator(source="auto", target=idioma_destino).translate(p) for p in partes]
+            traduzido = []
+            for p in partes:
+                pedaco_traduzido = GoogleTranslator(source="auto", target=idioma_destino).translate(p)
+                if _parece_erro_de_traducao(pedaco_traduzido):
+                    logger.warning("Tradução (em pedaços) devolveu uma página de erro do Google disfarçada — descartando o texto inteiro.")
+                    return None
+                traduzido.append(pedaco_traduzido)
             return " ".join(traduzido)
     except Exception as exc:
         logger.warning("Falha ao traduzir texto pra '%s' (%s) — não será cacheado.", idioma_destino, exc)

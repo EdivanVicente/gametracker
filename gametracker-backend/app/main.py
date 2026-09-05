@@ -87,7 +87,7 @@ def _run_light_migrations() -> None:
                 conn.execute(text(f"ALTER TABLE follows ADD COLUMN status {tipo_sql} NOT NULL DEFAULT 'ACCEPTED'"))
             if "responded_at" not in colunas_existentes_follows:
                 logger.info("Migração: adicionando coluna follows.responded_at")
-                conn.execute(text("ALTER TABLE follows ADD COLUMN responded_at TIMESTAMP"))
+                conn.execute(text("ALTER TABLE follows ADD COLUMN responded_at DATETIME"))
             if "is_favorite_friend" not in colunas_existentes_follows:
                 logger.info("Migração: adicionando coluna follows.is_favorite_friend")
                 conn.execute(text("ALTER TABLE follows ADD COLUMN is_favorite_friend BOOLEAN NOT NULL DEFAULT FALSE"))

@@ -54,7 +54,8 @@
 :root[data-theme="light"] .btn-close { filter: none; }
 
 /* Botão de alternância de tema (sol/lua) */
-.gt-theme-toggle {
+.gt-theme-toggle,
+.gt-icon-btn {
   width: 40px;
   height: 40px;
   display: flex;
@@ -65,7 +66,8 @@
   border: 1px solid var(--gt-border);
   color: var(--gt-text);
 }
-.gt-theme-toggle:hover {
+.gt-theme-toggle:hover,
+.gt-icon-btn:hover {
   border-color: var(--gt-accent);
   color: var(--gt-accent);
 }
@@ -256,10 +258,29 @@ body {
 .gt-navbar .nav-link {
   color: var(--gt-text-muted) !important;
   font-weight: 500;
+  white-space: nowrap;
 }
 .gt-navbar .nav-link.active,
 .gt-navbar .nav-link:hover {
   color: var(--gt-text) !important;
+}
+
+/* A partir de 5 itens no menu (Meus Jogos/Explorar/Estatísticas/Comunidade/
+   Recomendação) + sino + tema + idioma + perfil, o espaço fica apertado antes
+   do breakpoint de colapsar pro menu mobile — reduz fonte/espaçamento nessa
+   faixa intermediária pra tudo continuar cabendo numa linha só. */
+@media (min-width: 992px) and (max-width: 1440px) {
+  .gt-navbar .nav-link {
+    font-size: 0.85rem;
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+  }
+  .gt-navbar .navbar-nav {
+    gap: 0.1rem;
+  }
+  .gt-brand {
+    font-size: 1.05rem;
+  }
 }
 
 /* ==========================================================================

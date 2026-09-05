@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.core.deps import get_current_user
 from app import models, schemas
-from app.services.games_api import games_api_service
+from app.services.games_api import games_api_service, _parece_erro_de_traducao
 from app.services.igdb_service import igdb_service
 from app.services.hltb_service import hltb_service
 
@@ -150,7 +150,20 @@ def _descricao_no_idioma(db: Session, jogo: models.Game, lang: str) -> str | Non
         .first()
     )
     if cache:
-        return cache.description
+        if _parece_erro_de_traducao(cache.description):
+            # Autocura: essa tradução foi cacheada por engano numa hora em que
+            # o Google devolveu uma página de erro em vez de traduzir de
+            # verdade (bug já corrigido — isso aqui limpa o que ficou de
+            # antes). Apaga o cache ruim e cai pro fluxo normal, que tenta
+            # traduzir de novo.
+            logger.warning(
+                "Tradução cacheada de '%s' (%s) era uma página de erro disfarçada — descartando e tentando de novo.",
+                jogo.title, lang,
+            )
+            db.delete(cache)
+            db.commit()
+        else:
+            return cache.description
 
     traduzida = games_api_service.translate_description(jogo.description, lang)
     if traduzida is None:
