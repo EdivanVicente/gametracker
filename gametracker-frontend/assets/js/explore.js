@@ -205,7 +205,7 @@ function renderizarListaResultados(resultados, tituloBuscado) {
             <div class="col-12">
                 <div class="gt-panel d-flex align-items-center gap-3 p-2" data-explore-idx="${idx}" role="button">
                     <div style="width:48px;height:48px;border-radius:6px;overflow:hidden;background-color:var(--gt-surface-raised);flex-shrink:0;">
-                        ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                        ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy">` : ''}
                     </div>
                     <div class="flex-fill" style="min-width: 0;">
                         <p class="small fw-semibold mb-0 text-truncate">${escapeHtml(jogo.title)}</p>
@@ -220,7 +220,7 @@ function renderizarListaResultados(resultados, tituloBuscado) {
             <div class="${colClass}">
                 <div class="gt-panel h-100 overflow-hidden" style="padding: 0; cursor: pointer;" data-explore-idx="${idx}" role="button">
                     <div style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
-                        ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                        ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy">` : ''}
                     </div>
                     <div class="p-2">
                         <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(jogo.title)}">${escapeHtml(jogo.title)}</p>
@@ -278,7 +278,7 @@ function renderizarDetalheJogo(body, data, jogoResumo) {
         <div class="row g-4">
             <div class="col-12 col-md-5">
                 <div class="gt-detail-cover mb-3">
-                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title || '')}">` : '<i class="bi bi-controller"></i>'}
+                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="${escapeHtml(jogo.title || '')}" loading="lazy">` : '<i class="bi bi-controller"></i>'}
                 </div>
                 <p class="gt-detail-genre mb-2">${escapeHtml(gtTranslateGenre(jogo.genre) || '')}</p>
                 <div class="d-flex flex-wrap gap-1">${badgesPlataformas}</div>

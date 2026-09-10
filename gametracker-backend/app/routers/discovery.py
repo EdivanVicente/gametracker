@@ -10,6 +10,7 @@ por requisições anônimas.
 """
 
 from collections import Counter
+import asyncio
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session, joinedload
@@ -200,7 +201,12 @@ async def get_game_details(external_id: str, lang: str = "pt"):
     """Detalhes completos de um jogo específico, usado ao confirmar a seleção no modal."""
     detalhes = await games_api_service.get_game_details(external_id=external_id)
     original = detalhes.get("description")
-    traduzida = games_api_service.translate_description(original, lang)
+    # A tradução usa uma biblioteca SÍNCRONA (chamada de rede bloqueante).
+    # Chamá-la direto aqui travaria o loop de eventos inteiro — ou seja,
+    # travaria o site pra TODO MUNDO, não só pra quem pediu esse jogo —
+    # pelo tempo que o Google Tradutor demorar a responder. `asyncio.to_thread`
+    # joga essa espera pra uma thread separada, sem bloquear mais ninguém.
+    traduzida = await asyncio.to_thread(games_api_service.translate_description, original, lang)
     detalhes["description"] = traduzida if traduzida is not None else original
     return detalhes
 
@@ -234,7 +240,13 @@ async def explore_gameplay(
                 game_data = await games_api_service.get_game_details(external_id=resultados_busca[0]["external_id"])
         if game_data:
             original = game_data.get("description")
-            traduzida = games_api_service.translate_description(original, lang)
+            # Mesmo motivo do endpoint /games/{external_id}: sem o to_thread,
+            # essa chamada bloqueante travaria o servidor inteiro enquanto
+            # espera o Google Tradutor responder — e esse endpoint em
+            # particular é chamado toda vez que alguém abre um jogo no
+            # Explorar ou no perfil de um amigo, então é o ponto que mais
+            # sofria com isso.
+            traduzida = await asyncio.to_thread(games_api_service.translate_description, original, lang)
             game_data["description"] = traduzida if traduzida is not None else original
     except HTTPException:
         game_data = None

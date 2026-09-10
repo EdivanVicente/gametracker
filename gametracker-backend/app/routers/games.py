@@ -11,6 +11,7 @@ pertencentes ao usuário logado (isolamento por user_id).
 """
 
 from datetime import date
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -136,13 +137,16 @@ async def _preencher_duracao_automatica(db: Session, user_game: models.UserGame)
     db.commit()
 
 
-def _descricao_no_idioma(db: Session, jogo: models.Game, lang: str) -> str | None:
+def _traducao_cacheada_ou_original(db: Session, jogo: models.Game, lang: str) -> tuple[str | None, bool]:
     """
-    Devolve a descrição do jogo no idioma pedido (pt/en/es), usando a tabela de
-    cache de traduções pra não chamar o tradutor de novo a cada carregamento.
+    Só olha o cache (sem chamar o tradutor pela rede). Devolve
+    (texto, precisa_traduzir) — se precisa_traduzir=True, o texto devolvido
+    ainda é o original (inglês), esperando a tradução de verdade ser feita
+    depois (ver _traduzir_em_lote, chamado em paralelo pra quem tiver mais de
+    um jogo faltando tradução).
     """
     if lang == "en" or not jogo.description:
-        return jogo.description
+        return jogo.description, False
 
     cache = (
         db.query(models.GameTranslation)
@@ -163,7 +167,59 @@ def _descricao_no_idioma(db: Session, jogo: models.Game, lang: str) -> str | Non
             db.delete(cache)
             db.commit()
         else:
-            return cache.description
+            return cache.description, False
+
+    return jogo.description, True
+
+
+def _traduzir_em_lote(db: Session, jogos: list[models.Game], lang: str) -> None:
+    """
+    Traduz vários jogos de uma vez, EM PARALELO (thread pool) — cada chamada
+    ao serviço de tradução é uma requisição de rede bloqueante (pode levar
+    1-2+ segundos), então traduzir jogo por jogo em sequência multiplicava
+    esse tempo pelo número de jogos sem cache (ex: 10 jogos sem tradução
+    cacheada = até 10x o tempo de espera, numa tela que deveria ser rápida).
+    Rodando em paralelo, o tempo total fica perto do tempo de UMA única
+    tradução, não da soma de todas.
+
+    IMPORTANTE: as chamadas de tradução em si (rede, sem acesso ao banco)
+    rodam nas threads paralelas; a gravação do resultado no cache volta a ser
+    sequencial na sessão principal do banco depois — sessões do SQLAlchemy
+    não são seguras pra usar de várias threads ao mesmo tempo.
+    """
+    if not jogos:
+        return
+
+    with ThreadPoolExecutor(max_workers=min(8, len(jogos))) as executor:
+        traducoes = list(executor.map(
+            lambda jogo: games_api_service.translate_description(jogo.description, lang), jogos,
+        ))
+
+    for jogo, traduzida in zip(jogos, traducoes):
+        if traduzida is None:
+            continue  # falhou agora — mantém o original, tenta nas próximas cargas
+        jogo.description = traduzida
+        try:
+            db.add(models.GameTranslation(game_id=jogo.id, lang=lang, description=traduzida))
+            db.commit()
+        except IntegrityError:
+            # Duas requisições simultâneas traduziram o mesmo jogo/idioma ao
+            # mesmo tempo (ex: duas abas abertas) — só descarta essa gravação,
+            # a outra já cacheou primeiro.
+            db.rollback()
+
+
+def _descricao_no_idioma(db: Session, jogo: models.Game, lang: str) -> str | None:
+    """
+    Devolve a descrição do jogo no idioma pedido (pt/en/es), usando a tabela de
+    cache de traduções pra não chamar o tradutor de novo a cada carregamento.
+    Usada nos endpoints de UM jogo só (aqui a tradução direta ainda é rápida
+    o bastante) — pra LISTAS de vários jogos, ver _traducao_cacheada_ou_original
+    + _traduzir_em_lote acima, que paralelizam.
+    """
+    texto, precisa_traduzir = _traducao_cacheada_ou_original(db, jogo, lang)
+    if not precisa_traduzir:
+        return texto
 
     traduzida = games_api_service.translate_description(jogo.description, lang)
     if traduzida is None:
@@ -230,11 +286,22 @@ def get_my_games(
     # mais na sessão e a chamada explode com InvalidRequestError, derrubando
     # a tela inteira de "Meus Jogos" pra quem tem o mesmo jogo 2x.
     games_ja_processados: set[int] = set()
+    jogos_para_traduzir: list[models.Game] = []
     for user_game in jogos:
         if user_game.game.id not in games_ja_processados:
-            db.expunge(user_game.game)  # evita que a tradução "vaze" de volta pro banco por engano
-            user_game.game.description = _descricao_no_idioma(db, user_game.game, lang)
             games_ja_processados.add(user_game.game.id)
+            db.expunge(user_game.game)  # evita que a tradução "vaze" de volta pro banco por engano
+            texto, precisa_traduzir = _traducao_cacheada_ou_original(db, user_game.game, lang)
+            user_game.game.description = texto
+            if precisa_traduzir:
+                jogos_para_traduzir.append(user_game.game)
+
+    # Só quem realmente não tinha tradução em cache dispara uma chamada de
+    # rede — e todas elas em paralelo (ver _traduzir_em_lote), não uma atrás
+    # da outra. Isso é o que evita a tela demorar multiplicado pelo número de
+    # jogos sem tradução ainda.
+    _traduzir_em_lote(db, jogos_para_traduzir, lang)
+
     return jogos
 
 

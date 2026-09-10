@@ -19,7 +19,7 @@ function escapeHtml(texto) {
 
 function avatarOuIcone(avatarData, size = 36) {
     if (avatarData) {
-        return `<img src="${avatarData}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+        return `<img src="${avatarData}" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy">`;
     }
     return `<i class="bi bi-person text-white-50" style="font-size:${size * 0.5}px;"></i>`;
 }
@@ -53,7 +53,7 @@ async function carregarFeed() {
                         </p>
                         <p class="text-white-50 mb-0" style="font-size: 0.72rem;">${dataFmt}</p>
                     </div>
-                    ${item.cover_url ? `<img src="${item.cover_url}" class="gt-feed-cover" alt="">` : ''}
+                    ${item.cover_url ? `<img src="${item.cover_url}" class="gt-feed-cover" alt="" loading="lazy">` : ''}
                 </div>`;
         }).join('');
 
@@ -135,7 +135,7 @@ async function executarBuscaGlobal(termo) {
             html += `<p class="small text-white-50 text-uppercase mb-2" style="letter-spacing:0.05em;">${GT_I18N.t('community.searchGames')}</p>`;
             html += data.games.map(g => `
                 <div class="gt-search-hit" data-game-players="${g.external_id}">
-                    ${g.cover_url ? `<img src="${g.cover_url}" class="gt-feed-cover" alt="">` : '<div class="gt-feed-cover"></div>'}
+                    ${g.cover_url ? `<img src="${g.cover_url}" class="gt-feed-cover" alt="" loading="lazy">` : '<div class="gt-feed-cover"></div>'}
                     <span class="flex-fill small">${escapeHtml(g.title)}</span>
                     <span class="small text-white-50">${g.players_count} ${GT_I18N.t('community.playersCount')}</span>
                 </div>`).join('');
@@ -374,7 +374,7 @@ function renderizarGradeJogosPublico(jogos) {
                 <div class="col-12">
                     <div class="gt-panel d-flex align-items-center gap-3 p-2" data-game-idx="${idx}" role="button">
                         <div style="width:48px;height:48px;border-radius:6px;overflow:hidden;background-color:var(--gt-surface-raised);flex-shrink:0;">
-                            ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                            ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy">` : ''}
                         </div>
                         <div class="flex-fill min-width-0">
                             <p class="small fw-semibold mb-0 text-truncate">${escapeHtml(j.title)}</p>
@@ -392,7 +392,7 @@ function renderizarGradeJogosPublico(jogos) {
                 <div class="${colClass}">
                     <div class="gt-panel h-100 overflow-hidden" style="padding: 0; cursor: pointer;" data-game-idx="${idx}" role="button">
                         <div class="position-relative" style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
-                            ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                            ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy">` : ''}
                             <span class="badge ${badge.classe} position-absolute top-0 start-0 m-2" style="font-size: 0.65rem;">${badge.texto}</span>
                         </div>
                         <div class="p-2">
@@ -545,7 +545,7 @@ async function abrirQuickViewJogo(jogo) {
         <div class="row g-3 mb-3">
             <div class="col-4 col-sm-3">
                 <div style="aspect-ratio: 3/4; border-radius: 8px; overflow: hidden; background-color: var(--gt-surface-raised);">
-                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                    ${jogo.cover_url ? `<img src="${jogo.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy">` : ''}
                 </div>
             </div>
             <div class="col-8 col-sm-9">

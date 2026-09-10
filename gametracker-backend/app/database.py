@@ -49,7 +49,29 @@ connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL_RESOLVID
 
 engine = create_engine(DATABASE_URL_RESOLVIDA, connect_args=connect_args)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    # Por padrão, o SQLAlchemy "expira" (invalida) TODOS os objetos ainda
+    # presos na sessão depois de qualquer commit() — o próximo acesso a
+    # qualquer atributo/relacionamento deles dispara uma consulta nova ao
+    # banco pra recarregar, mesmo que esse objeto não tenha nada a ver com o
+    # que acabou de ser commitado. Isso causava um bug real: ao traduzir a
+    # descrição de vários jogos na tela "Meus Jogos", cada tradução salva no
+    # cache fazia um commit() — e esse commit invalidava o UserGame de jogos
+    # JÁ traduzidos antes, fazendo o relacionamento ".game" ser recarregado
+    # do banco na hora de montar a resposta, jogando fora a tradução que já
+    # tínhamos calculado em memória (o usuário via a descrição em inglês de
+    # novo, mesmo a tradução tendo funcionado).
+    # Com expire_on_commit=False, um objeto só fica desatualizado se alguém
+    # pedir explicitamente (db.refresh(obj)) — o que o projeto já faz em
+    # todo lugar que realmente precisa dos dados mais recentes depois de
+    # salvar (ex: pegar o ID gerado pelo banco), então essa mudança não tira
+    # nenhuma garantia que o código já dependia — só evita recargas
+    # implícitas e surpreendentes no meio do caminho.
+    expire_on_commit=False,
+)
 
 Base = declarative_base()
 
