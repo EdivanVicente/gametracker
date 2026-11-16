@@ -102,6 +102,10 @@ class Game(Base):
     genre = Column(String(255), nullable=True)
     platforms = Column(Text, nullable=True)  # nomes separados por vírgula (ex: "PC, PlayStation 5")
     multiplayer_info = Column(String(255), nullable=True)  # ex: "Single-player, Multiplayer"
+    # --- Nota da crítica especializada (só leitura, vem da RAWG/IGDB) ---
+    critic_score = Column(Integer, nullable=True)        # 0-100
+    critic_source = Column(String(20), nullable=True)    # "metacritic" | "igdb"
+    critic_checked_at = Column(DateTime, nullable=True)  # última busca (evita buscar toda hora)
 
     user_entries = relationship("UserGame", back_populates="game")
 
@@ -137,6 +141,8 @@ class UserGame(Base):
     # --- Estimativas de duração (informativo, tipo HowLongToBeat) ---
     time_to_beat_main = Column(Integer, nullable=True)  # minutos p/ terminar a missão principal
     time_to_beat_completionist = Column(Integer, nullable=True)  # minutos p/ 100%
+    # --- Veredito pessoal: "replay" | "good_but" | "wouldnt_replay" | "not_recommend" ---
+    verdict = Column(String(20), nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 

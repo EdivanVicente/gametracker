@@ -12,6 +12,8 @@ PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Z
 
 GENDER_OPTIONS = {"male", "female", "other", "private"}
 VISIBILITY_OPTIONS = {"public", "friends", "private"}
+# Veredito pessoal do jogador sobre o jogo (aparece no card e no detalhe).
+VERDICT_OPTIONS = {"replay", "good_but", "wouldnt_replay", "not_recommend"}
 
 
 def _validar_senha_forte(value: str) -> str:
@@ -186,6 +188,9 @@ class GameOut(BaseModel):
     genre: str | None = None
     platforms: str | None = None
     multiplayer_info: str | None = None
+    # Nota da crítica especializada (0-100), só leitura. Fonte: "metacritic" (RAWG) ou "igdb".
+    critic_score: int | None = None
+    critic_source: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -277,6 +282,18 @@ class UserGameUpdate(BaseModel):
     # Horas jogadas — em MINUTOS no banco, mas aceito/exposto em HORAS (float) aqui.
     hours_played: float | None = Field(default=None, ge=0)
 
+    # Veredito pessoal. Enviar null limpa a escolha.
+    verdict: str | None = None
+
+    @field_validator("verdict")
+    @classmethod
+    def _validar_veredito(cls, value):
+        if value is None or value == "":
+            return None
+        if value not in VERDICT_OPTIONS:
+            raise ValueError("Veredito inválido.")
+        return value
+
 
 class PlaySessionOut(BaseModel):
     id: int
@@ -352,6 +369,7 @@ class UserGameOut(BaseModel):
     hours_played: float | None = None
     time_to_beat_main: float | None = None
     time_to_beat_completionist: float | None = None
+    verdict: str | None = None
     sessions: list[PlaySessionOut] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -376,6 +394,8 @@ class PublicGameEntryOut(BaseModel):
     genre: str | None = None
     platform: str | None = None
     status: str
+    critic_score: int | None = None
+    verdict: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -402,6 +422,9 @@ class PublicGameDetailOut(BaseModel):
     sound_score: int | None = None
     gameplay_score: int | None = None
     difficulty_score: int | None = None
+    verdict: str | None = None
+    critic_score: int | None = None
+    critic_source: str | None = None
     sessions: list[PublicSessionOut] = []
 
 

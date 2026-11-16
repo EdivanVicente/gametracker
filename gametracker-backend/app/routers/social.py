@@ -114,6 +114,7 @@ def get_public_profile(
                 id=j.id, external_id=j.game.external_id,
                 title=j.game.title, cover_url=j.game.cover_url, genre=j.game.genre,
                 platform=j.platform, status=j.status.value,
+                critic_score=j.game.critic_score, verdict=j.verdict,
             ) for j in jogos
         ],
     )
@@ -162,6 +163,9 @@ def get_friend_game_detail(
         sound_score=rating.sound_score if rating else None,
         gameplay_score=rating.gameplay_score if rating else None,
         difficulty_score=rating.difficulty_score if rating else None,
+        verdict=entrada.verdict,
+        critic_score=entrada.game.critic_score,
+        critic_source=entrada.game.critic_source,
         sessions=[
             schemas.PublicSessionOut(started_at=s.started_at, finished_at=s.finished_at, duration_minutes=s.duration_minutes)
             for s in sorted(entrada.sessions, key=lambda s: s.started_at, reverse=True)

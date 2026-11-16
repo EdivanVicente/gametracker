@@ -27,7 +27,10 @@ logger = logging.getLogger("gametracker.igdb")
 _TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 _IGDB_BASE_URL = "https://api.igdb.com/v4"
 
-_CAMPOS = "name,cover.url,genres.name,platforms.name,summary,first_release_date,game_modes.name"
+_CAMPOS = (
+    "name,cover.url,genres.name,platforms.name,summary,first_release_date,game_modes.name,"
+    "aggregated_rating,aggregated_rating_count"
+)
 
 
 class IGDBService:
@@ -140,7 +143,20 @@ class IGDBService:
             "genre": ", ".join(genres) if genres else None,
             "release_date": release_date,
             "multiplayer_info": ", ".join(modos) if modos else None,
+            # Média da crítica especializada na IGDB (0-100) — None quando não existe.
+            "critic_score": round(item["aggregated_rating"]) if item.get("aggregated_rating") else None,
+            "critic_source": "igdb" if item.get("aggregated_rating") else None,
         }
+
+    async def get_critic_score_by_title(self, title: str) -> int | None:
+        """Reserva: procura o jogo pelo nome na IGDB e devolve a nota da crítica (0-100), se houver."""
+        if not self.configurado or not title:
+            return None
+        resultados = await self.search_games(title, page_size=5)
+        alvo = title.strip().lower()
+        exato = next((r for r in resultados if (r.get("title") or "").strip().lower() == alvo), None)
+        escolhido = exato or (resultados[0] if resultados else None)
+        return escolhido.get("critic_score") if escolhido else None
 
 
 igdb_service = IGDBService()

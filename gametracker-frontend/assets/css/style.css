@@ -1197,3 +1197,139 @@ textarea::placeholder {
     transition: none;
   }
 }
+
+
+/* ==========================================================================
+   Veredito pessoal + nota da crítica especializada
+   ========================================================================== */
+
+.gt-card-verdict-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.gt-critic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  font-family: var(--gt-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.4;
+}
+.gt-critic-badge--lg {
+  min-width: 3rem;
+  height: 3rem;
+  justify-content: center;
+  font-size: 1.15rem;
+  border-radius: 10px;
+}
+.gt-critic--high { background: #2e9e5b; }
+.gt-critic--mid  { background: #c99a1a; }
+.gt-critic--low  { background: #c0392b; }
+
+.gt-critic-box {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 10px;
+  min-height: 3rem;
+}
+
+/* Cores por veredito (chip do card e botão ativo do detalhe) */
+.gt-verdict--replay         { --gt-verdict-color: #2e9e5b; }
+.gt-verdict--good-but       { --gt-verdict-color: #c99a1a; }
+.gt-verdict--wouldnt-replay { --gt-verdict-color: #c0392b; }
+.gt-verdict--not-recommend  { --gt-verdict-color: #8a8f98; }
+
+.gt-verdict-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  color: var(--gt-verdict-color);
+  border: 1px solid var(--gt-verdict-color);
+}
+
+.gt-verdict-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+@media (min-width: 768px) {
+  .gt-verdict-group { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.gt-verdict-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--gt-border);
+  background: transparent;
+  color: var(--gt-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  text-align: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.gt-verdict-option i { font-size: 1rem; color: var(--gt-verdict-color); }
+.gt-verdict-option:hover { border-color: var(--gt-verdict-color); }
+.gt-verdict-option.is-active {
+  background: var(--gt-verdict-color);
+  border-color: var(--gt-verdict-color);
+  color: #fff;
+}
+.gt-verdict-option.is-active i { color: #fff; }
+
+
+/* --- Card: legenda do veredito e "sem nota da crítica" --- */
+.gt-card-verdict-row { flex-wrap: wrap; }
+.gt-critic--none {
+  background: transparent;
+  color: var(--gt-text-muted);
+  border: 1px dashed var(--gt-border);
+  font-weight: 500;
+}
+.gt-verdict-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--gt-verdict-color);
+  border: 1px solid var(--gt-verdict-color);
+  white-space: nowrap;
+}
+
+
+/* --- Card: "Avaliação de <nome>" acima das notas por categoria --- */
+.gt-card-rated-by {
+  font-size: 0.7rem;
+  color: var(--gt-text-muted);
+  margin: 0 0 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A linha separadora passa a ficar acima do "Avaliação de", não das notas */
+.gt-card-rated-by + .gt-card-scores {
+  border-top: none;
+  padding-top: 0;
+}
+.gt-card-verdict-row + .gt-card-rated-by,
+.gt-card-duration + .gt-card-rated-by {
+  border-top: 1px solid var(--gt-border);
+  padding-top: 0.5rem;
+}

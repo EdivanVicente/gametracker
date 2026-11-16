@@ -18,10 +18,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
   <!-- Design system próprio -->
-  <link rel="stylesheet" href="assets/css/style.css?v=1789073466">
+  <link rel="stylesheet" href="assets/css/style.css?v=1789073502">
   <script src="assets/js/config.js?v=1789073466"></script>
   <script src="assets/js/theme.js?v=1789073466"></script>
-  <script src="assets/js/i18n.js?v=1789073466"></script>
+  <script src="assets/js/i18n.js?v=1789073502"></script>
 
   <script src="assets/js/auth-check.js?v=1789073466"></script>
 </head>
@@ -543,6 +543,10 @@
 
           <hr class="border-secondary">
 
+          <!-- Nota da crítica especializada (só leitura — vem da RAWG/Metacritic ou IGDB) -->
+          <p class="small text-white-50 mb-2" data-i18n="critic.title">Crítica especializada</p>
+          <div class="gt-critic-box d-flex align-items-center mb-3" id="detail-critic-box"></div>
+
           <p class="small text-white-50 mb-2" data-i18n="detail.ratingByCategory">Avaliação por categoria</p>
           <div class="row g-2 mb-3 gt-rating-grid">
             <div class="col-12 col-sm-6 d-flex justify-content-between align-items-center">
@@ -587,6 +591,23 @@
             </div>
           </div>
 
+          <!-- Veredito pessoal (os botões também servem de legenda dos ícones do card) -->
+          <p class="small text-white-50 mb-2" data-i18n="verdict.title">Seu veredito</p>
+          <div class="gt-verdict-group mb-3" id="detail-verdict" data-verdict="" role="group">
+            <button type="button" class="gt-verdict-option gt-verdict--replay" data-value="replay" aria-pressed="false">
+              <i class="bi bi-arrow-repeat"></i><span data-i18n="verdict.replay">Jogaria de novo</span>
+            </button>
+            <button type="button" class="gt-verdict-option gt-verdict--good-but" data-value="good_but" aria-pressed="false">
+              <i class="bi bi-hand-thumbs-up"></i><span data-i18n="verdict.goodBut">Bom, mas viveria sem</span>
+            </button>
+            <button type="button" class="gt-verdict-option gt-verdict--wouldnt-replay" data-value="wouldnt_replay" aria-pressed="false">
+              <i class="bi bi-hand-thumbs-down"></i><span data-i18n="verdict.wouldntReplay">Não jogaria de novo</span>
+            </button>
+            <button type="button" class="gt-verdict-option gt-verdict--not-recommend" data-value="not_recommend" aria-pressed="false">
+              <i class="bi bi-slash-circle"></i><span data-i18n="verdict.notRecommend">Não recomendo</span>
+            </button>
+          </div>
+
           <div class="form-check form-switch mb-3">
             <input class="form-check-input" type="checkbox" role="switch" id="detail-favorite">
             <label class="form-check-label small" for="detail-favorite" data-i18n="detail.markFavorite">Marcar como favorito</label>
@@ -614,7 +635,7 @@
 <script src="assets/js/youtube-player.js?v=1789073466"></script>
 <script src="assets/js/consoles.js?v=1789073466"></script>
 <script src="assets/js/genres.js?v=1789073466"></script>
-<script src="assets/js/dashboard.js?v=1789073466"></script>
+<script src="assets/js/dashboard.js?v=1789073503"></script>
 
 </body>
 </html>

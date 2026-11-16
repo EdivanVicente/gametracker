@@ -1,3 +1,4 @@
+console.log('[GameTracker] dashboard.js carregado: versao com nota da crítica na busca');
 /**
  * Dashboard JavaScript - Gerencia a interação do utilizador com a API
  */
@@ -54,11 +55,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Onboarding: pergunta nome de exibição + IDs de plataforma só no primeiro acesso ---
+let nomeAvaliador = '';
+
 async function verificarOnboarding() {
     try {
         const response = await authFetch('/auth/me');
         if (!response.ok) return;
         const user = await response.json();
+
+        // --- NOME DO AVALIADOR NO CARD ---
+        // Mesmo critério da navbar: nome de exibição do cadastro ou, se vazio,
+        // a parte do e-mail antes do @. Re-renderiza os cards já desenhados.
+        nomeAvaliador = user.display_name || (user.email ? user.email.split('@')[0] : '');
+        if (meusJogos.length) aplicarFiltros();
+
         if (user.onboarding_completed) return;
 
         // Pré-preenche caso o usuário já tenha algo salvo (ex: veio de um cadastro antigo).
@@ -260,6 +270,7 @@ async function carregarMeusJogos() {
         meusJogos = await response.json();
         atualizarHud(meusJogos);
         aplicarFiltros();
+        atualizarNotasCriticaPendentes();
     } catch (error) {
         console.error('Erro ao carregar jogos:', error);
     }
@@ -318,6 +329,115 @@ function obterBadgeStatus(item) {
     return { classe: 'is-finished', texto: GT_I18N.t('status.finished') };
 }
 
+// --- VEREDITO PESSOAL + NOTA DA CRÍTICA ---
+// Ícone, cor e texto (i18n) de cada veredito. O texto aparece ao passar o
+// mouse no card e nos botões do detalhe (que funcionam como legenda).
+const VEREDITOS = {
+    replay:         { icone: 'bi-arrow-repeat',     classe: 'gt-verdict--replay',         chave: 'verdict.replay' },
+    good_but:       { icone: 'bi-hand-thumbs-up',   classe: 'gt-verdict--good-but',       chave: 'verdict.goodBut' },
+    wouldnt_replay: { icone: 'bi-hand-thumbs-down', classe: 'gt-verdict--wouldnt-replay', chave: 'verdict.wouldntReplay' },
+    not_recommend:  { icone: 'bi-slash-circle',     classe: 'gt-verdict--not-recommend',  chave: 'verdict.notRecommend' },
+};
+
+// Cor da nota da crítica: verde >= 75, amarelo 50-74, vermelho < 50 (padrão Metacritic).
+function classeNotaCritica(nota) {
+    if (nota >= 75) return 'gt-critic--high';
+    if (nota >= 50) return 'gt-critic--mid';
+    return 'gt-critic--low';
+}
+
+function nomeFonteCritica(fonte) {
+    return fonte === 'igdb' ? 'IGDB' : 'Metacritic';
+}
+
+// Etiqueta pequena da nota da crítica (card e lista). Vazio quando não há nota.
+// compacto = true na visualização em lista (só ícone + nota; texto no tooltip).
+function htmlNotaCriticaCard(jogo, compacto = false) {
+    if (jogo.critic_score == null) {
+        const textoSemNota = GT_I18N.t('critic.noneShort');
+        return `<span class="gt-critic-badge gt-critic--none" title="${escapeHtml(textoSemNota)}">
+                    <i class="bi bi-trophy"></i> ${compacto ? '—' : escapeHtml(textoSemNota)}
+                </span>`;
+    }
+    const titulo = `${GT_I18N.t('critic.label')} (${nomeFonteCritica(jogo.critic_source)}): ${jogo.critic_score}/100`;
+    return `<span class="gt-critic-badge ${classeNotaCritica(jogo.critic_score)}" title="${escapeHtml(titulo)}">
+                <i class="bi bi-trophy-fill"></i> ${compacto ? '' : `${GT_I18N.t('critic.short')}: `}${jogo.critic_score}
+            </span>`;
+}
+
+// Nota da crítica na prévia da busca: nota + fonte, ou "Sem nota da crítica".
+function htmlNotaCriticaPrevia(nota) {
+    if (nota.critic_score == null) return htmlNotaCriticaCard(nota);
+    return `${htmlNotaCriticaCard(nota)}
+            <span class="small text-white-50 ms-1">${GT_I18N.t('critic.source')}: ${nomeFonteCritica(nota.critic_source)}</span>`;
+}
+
+// Ícone do veredito no card (texto no tooltip). Vazio quando não escolhido.
+// No card mostra ícone + texto (legenda); na lista (compacto) só o ícone com tooltip.
+function htmlVereditoCard(item, compacto = false) {
+    const v = VEREDITOS[item.verdict];
+    if (!v) return '';
+    const texto = GT_I18N.t(v.chave);
+    if (compacto) {
+        return `<span class="gt-verdict-chip ${v.classe}" title="${escapeHtml(texto)}" aria-label="${escapeHtml(texto)}">
+                    <i class="bi ${v.icone}"></i>
+                </span>`;
+    }
+    return `<span class="gt-verdict-pill ${v.classe}" title="${escapeHtml(GT_I18N.t('verdict.title'))}">
+                <i class="bi ${v.icone}"></i> ${escapeHtml(texto)}
+            </span>`;
+}
+
+// Preenche o bloco "Crítica especializada" (só leitura) no detalhe.
+function preencherNotaCriticaDetalhe(jogo) {
+    const box = document.getElementById('detail-critic-box');
+    if (!box) return;
+    if (jogo.critic_score == null) {
+        box.innerHTML = `<span class="small text-white-50"><i class="bi bi-trophy me-1"></i>${GT_I18N.t('critic.none')}</span>`;
+        return;
+    }
+    box.innerHTML = `
+        <span class="gt-critic-badge gt-critic-badge--lg ${classeNotaCritica(jogo.critic_score)}">${jogo.critic_score}</span>
+        <div class="ms-2">
+            <div class="small fw-semibold">${GT_I18N.t('critic.label')} <span class="text-white-50">/100</span></div>
+            <div class="small text-white-50">${GT_I18N.t('critic.source')}: ${nomeFonteCritica(jogo.critic_source)} · ${GT_I18N.t('critic.readOnly')}</div>
+        </div>`;
+}
+
+// Marca visualmente o veredito escolhido no detalhe (dataset.verdict guarda o valor).
+function definirVeredito(valor) {
+    const grupo = document.getElementById('detail-verdict');
+    if (!grupo) return;
+    grupo.dataset.verdict = valor || '';
+    grupo.querySelectorAll('.gt-verdict-option').forEach(btn => {
+        const ativo = btn.dataset.value === valor;
+        btn.classList.toggle('is-active', ativo);
+        btn.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+    });
+}
+
+// Jogos salvos antes desse recurso não têm nota da crítica ainda. Pede pro
+// backend buscar em lotes (uma vez por carregamento de página) e recarrega a
+// lista se alguma nota nova chegou.
+let _notasCriticaVerificadas = false;
+async function atualizarNotasCriticaPendentes() {
+    if (_notasCriticaVerificadas) return;
+    _notasCriticaVerificadas = true;
+    let houveNovidade = false;
+    try {
+        for (let rodada = 0; rodada < 10; rodada++) {
+            const r = await authFetch('/games/refresh-critic-scores', { method: 'POST' });
+            if (!r.ok) break;
+            const data = await r.json();
+            if (data.updated > 0) houveNovidade = true;
+            if (!data.remaining) break;
+        }
+    } catch (error) {
+        console.warn('Não foi possível atualizar as notas da crítica:', error);
+    }
+    if (houveNovidade) carregarMeusJogos();
+}
+
 function renderGridCards(jogos, grid) {
     const colClass = CLASSES_POR_MODO[modoVisualizacao] || CLASSES_POR_MODO.medium;
 
@@ -345,6 +465,10 @@ function renderGridCards(jogos, grid) {
               <h3 class="gt-card-title mb-0">${escapeHtml(jogo.title)}</h3>
               <p class="gt-card-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(gtTranslateGenre(jogo.genre) || '—')}</p>
               ${duracao ? `<p class="gt-card-duration"><i class="bi bi-hourglass-split"></i> ${duracao.titulo}</p>` : ''}
+              <div class="gt-card-verdict-row">${htmlNotaCriticaCard(jogo)}${htmlVereditoCard(item)}</div>
+              <p class="gt-card-rated-by">${nomeAvaliador
+                  ? GT_I18N.t('card.ratedBy', { name: escapeHtml(nomeAvaliador) })
+                  : GT_I18N.t('card.myRating')}</p>
               <div class="gt-card-scores">
                 <span>Grf <span class="gt-score-value">${rating.graphics_score ?? '-'}</span></span>
                 <span>Som <span class="gt-score-value">${rating.sound_score ?? '-'}</span></span>
@@ -379,6 +503,7 @@ function renderGridLista(jogos, grid) {
               <div class="gt-card-list-title">${escapeHtml(jogo.title)}</div>
               <div class="gt-card-list-meta">${escapeHtml(item.platform || '—')} · ${escapeHtml(gtTranslateGenre(jogo.genre) || '—')}${duracao ? ` · ${duracao.titulo}` : ''}</div>
             </div>
+            <div class="d-flex align-items-center gap-1 flex-shrink-0">${htmlNotaCriticaCard(jogo, true)}${htmlVereditoCard(item, true)}</div>
             <span class="gt-card-status position-relative ${badge.classe}" style="top:auto; left:auto;">
                 ${badge.texto}
             </span>
@@ -536,11 +661,23 @@ function setupSearch() {
                                 : '<div style="width:50px;height:50px;" class="rounded bg-secondary d-flex align-items-center justify-content-center"><i class="bi bi-controller"></i></div>'}
                             <div class="ms-3 flex-fill" style="min-width: 0;">
                                 <h6 class="mb-0 text-white text-truncate">${escapeHtml(jogo.title)}</h6>
-                                <small class="text-white-50">${escapeHtml(gtTranslateGenre(jogo.genre) || '')}</small>
+                                <small class="text-white-50 d-block">${escapeHtml(gtTranslateGenre(jogo.genre) || '')}</small>
+                                ${listarPlataformasBusca(jogo).length
+                                    ? `<small class="text-white-50 d-block text-truncate" style="font-size: 0.72rem;"><i class="bi bi-joystick me-1"></i>${escapeHtml(listarPlataformasBusca(jogo).join(', '))}</small>`
+                                    : ''}
+                                <!-- --- NOTA DA CRÍTICA NA BUSCA (antes de abrir a prévia) --- -->
+                                <div class="mt-1">${htmlNotaCriticaCard(jogo)}</div>
                             </div>
-                            <button class="btn btn-sm btn-primary ms-auto flex-shrink-0" style="background-color: var(--gt-accent); border-color: var(--gt-accent);"
+                            <button type="button" class="btn btn-sm btn-gt-outline ms-2 flex-shrink-0"
+                                    onclick="alternarPreviewJogo(${idx})" title="${GT_I18N.t('explore.learnMore')}" aria-label="${GT_I18N.t('explore.learnMore')}">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary ms-2 flex-shrink-0" style="background-color: var(--gt-accent); border-color: var(--gt-accent);"
                                     onclick="prepararAdicaoJogo('${jogo.external_id}', ${idx})" data-i18n="addGame.addBtn">Adicionar</button>
                         </div>
+
+                        <!-- Prévia do jogo (botão do olho): capa, plataformas, descrição e gameplay. -->
+                        <div class="d-none gt-add-preview mt-2 pt-2 border-top border-secondary" id="game-result-preview-${idx}"></div>
 
                         <div class="d-none mt-2 pt-2 border-top border-secondary" id="game-result-form-${idx}">
                             <!-- Passo 1: escolher o status inicial — decide o que mais é pedido depois. -->
@@ -602,6 +739,94 @@ function setupSearch() {
 }
 
 let resultados_busca_atual = [];
+
+// --- PRÉVIA DO JOGO ANTES DE ADICIONAR (botão do olho) ---
+// O backend pode devolver "platforms" como lista ou como texto separado por vírgula.
+function listarPlataformasBusca(jogo) {
+    const p = jogo && jogo.platforms;
+    if (Array.isArray(p)) return p.filter(Boolean);
+    if (typeof p === 'string') return p.split(',').map(x => x.trim()).filter(Boolean);
+    return [];
+}
+
+// Mostra capa maior, plataformas, descrição e gameplay dentro do próprio
+// resultado, pra conferir se é o jogo certo quando há vários com o mesmo nome.
+async function alternarPreviewJogo(idx) {
+    const painel = document.getElementById(`game-result-preview-${idx}`);
+    const jogo = resultados_busca_atual[idx];
+    if (!painel || !jogo) return;
+
+    // Se já está aberta, clicar de novo fecha.
+    if (!painel.classList.contains('d-none')) {
+        painel.classList.add('d-none');
+        painel.innerHTML = '';
+        return;
+    }
+
+    // Fecha qualquer outra prévia aberta (o player de vídeo só suporta um por vez).
+    document.querySelectorAll('.gt-add-preview').forEach(p => {
+        p.classList.add('d-none');
+        p.innerHTML = '';
+    });
+
+    painel.classList.remove('d-none');
+    painel.innerHTML = `<p class="small text-white-50 text-center py-3 mb-0">${GT_I18N.t('common.loading')}</p>`;
+
+    let dados = {};
+    try {
+        const response = await authFetch(
+            `/explore/gameplay?title=${encodeURIComponent(jogo.title)}&external_id=${encodeURIComponent(jogo.external_id)}&lang=${gtBackendLang()}`
+        );
+        if (response.ok) dados = await response.json();
+    } catch (error) {
+        console.error('Erro ao carregar prévia do jogo:', error);
+    }
+
+    // Usuário pode ter fechado a prévia enquanto carregava.
+    if (painel.classList.contains('d-none')) return;
+
+    const info = dados.game || jogo;
+    // Se os detalhes vierem sem nota, mantém a que já veio na lista de busca.
+    const notaCritica = {
+        critic_score: info.critic_score ?? jogo.critic_score ?? null,
+        critic_source: info.critic_source || jogo.critic_source || null,
+    };
+    const plataformas = listarPlataformasBusca(info).length ? listarPlataformasBusca(info) : listarPlataformasBusca(jogo);
+    const descricao = info.description
+        ? escapeHtml(info.description.split(/\s+/).slice(0, 60).join(' ')) + '…'
+        : GT_I18N.t('explore.noDescription');
+
+    painel.innerHTML = `
+        <div class="row g-3">
+            <div class="col-4">
+                <div class="gt-detail-cover">
+                    ${info.cover_url
+                        ? `<img src="${info.cover_url}" alt="${escapeHtml(info.title || '')}" loading="lazy">`
+                        : '<i class="bi bi-controller"></i>'}
+                </div>
+            </div>
+            <div class="col-8">
+                <p class="gt-detail-genre mb-2">${escapeHtml(gtTranslateGenre(info.genre) || '')}</p>
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                    ${plataformas.map(p => `<span class="gt-platform-badge">${escapeHtml(p)}</span>`).join('')}
+                </div>
+                <!-- --- NOTA DA CRÍTICA NA PRÉVIA (só leitura) --- -->
+                <div class="mb-2">${htmlNotaCriticaPrevia(notaCritica)}</div>
+                <p class="small mb-0">${descricao}</p>
+            </div>
+            <div class="col-12">
+                <p class="small text-white-50 mb-2">${GT_I18N.t('detail.gameplayLabel')}</p>
+                <div id="game-result-video-${idx}"></div>
+            </div>
+        </div>
+    `;
+
+    renderizarGameplay(
+        document.getElementById(`game-result-video-${idx}`),
+        dados.videos || (dados.video ? [dados.video] : []),
+        info.title || jogo.title
+    );
+}
 
 // Ao clicar "Adicionar", revela o miniformulário de 2 passos: primeiro o
 // status inicial (Quero jogar / Jogando / Finalizado), depois só os campos
@@ -683,7 +908,7 @@ async function adicionarJogo(payload, btnElement) {
             // registrou uma nova sessão de jogo (replay) e incrementou o contador.
             if (data && data.play_count > 1) {
                 mostrarToast(
-                    tf('toast.replayLogged', { title: data.game?.title || '', count: data.play_count })
+                    GT_I18N.t('toast.replayLogged', { title: data.game?.title || '', count: data.play_count })
                     || `"${data.game?.title || ''}" já estava na sua biblioteca — registramos mais uma jogada (total: ${data.play_count}x).`
                 );
             }
@@ -721,6 +946,14 @@ async function atualizarJogo(userGameId, payload) {
 
 // --- Modal de Detalhe / Avaliação ---
 function setupDetailModal() {
+    // Veredito: clique escolhe; clicar no mesmo de novo limpa.
+    document.querySelectorAll('#detail-verdict .gt-verdict-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const atual = document.getElementById('detail-verdict').dataset.verdict || '';
+            definirVeredito(atual === btn.dataset.value ? '' : btn.dataset.value);
+        });
+    });
+
     // Estrelas: clique define a nota (1 a 5); clicar na mesma nota zera.
     document.querySelectorAll('.gt-star-input').forEach(container => {
         container.querySelectorAll('.gt-star').forEach(star => {
@@ -737,6 +970,7 @@ function setupDetailModal() {
     document.getElementById('btn-delete-detail')?.addEventListener('click', excluirJogoAtual);
     document.getElementById('btn-confirm-session')?.addEventListener('click', confirmarFormularioSessao);
     document.getElementById('btn-cancel-session')?.addEventListener('click', fecharFormularioSessao);
+    document.getElementById('detail-session-finish-input')?.addEventListener('input', atualizarBotoesNovaJogada);
     document.getElementById('btn-delete-session')?.addEventListener('click', excluirSessaoAtual);
     document.getElementById('btn-fetch-duration')?.addEventListener('click', buscarDuracaoAutomatica);
 
@@ -955,6 +1189,9 @@ function abrirDetalhe(userGameId) {
     definirEstrelas(document.getElementById('stars-gameplay'), rating.gameplay_score || 0);
     definirEstrelas(document.getElementById('stars-difficulty'), rating.difficulty_score || 0);
 
+    preencherNotaCriticaDetalhe(jogo);
+    definirVeredito(item.verdict || '');
+
     // Guarda uma "foto" do estado logo após preencher todos os campos, pra
     // depois o botão Salvar conseguir saber se o usuário realmente mudou algo
     // (ver salvarDetalhe / lerEstadoAtualDoFormulario).
@@ -985,6 +1222,7 @@ function lerEstadoAtualDoFormulario() {
         sound_score: Number(document.getElementById('stars-sound').dataset.score) || 0,
         gameplay_score: Number(document.getElementById('stars-gameplay').dataset.score) || 0,
         difficulty_score: Number(document.getElementById('stars-difficulty').dataset.score) || 0,
+        verdict: document.getElementById('detail-verdict')?.dataset.verdict || null,
         // Horas jogadas: compara pelo valor em MINUTOS (inteiro), não pelo texto
         // "hh:mm" — assim "1:19" digitado de novo não conta como mudança, e
         // pequenas diferenças de formatação (ex: "1:9" vs "1:09") também não.
@@ -1040,6 +1278,7 @@ async function salvarDetalhe() {
         sound_score: Number(document.getElementById('stars-sound').dataset.score) || null,
         gameplay_score: Number(document.getElementById('stars-gameplay').dataset.score) || null,
         difficulty_score: Number(document.getElementById('stars-difficulty').dataset.score) || null,
+        verdict: document.getElementById('detail-verdict')?.dataset.verdict || null,
         hours_played: hhmmParaDecimal(document.getElementById('detail-hours-played').value),
     };
 
@@ -1302,12 +1541,12 @@ function abrirFormularioSessao(modo, sessao = null) {
         inicioInput.value = hoje;
         inicioInput.disabled = false;
 
-        // Limpa o campo de fim e seu "min": antes, ao só esconder (d-none),
-        // um valor de uma sessão 'finish'/'edit' anterior ficava preso aqui
-        // e era lido na validação, disparando o erro de data por engano.
+        // --- NOVA JOGADA: DATA DE FINALIZAÇÃO OPCIONAL ---
+        // O campo de fim agora aparece já na nova jogada. Vazio = "Ainda jogando";
+        // preenchido = a jogada já entra como finalizada (habilita "Confirmar").
         fimInput.value = '';
-        fimInput.min = '';
-        fimWrapper.classList.add('d-none');
+        fimInput.min = inicioInput.value;
+        fimWrapper.classList.remove('d-none');
 
         duracaoInput.value = '';
     } else if (modo === 'finish') {
@@ -1333,7 +1572,60 @@ function abrirFormularioSessao(modo, sessao = null) {
     // ("finish") uma jogada nova, já que ainda não há o que excluir.
     document.getElementById('btn-delete-session').classList.toggle('d-none', modo !== 'edit');
 
+    obterBotaoAindaJogando().classList.toggle('d-none', modo !== 'start');
+    atualizarBotoesNovaJogada();
+
     form.classList.remove('d-none');
+}
+
+// --- BOTÃO "AINDA JOGANDO" (nova jogada sem data de finalização) ---
+// Criado via JS ao lado do "Confirmar", pra não precisar mexer no dashboard.html.
+const TEXTO_AINDA_JOGANDO = { 'pt-BR': 'Ainda jogando', en: 'Still playing', es: 'Sigo jugando' };
+
+function obterBotaoAindaJogando() {
+    let btn = document.getElementById('btn-still-playing-session');
+    if (btn) return btn;
+
+    const btnConfirmar = document.getElementById('btn-confirm-session');
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'btn-still-playing-session';
+    btn.className = 'btn btn-gt-outline btn-sm d-none';
+    const lang = (typeof GT_I18N !== 'undefined' && GT_I18N.getLang) ? GT_I18N.getLang() : 'pt-BR';
+    btn.innerHTML = `<i class="bi bi-play-fill me-1"></i>${TEXTO_AINDA_JOGANDO[lang] || TEXTO_AINDA_JOGANDO['pt-BR']}`;
+    btn.addEventListener('click', () => confirmarFormularioSessao({ aindaJogando: true }));
+    btnConfirmar.insertAdjacentElement('afterend', btn);
+
+    // Mantém o "min" da data de fim sempre >= data de início na nova jogada.
+    document.getElementById('detail-session-date-input')?.addEventListener('input', (e) => {
+        if (_sessaoFormModo === 'start') {
+            document.getElementById('detail-session-finish-input').min = e.target.value;
+            atualizarBotoesNovaJogada();
+        }
+    });
+    return btn;
+}
+
+// Na nova jogada: sem data de fim -> só "Ainda jogando" ativo (tempo fica pra
+// quando finalizar). Com data de fim -> "Confirmar" ativo e "Ainda jogando" desativado.
+function atualizarBotoesNovaJogada() {
+    const btnConfirmar = document.getElementById('btn-confirm-session');
+    const btnAinda = document.getElementById('btn-still-playing-session');
+    const duracaoInput = document.getElementById('detail-session-duration-input');
+
+    if (_sessaoFormModo !== 'start') {
+        btnConfirmar.disabled = false;
+        if (btnAinda) btnAinda.disabled = false;
+        duracaoInput.disabled = false;
+        return;
+    }
+
+    const temFim = !!document.getElementById('detail-session-finish-input').value;
+    const temInicio = !!document.getElementById('detail-session-date-input').value;
+    btnConfirmar.disabled = !temFim || !temInicio;
+    if (btnAinda) btnAinda.disabled = temFim || !temInicio;
+    duracaoInput.disabled = !temFim;
+    if (!temFim) duracaoInput.value = '';
 }
 
 async function excluirSessaoAtual() {
@@ -1386,6 +1678,9 @@ function fecharFormularioSessao() {
     fimInput.min = '';
     fimInput.max = '';
     duracaoInput.value = '';
+    duracaoInput.disabled = false;
+    document.getElementById('btn-confirm-session').disabled = false;
+    document.getElementById('btn-still-playing-session')?.classList.add('d-none');
 
     // Se o "Jogar novamente" foi cancelado (ou o formulário fechado por
     // qualquer outro motivo) e já existe mais de uma jogada no histórico, o
@@ -1397,12 +1692,19 @@ function fecharFormularioSessao() {
     _sessaoFormId = null;
 }
 
-async function confirmarFormularioSessao() {
+async function confirmarFormularioSessao(opcoes = {}) {
     if (!jogoEmEdicaoId || !_sessaoFormModo) return;
+    // Quando chamado pelo listener de clique, o 1º argumento é o evento — ignora.
+    const aindaJogando = opcoes && opcoes.aindaJogando === true;
 
     const inicio = document.getElementById('detail-session-date-input').value || null;
     const fim = document.getElementById('detail-session-finish-input').value || null;
     const duracaoMin = hhmmParaMinutos(document.getElementById('detail-session-duration-input').value);
+
+    if (_sessaoFormModo === 'start' && !inicio) {
+        document.getElementById('detail-session-date-input').focus();
+        return;
+    }
 
     if (fim && inicio && fim < inicio) {
         alert(GT_I18N.t('detail.sessionDateOrderError'));
@@ -1417,6 +1719,22 @@ async function confirmarFormularioSessao() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ started_at: inicio }),
             });
+
+            // Se informou data de fim (e não clicou em "Ainda jogando"), finaliza
+            // na hora a jogada recém-criada — ela já aparece como finalizada.
+            if (response.ok && fim && !aindaJogando) {
+                const criado = await response.json();
+                const aberta = (criado.sessions || []).find(s => !s.finished_at);
+                if (aberta) {
+                    response = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${aberta.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ finished_at: fim, duration_minutes: duracaoMin }),
+                    });
+                } else {
+                    response = new Response(JSON.stringify(criado), { status: 200 });
+                }
+            }
         } else if (_sessaoFormModo === 'finish') {
             response = await authFetch(`/games/${jogoEmEdicaoId}/sessions/${_sessaoFormId}`, {
                 method: 'PATCH',

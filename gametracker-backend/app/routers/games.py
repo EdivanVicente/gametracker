@@ -10,7 +10,8 @@ Todas as rotas exigem usuário autenticado e operam apenas sobre registros
 pertencentes ao usuário logado (isolamento por user_id).
 """
 
-from datetime import date
+import asyncio
+from datetime import date, datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -63,7 +64,15 @@ async def _get_or_create_game(db: Session, external_id: str) -> tuple[models.Gam
         genre=details["genre"],
         platforms=", ".join(details.get("platforms") or []) or None,
         multiplayer_info=details.get("multiplayer_info"),
+        critic_score=details.get("critic_score"),
+        critic_source=details.get("critic_source"),
+        critic_checked_at=datetime.utcnow(),
     )
+    # Sem nota do Metacritic na RAWG? Tenta a média da crítica da IGDB (reserva).
+    if game.critic_score is None:
+        nota_igdb = await _nota_igdb_segura(game.title)
+        if nota_igdb is not None:
+            game.critic_score, game.critic_source = nota_igdb, "igdb"
     db.add(game)
     db.commit()
     db.refresh(game)
@@ -71,6 +80,34 @@ async def _get_or_create_game(db: Session, external_id: str) -> tuple[models.Gam
     plataformas = details.get("platforms") or []
     plataforma_sugerida = plataformas[0] if plataformas else None
     return game, plataforma_sugerida
+
+
+async def _nota_igdb_segura(titulo: str) -> int | None:
+    """Busca a nota da crítica na IGDB pelo título; nunca quebra o fluxo se falhar."""
+    try:
+        return await igdb_service.get_critic_score_by_title(titulo)
+    except Exception as exc:
+        logger.warning("Nota da crítica: falha ao consultar IGDB para '%s' (%s)", titulo, exc)
+        return None
+
+
+async def _buscar_nota_critica(game: models.Game) -> tuple[int | None, str | None]:
+    """
+    Descobre a nota da crítica (0-100) de um jogo já salvo.
+    Ordem: Metacritic via RAWG -> média da crítica na IGDB. Devolve (nota, fonte).
+    """
+    try:
+        detalhes = await games_api_service.get_game_details(external_id=game.external_id)
+        if detalhes.get("critic_score"):
+            return detalhes["critic_score"], detalhes.get("critic_source")
+    except Exception as exc:
+        logger.warning("Nota da crítica: falha nos detalhes de '%s' (%s)", game.external_id, exc)
+
+    if not game.external_id.startswith("igdb-"):
+        nota = await _nota_igdb_segura(game.title)
+        if nota is not None:
+            return nota, "igdb"
+    return None, None
 
 
 async def _tentar_melhorar_capa(details: dict) -> None:
@@ -303,6 +340,45 @@ def get_my_games(
     _traduzir_em_lote(db, jogos_para_traduzir, lang)
 
     return jogos
+
+
+# --- NOTA DA CRÍTICA: preenche jogos antigos (salvos antes desse recurso) ---
+# O frontend chama isso uma vez depois de carregar "Meus Jogos". Cada jogo só é
+# consultado UMA vez (critic_checked_at), mesmo que não tenha nota nenhuma.
+@router.post("/refresh-critic-scores")
+async def refresh_critic_scores(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    pendentes = (
+        db.query(models.Game)
+        .join(models.UserGame, models.UserGame.game_id == models.Game.id)
+        .filter(models.UserGame.user_id == current_user.id, models.Game.critic_checked_at.is_(None))
+        .distinct()
+        .limit(15)  # lotes pequenos pra não estourar o limite das APIs externas
+        .all()
+    )
+    if not pendentes:
+        return {"updated": 0, "remaining": 0}
+
+    resultados = await asyncio.gather(*(_buscar_nota_critica(g) for g in pendentes))
+    atualizados = 0
+    for game, (nota, fonte) in zip(pendentes, resultados):
+        game.critic_score = nota
+        game.critic_source = fonte
+        game.critic_checked_at = datetime.utcnow()
+        if nota is not None:
+            atualizados += 1
+    db.commit()
+
+    restantes = (
+        db.query(models.Game.id)
+        .join(models.UserGame, models.UserGame.game_id == models.Game.id)
+        .filter(models.UserGame.user_id == current_user.id, models.Game.critic_checked_at.is_(None))
+        .distinct()
+        .count()
+    )
+    return {"updated": atualizados, "remaining": restantes}
 
 
 @router.post("/", response_model=schemas.UserGameOut, status_code=status.HTTP_201_CREATED)
@@ -618,6 +694,8 @@ def update_game(
         user_game.platform = data["platform"]
     if "is_favorite" in data:
         user_game.is_favorite = data["is_favorite"]
+    if "verdict" in data:
+        user_game.verdict = data["verdict"]
 
     # Horas jogadas (float, em horas) -> convertido para minutos (int) no banco.
     if "hours_played" in data:

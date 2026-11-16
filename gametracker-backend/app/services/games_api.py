@@ -285,6 +285,9 @@ class GamesApiService:
             "genre": ", ".join(genres) if genres else None,
             "release_date": item.get("released"),
             "multiplayer_info": ", ".join(modos) if modos else None,
+            # Nota do Metacritic (0-100) que a RAWG já devolve — None quando não existe.
+            "critic_score": item.get("metacritic") or None,
+            "critic_source": "metacritic" if item.get("metacritic") else None,
         }
 
     @staticmethod

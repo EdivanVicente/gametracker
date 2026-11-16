@@ -143,6 +143,9 @@ def _run_light_migrations() -> None:
             colunas_novas_games = {
                 "platforms": "TEXT",
                 "multiplayer_info": "VARCHAR(255)",
+                "critic_score": "INTEGER",
+                "critic_source": "VARCHAR(20)",
+                "critic_checked_at": "TIMESTAMP",
             }
             for nome, tipo_sql in colunas_novas_games.items():
                 if nome not in colunas_existentes_games:
@@ -156,6 +159,7 @@ def _run_light_migrations() -> None:
                 "hours_played": "INTEGER",
                 "time_to_beat_main": "INTEGER",
                 "time_to_beat_completionist": "INTEGER",
+                "verdict": "VARCHAR(20)",
             }
             for nome, tipo_sql in colunas_novas_ug.items():
                 if nome not in colunas_existentes_ug:
