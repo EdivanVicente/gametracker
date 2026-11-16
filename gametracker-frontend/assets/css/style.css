@@ -1333,3 +1333,14 @@ textarea::placeholder {
   border-top: 1px solid var(--gt-border);
   padding-top: 0.5rem;
 }
+
+
+/* --- Comunidade: cards dos amigos no mesmo formato de Meus Jogos --- */
+#public-profile-games-grid .gt-card-body {
+  padding: 0.7rem;
+}
+#public-profile-games-grid .gt-card-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

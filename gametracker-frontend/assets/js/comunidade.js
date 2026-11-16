@@ -328,7 +328,7 @@ function renderizarPerfilPublico(p) {
 }
 
 const CLASSES_POR_MODO_PUBLICO = {
-    medium: 'col-6 col-sm-4 col-lg-3',
+    medium: 'col-6 col-md-4 col-lg-3',
     large: 'col-12 col-sm-6 col-lg-4',
 };let modoVisualizacaoPublico = localStorage.getItem('gt-view-mode') || 'medium';
 if (modoVisualizacaoPublico === 'small') modoVisualizacaoPublico = 'medium';
@@ -341,6 +341,67 @@ function definirModoVisualizacaoPublico(modo) {
     const icone = document.getElementById('public-view-mode-icon');
     if (icone) icone.className = `bi ${ICONE_POR_MODO_PUBLICO[modo] || ICONE_POR_MODO_PUBLICO.medium}`;
     filtrarJogosPublico();
+}
+
+// --- NOTA DA CRÍTICA + VEREDITO DO AMIGO (mesmo visual de Meus Jogos) ---
+const VEREDITOS_PUBLICO = {
+    replay:         { icone: 'bi-arrow-repeat',     classe: 'gt-verdict--replay',         chave: 'verdict.replay' },
+    good_but:       { icone: 'bi-hand-thumbs-up',   classe: 'gt-verdict--good-but',       chave: 'verdict.goodBut' },
+    wouldnt_replay: { icone: 'bi-hand-thumbs-down', classe: 'gt-verdict--wouldnt-replay', chave: 'verdict.wouldntReplay' },
+    not_recommend:  { icone: 'bi-slash-circle',     classe: 'gt-verdict--not-recommend',  chave: 'verdict.notRecommend' },
+};
+
+function _classeNotaCriticaPublico(nota) {
+    if (nota >= 75) return 'gt-critic--high';
+    if (nota >= 50) return 'gt-critic--mid';
+    return 'gt-critic--low';
+}
+
+// Etiqueta da nota da crítica. compacto = só ícone + número (modo lista).
+function _htmlNotaCriticaPublico(nota, compacto = false) {
+    if (nota == null) {
+        const semNota = GT_I18N.t('critic.noneShort');
+        return `<span class="gt-critic-badge gt-critic--none" title="${escapeHtml(semNota)}">
+                    <i class="bi bi-trophy"></i> ${compacto ? '—' : escapeHtml(semNota)}
+                </span>`;
+    }
+    return `<span class="gt-critic-badge ${_classeNotaCriticaPublico(nota)}" title="${escapeHtml(GT_I18N.t('critic.label'))}: ${nota}/100">
+                <i class="bi bi-trophy-fill"></i> ${compacto ? '' : `${GT_I18N.t('critic.short')}: `}${nota}
+            </span>`;
+}
+
+// Veredito do amigo. compacto = só o ícone (texto no tooltip).
+function _htmlVereditoPublico(verdict, compacto = false) {
+    const v = VEREDITOS_PUBLICO[verdict];
+    if (!v) return '';
+    const texto = GT_I18N.t(v.chave);
+    if (compacto) {
+        return `<span class="gt-verdict-chip ${v.classe}" title="${escapeHtml(texto)}" aria-label="${escapeHtml(texto)}"><i class="bi ${v.icone}"></i></span>`;
+    }
+    return `<span class="gt-verdict-pill ${v.classe}"><i class="bi ${v.icone}"></i> ${escapeHtml(texto)}</span>`;
+}
+
+// Bloco "Crítica especializada" no detalhe do jogo do amigo (só leitura).
+function _htmlCaixaCriticaPublico(nota, fonte) {
+    if (nota == null) {
+        return `<div class="gt-critic-box d-flex align-items-center"><span class="small text-white-50"><i class="bi bi-trophy me-1"></i>${GT_I18N.t('critic.none')}</span></div>`;
+    }
+    const nomeFonte = fonte === 'igdb' ? 'IGDB' : 'Metacritic';
+    return `
+        <div class="gt-critic-box d-flex align-items-center">
+            <span class="gt-critic-badge gt-critic-badge--lg ${_classeNotaCriticaPublico(nota)}">${nota}</span>
+            <div class="ms-2">
+                <div class="small fw-semibold">${GT_I18N.t('critic.label')} <span class="text-white-50">/100</span></div>
+                <div class="small text-white-50">${GT_I18N.t('critic.source')}: ${nomeFonte} · ${GT_I18N.t('critic.readOnly')}</div>
+            </div>
+        </div>`;
+}
+
+// Classe do selo de status no mesmo padrão dos cards de Meus Jogos.
+function _classeStatusCardPublico(statusValor) {
+    if (statusValor === 'wish_to_play') return 'is-wishlist';
+    if (statusValor === 'playing') return 'is-playing';
+    return 'is-finished';
 }
 
 // Traduz o status de um jogo do amigo pra {classe, texto} do badge — mesma
@@ -380,6 +441,7 @@ function renderizarGradeJogosPublico(jogos) {
                             <p class="small fw-semibold mb-0 text-truncate">${escapeHtml(j.title)}</p>
                             <p class="text-white-50 mb-0" style="font-size: 0.72rem;">${escapeHtml(j.platform || '—')}</p>
                         </div>
+                        <div class="d-flex align-items-center gap-1 flex-shrink-0">${_htmlNotaCriticaPublico(j.critic_score, true)}${_htmlVereditoPublico(j.verdict, true)}</div>
                         <span class="badge ${badge.classe}" style="font-size: 0.65rem;">${badge.texto}</span>
                     </div>
                 </div>`;
@@ -388,20 +450,22 @@ function renderizarGradeJogosPublico(jogos) {
         const colClass = CLASSES_POR_MODO_PUBLICO[modoVisualizacaoPublico] || CLASSES_POR_MODO_PUBLICO.medium;
         grid.innerHTML = jogos.map((j, idx) => {
             const badge = _badgeStatusPublico(j.status);
+            // --- CARD DO AMIGO: mesmo formato dos cards de Meus Jogos ---
             return `
                 <div class="${colClass}">
-                    <div class="gt-panel h-100 overflow-hidden" style="padding: 0; cursor: pointer;" data-game-idx="${idx}" role="button">
-                        <div class="position-relative" style="aspect-ratio: 3/4; background-color: var(--gt-surface-raised);">
-                            ${j.cover_url ? `<img src="${j.cover_url}" alt="" style="width:100%;height:100%;object-fit:cover;" loading="lazy">` : ''}
-                            <span class="badge ${badge.classe} position-absolute top-0 start-0 m-2" style="font-size: 0.65rem;">${badge.texto}</span>
+                    <article class="gt-card" data-game-idx="${idx}" role="button" style="cursor: pointer;">
+                        <div class="gt-card-status ${_classeStatusCardPublico(j.status)}">${badge.texto}</div>
+                        <div class="gt-card-cover">
+                            ${j.cover_url
+                                ? `<img src="${j.cover_url}" alt="${escapeHtml(j.title)}" loading="lazy">`
+                                : '<i class="bi bi-controller"></i>'}
                         </div>
-                        <div class="p-2">
-                            <p class="small fw-semibold mb-1 text-truncate" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</p>
-                            <p class="text-white-50 mb-0" style="font-size: 0.72rem;">
-                                ${escapeHtml(j.platform || '—')}${j.genre ? ` · ${escapeHtml(gtTranslateGenre(j.genre))}` : ''}
-                            </p>
+                        <div class="gt-card-body">
+                            <h3 class="gt-card-title mb-0" title="${escapeHtml(j.title)}">${escapeHtml(j.title)}</h3>
+                            <p class="gt-card-meta">${escapeHtml(j.platform || '—')}${j.genre ? ` · ${escapeHtml(gtTranslateGenre(j.genre))}` : ''}</p>
+                            <div class="gt-card-verdict-row mb-0">${_htmlNotaCriticaPublico(j.critic_score)}${_htmlVereditoPublico(j.verdict)}</div>
                         </div>
-                    </div>
+                    </article>
                 </div>`;
         }).join('');
     }
@@ -555,6 +619,11 @@ async function abrirQuickViewJogo(jogo) {
             </div>
         </div>
 
+        <!-- --- NOTA DA CRÍTICA + VEREDITO DO AMIGO --- -->
+        <p class="small text-white-50 mb-2">${GT_I18N.t('critic.title')}</p>
+        <div id="quickview-critic" class="mb-3">${_htmlCaixaCriticaPublico(jogo.critic_score, null)}</div>
+        <div id="quickview-friend-verdict" class="mb-3"></div>
+
         <div id="quickview-friend-stats" class="mb-3"></div>
 
         <div id="quickview-add-wrapper" class="mb-3"></div>
@@ -607,6 +676,22 @@ async function carregarStatsAmigoNoJogo(jogo) {
         const response = await authFetch(`/social/profile/${_perfilPublicoAtual.id}/games/${jogo.id}`);
         if (!response.ok) return;
         const d = await response.json();
+
+        // Atualiza a caixa da crítica já com a fonte (Metacritic/IGDB).
+        const criticWrapper = document.getElementById('quickview-critic');
+        if (criticWrapper) criticWrapper.innerHTML = _htmlCaixaCriticaPublico(d.critic_score, d.critic_source);
+
+        // Veredito do amigo: "Veredito de <nome>: <ícone> <texto>".
+        const verdictWrapper = document.getElementById('quickview-friend-verdict');
+        if (verdictWrapper) {
+            const nomeAmigo = _perfilPublicoAtual.display_name || GT_I18N.t('community.anonymous');
+            verdictWrapper.innerHTML = VEREDITOS_PUBLICO[d.verdict]
+                ? `<div class="d-flex align-items-center flex-wrap gap-2">
+                       <span class="small text-white-50">${GT_I18N.t('community.friendVerdict', { name: escapeHtml(nomeAmigo) })}:</span>
+                       ${_htmlVereditoPublico(d.verdict)}
+                   </div>`
+                : '';
+        }
 
         const notas = [
             ['Grf', d.graphics_score], ['Som', d.sound_score], ['Jog', d.gameplay_score], ['Dif', d.difficulty_score],
